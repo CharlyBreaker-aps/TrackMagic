@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>Charly VR Tracker</title>
+<title>MagicTracker (By Charly)</title>
 <link rel="manifest" href="manifest.json">
 <style>
 :root{
@@ -209,8 +209,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: 'Charly VR Tracker',
-    // Onboarding
+    appName: 'MagicTracker (By Charly)',
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -276,7 +275,7 @@ const T = {
     search_food: 'Search food',
     search_placeholder: 'chicken breast, rice, apple, salmon...',
     search_hint: '500+ foods · type "protein" · "low cal" · "high carb" to filter',
-    high_protein: 'high protein', low_cal: 'low cal', high_carb: 'high carb',
+    high_protein: 'high protein', low_cal: 'low cal', high_carb: 'high carb', home_meals_tag: 'home cooked',
     searched: 'added',
     no_results: 'No results. Try: chicken, rice, apple, salmon...',
     results: 'result', results_pl: 'results',
@@ -342,7 +341,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: 'Charly VR Tracker',
+    appName: 'MagicTracker (By Charly)',
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -406,7 +405,7 @@ const T = {
     search_food: 'Buscar alimento',
     search_placeholder: 'chicken breast, arroz, manzana, salmon...',
     search_hint: '500+ alimentos · "proteina" · "bajo cal" · "alta carbos" para filtrar',
-    high_protein: 'alta proteína', low_cal: 'bajo cal', high_carb: 'alta carbos',
+    high_protein: 'alta proteína', low_cal: 'bajo cal', high_carb: 'alta carbos', home_meals_tag: 'comida casera',
     searched: 'buscado',
     no_results: 'Sin resultados. Probá: chicken, rice, apple, salmon...',
     results: 'resultado', results_pl: 'resultados',
@@ -547,29 +546,104 @@ const FDB=[
 {n:'Beef jerky 30g',k:90,p:15,c:5,cat:'Snacks',hi:1},{n:'Protein bar',k:200,p:20,c:20,cat:'Snacks',hi:1},
 {n:'Oat milk 200ml',k:90,p:1,c:16,cat:'Drinks'},{n:'Almond milk 200ml',k:30,p:1,c:1,cat:'Drinks',lc:1},
 {n:'Coconut water 330ml',k:60,p:1,c:15,cat:'Drinks'},
-// ── HOME MEAL INGREDIENTS ──
-{n:'Overnight oats 80g (dry)',k:304,p:11,c:55,cat:'Breakfast',hc:1},{n:'Scrambled eggs x3 + milk',k:250,p:20,c:3,cat:'Breakfast',hi:1},
-{n:'Omelette 3 eggs + veggies',k:280,p:21,c:5,cat:'Breakfast',hi:1},{n:'Porridge 60g oats + milk',k:320,p:12,c:52,cat:'Breakfast',hc:1},
-{n:'Pancakes x3 (homemade)',k:350,p:10,c:55,cat:'Breakfast',hc:1},{n:'Toast x2 + peanut butter',k:340,p:13,c:38,cat:'Breakfast',hc:1},
-{n:'Smoothie protein (whey+milk+banana)',k:380,p:30,c:45,cat:'Breakfast',hi:1},
-{n:'Grilled chicken breast + rice 150g + broccoli',k:530,p:55,c:55,cat:'Home meal',hi:1},
-{n:'Baked salmon 150g + sweet potato + asparagus',k:530,p:40,c:35,cat:'Home meal',hi:1},
-{n:'Beef stir fry + rice 150g + veggies',k:600,p:45,c:55,cat:'Home meal',hi:1},
-{n:'Tuna pasta (tuna + pasta 150g + tomato sauce)',k:530,p:40,c:60,cat:'Home meal',hi:1},
-{n:'Chicken thigh x2 roasted + potato baked',k:640,p:50,c:40,cat:'Home meal',hi:1},
-{n:'Prawn stir fry + rice 150g',k:480,p:38,c:55,cat:'Home meal',hi:1},
-{n:'Omelette x3 eggs + ham + cheese',k:400,p:35,c:2,cat:'Home meal',hi:1},
-{n:'Chicken + vegetable soup (homemade)',k:350,p:35,c:25,cat:'Home meal',hi:1},
-{n:'Beef bolognese + pasta 150g',k:680,p:38,c:65,cat:'Home meal',hi:1,hc:1},
-{n:'Grilled fish + mashed potato + greens',k:480,p:38,c:38,cat:'Home meal',hi:1},
-{n:'Chicken caesar salad (no croutons)',k:420,p:42,c:8,cat:'Home meal',hi:1},
-{n:'Egg fried rice 200g',k:420,p:18,c:58,cat:'Home meal',hc:1},
-{n:'Whey protein shake 30g',k:120,p:24,c:4,cat:'Protein',hi:1},{n:'Casein protein shake 30g',k:115,p:24,c:3,cat:'Protein',hi:1},
+// ── BREAKFAST ──
+{n:'Overnight oats 80g + berries',k:350,p:13,c:58,cat:'Breakfast',hc:1,hm:1},
+{n:'Scrambled eggs x3 + toast x2',k:420,p:27,c:32,cat:'Breakfast',hi:1,hm:1},
+{n:'Omelette x3 eggs + vegetables',k:280,p:21,c:5,cat:'Breakfast',hi:1,hm:1},
+{n:'Porridge 60g oats + milk + banana',k:370,p:13,c:62,cat:'Breakfast',hc:1,hm:1},
+{n:'Pancakes x3 homemade + honey',k:380,p:10,c:60,cat:'Breakfast',hc:1,hm:1},
+{n:'Toast x2 wholemeal + peanut butter',k:340,p:13,c:38,cat:'Breakfast',hm:1},
+{n:'Protein smoothie (whey + milk + banana)',k:380,p:30,c:45,cat:'Breakfast',hi:1,hm:1},
+{n:'Greek yogurt 200g + granola 40g + fruit',k:430,p:22,c:58,cat:'Breakfast',hi:1,hm:1},
+{n:'Avocado on toast x2 + poached eggs x2',k:520,p:22,c:42,cat:'Breakfast',hm:1},
+{n:'French toast x2 slices + eggs',k:400,p:16,c:44,cat:'Breakfast',hm:1},
+{n:'Egg white omelette x4 + spinach',k:200,p:28,c:4,cat:'Breakfast',hi:1,hm:1},
+{n:'Muesli 60g + milk + apple',k:380,p:11,c:65,cat:'Breakfast',hc:1,hm:1},
+{n:'Weetabix x2 + milk + banana',k:320,p:10,c:58,cat:'Breakfast',hc:1,hm:1},
+{n:'Boiled eggs x3 + toast x1',k:330,p:22,c:18,cat:'Breakfast',hi:1,hm:1},
+{n:'Bacon x2 + eggs x2 + toast x1',k:490,p:32,c:28,cat:'Breakfast',hi:1,hm:1},
+// ── CHICKEN DISHES ──
+{n:'Grilled chicken breast 200g + white rice 150g + broccoli',k:580,p:62,c:55,cat:'Home meal',hi:1,hm:1},
+{n:'Chicken breast 200g + mashed potato 150g + peas',k:600,p:58,c:55,cat:'Home meal',hi:1,hm:1},
+{n:'Chicken thigh x2 roasted + baked potato + green beans',k:670,p:52,c:42,cat:'Home meal',hi:1,hm:1},
+{n:'Chicken stir fry + rice 150g + mixed vegetables',k:570,p:50,c:55,cat:'Home meal',hi:1,hm:1},
+{n:'Chicken curry (mild) + rice 150g',k:680,p:48,c:70,cat:'Home meal',hi:1,hm:1},
+{n:'Chicken + vegetable soup (homemade)',k:350,p:35,c:25,cat:'Home meal',hi:1,hm:1},
+{n:'Chicken caesar salad (no croutons)',k:420,p:42,c:8,cat:'Home meal',hi:1,hm:1},
+{n:'Chicken wrap + salad leaves + hummus',k:520,p:38,c:48,cat:'Home meal',hi:1,hm:1},
+{n:'Chicken fajitas x2 wraps + peppers + onion',k:620,p:44,c:62,cat:'Home meal',hi:1,hm:1},
+{n:'Roast chicken leg + roast potato + carrots',k:650,p:48,c:42,cat:'Home meal',hi:1,hm:1},
+{n:'Chicken + rice 150g + sweet potato',k:630,p:50,c:65,cat:'Home meal',hi:1,hm:1,hc:1},
+{n:'Chicken breast 200g + couscous 150g + roasted veg',k:590,p:58,c:55,cat:'Home meal',hi:1,hm:1},
+{n:'Chicken drumsticks x4 oven-baked + chips oven 150g',k:760,p:56,c:42,cat:'Home meal',hi:1,hm:1},
+{n:'Chicken and mushroom pasta 150g',k:620,p:46,c:58,cat:'Home meal',hi:1,hm:1},
+{n:'Chicken tikka (no sauce) + rice 150g + salad',k:560,p:50,c:45,cat:'Home meal',hi:1,hm:1},
+// ── BEEF DISHES ──
+{n:'Beef bolognese + pasta 150g',k:680,p:40,c:62,cat:'Home meal',hi:1,hm:1},
+{n:'Beef steak 200g + mashed potato + asparagus',k:680,p:58,c:34,cat:'Home meal',hi:1,hm:1},
+{n:'Beef stir fry + noodles 150g + broccoli',k:620,p:44,c:55,cat:'Home meal',hi:1,hm:1},
+{n:'Beef mince chilli + rice 150g + kidney beans',k:680,p:44,c:65,cat:'Home meal',hi:1,hm:1},
+{n:'Beef burger homemade + bun + salad',k:620,p:38,c:45,cat:'Home meal',hi:1,hm:1},
+{n:'Beef tacos x2 + cheese + salsa',k:580,p:36,c:50,cat:'Home meal',hi:1,hm:1},
+{n:'Beef stew + potato 180g + carrots',k:620,p:40,c:48,cat:'Home meal',hi:1,hm:1},
+{n:'Minced beef + rice 150g + peas',k:580,p:38,c:55,cat:'Home meal',hi:1,hm:1},
+{n:'Beef lasagne homemade (1 serving)',k:720,p:42,c:62,cat:'Home meal',hi:1,hm:1},
+{n:'Beef meatballs x6 + tomato sauce + pasta 150g',k:680,p:38,c:60,cat:'Home meal',hi:1,hm:1},
+// ── PORK DISHES ──
+{n:'Pork loin chop + sweet potato + broccoli',k:590,p:44,c:38,cat:'Home meal',hi:1,hm:1},
+{n:'Pulled pork + rice 150g + coleslaw',k:680,p:44,c:55,cat:'Home meal',hi:1,hm:1},
+{n:'Pork mince + noodles 150g + spring onion',k:610,p:38,c:52,cat:'Home meal',hi:1,hm:1},
+{n:'Sausage x2 + mash + onion gravy',k:720,p:32,c:58,cat:'Home meal',hm:1},
+{n:'Bacon + eggs x2 + baked beans 200g',k:580,p:38,c:38,cat:'Home meal',hi:1,hm:1},
+// ── FISH / SEAFOOD ──
+{n:'Baked salmon 150g + sweet potato 150g + asparagus',k:530,p:40,c:35,cat:'Home meal',hi:1,hm:1},
+{n:'Salmon fillet 150g + white rice 150g + broccoli',k:610,p:44,c:55,cat:'Home meal',hi:1,hm:1},
+{n:'Tuna pasta (tuna tin + pasta 150g + tomato sauce)',k:530,p:42,c:58,cat:'Home meal',hi:1,hm:1},
+{n:'Tuna + rice 150g + sweetcorn + mayo',k:520,p:36,c:58,cat:'Home meal',hi:1,hm:1},
+{n:'Grilled cod 150g + mashed potato 150g + peas',k:500,p:40,c:48,cat:'Home meal',hi:1,hm:1},
+{n:'Prawn stir fry + rice 150g + veggies',k:480,p:38,c:55,cat:'Home meal',hi:1,hm:1},
+{n:'Sardines on toast x2',k:420,p:28,c:32,cat:'Home meal',hi:1,hm:1},
+{n:'Fish cakes x2 homemade + salad',k:480,p:30,c:38,cat:'Home meal',hm:1},
+{n:'Sea bass 150g + quinoa 150g + roasted veg',k:520,p:44,c:42,cat:'Home meal',hi:1,hm:1},
+{n:'Tuna jacket potato + cheese',k:580,p:38,c:58,cat:'Home meal',hi:1,hm:1},
+// ── EGGS & VEGETARIAN ──
+{n:'Omelette x3 eggs + ham + cheese',k:400,p:35,c:2,cat:'Home meal',hi:1,hm:1},
+{n:'Egg fried rice 200g + peas + spring onion',k:440,p:18,c:60,cat:'Home meal',hc:1,hm:1},
+{n:'Shakshuka x2 eggs + tomatoes + peppers',k:380,p:20,c:28,cat:'Home meal',hm:1},
+{n:'Frittata x3 eggs + vegetables + cheese',k:360,p:26,c:8,cat:'Home meal',hi:1,hm:1},
+{n:'Lentil soup + bread x2',k:480,p:20,c:70,cat:'Home meal',hm:1},
+{n:'Chickpea curry + rice 150g',k:620,p:20,c:88,cat:'Home meal',hc:1,hm:1},
+{n:'Vegetable stir fry + tofu + rice 150g',k:480,p:18,c:60,cat:'Home meal',hm:1},
+{n:'Spinach + lentil dal + rice 150g',k:560,p:22,c:80,cat:'Home meal',hc:1,hm:1},
+{n:'Bean and vegetable soup homemade',k:320,p:16,c:45,cat:'Home meal',hm:1},
+// ── POTATO / CARB MAINS ──
+{n:'Mashed potato 150g + chicken breast 150g + gravy',k:580,p:48,c:45,cat:'Home meal',hi:1,hm:1},
+{n:'Baked potato 180g + baked beans + cheese',k:520,p:22,c:70,cat:'Home meal',hc:1,hm:1},
+{n:'Baked potato 180g + tuna + sweetcorn',k:500,p:34,c:62,cat:'Home meal',hi:1,hm:1},
+{n:'Sweet potato mash 200g + grilled chicken',k:520,p:46,c:42,cat:'Home meal',hi:1,hm:1},
+{n:'Rice white 150g + beef mince + tomatoes',k:560,p:36,c:52,cat:'Home meal',hi:1,hm:1},
+{n:'Rice brown 150g + salmon + edamame',k:560,p:42,c:48,cat:'Home meal',hi:1,hm:1},
+{n:'Pasta penne 150g + tomato sauce + mozzarella',k:520,p:22,c:68,cat:'Home meal',hc:1,hm:1},
+{n:'Pasta spaghetti 150g + bolognese sauce',k:640,p:38,c:58,cat:'Home meal',hi:1,hm:1},
+{n:'Mac and cheese homemade (1 serving)',k:620,p:24,c:70,cat:'Home meal',hc:1,hm:1},
+// ── SOUPS & STEWS ──
+{n:'Chicken and vegetable broth (homemade)',k:280,p:28,c:20,cat:'Home meal',hi:1,hm:1},
+{n:'Lentil and tomato soup + bread x1',k:380,p:16,c:55,cat:'Home meal',hm:1},
+{n:'Minestrone soup (homemade) + bread x1',k:340,p:12,c:52,cat:'Home meal',hm:1},
+{n:'Beef and vegetable stew (homemade)',k:500,p:36,c:38,cat:'Home meal',hi:1,hm:1},
+{n:'Tomato soup 400ml + toast x2',k:320,p:8,c:48,cat:'Home meal',hm:1},
+// ── SALADS ──
+{n:'Greek salad + grilled chicken breast 150g',k:460,p:44,c:12,cat:'Home meal',hi:1,hm:1},
+{n:'Tuna nicoise salad (eggs + tuna + olives)',k:420,p:36,c:18,cat:'Home meal',hi:1,hm:1},
+{n:'Prawn avocado salad + lemon dressing',k:380,p:30,c:14,cat:'Home meal',hi:1,hm:1},
+{n:'Chicken quinoa salad 150g + cucumber + tomato',k:480,p:40,c:42,cat:'Home meal',hi:1,hm:1},
+{n:'Protein shake 30g',k:120,p:24,c:4,cat:'Protein',hi:1,hm:1},
 ];
 
 const PROT=FDB.filter(f=>f.hi&&f.p>=15);
 const LCAL=FDB.filter(f=>f.lc&&f.k<=100).sort((a,b)=>a.k-b.k);
 const HCARB=FDB.filter(f=>f.hc&&f.c>=30).sort((a,b)=>b.c-a.c);
+const HOMEMEALS=FDB.filter(f=>f.hm).sort((a,b)=>b.p-a.p);
 const MSTEPS=[0.5,0.75,1,1.25,1.5,2];
 const MLBLS={0.5:'½×',0.75:'¾×',1:'1×',1.25:'1¼×',1.5:'1½×',2:'2×'};
 
@@ -593,21 +667,56 @@ const CHARLY_SUPPS = [
   {id:'am',label:{en:'Creatine 5g + zero sugar electrolytes',es:'Creatina 5g + electrolitos zero sugar'},time:{en:'Morning',es:'Mañana'}},
   {id:'pm',label:{en:'Creatine 5g + zero sugar electrolytes',es:'Creatina 5g + electrolitos zero sugar'},time:{en:'Afternoon ~15:30',es:'Tarde ~15:30'}},
 ];
-const CHARLY_SA=[{id:'sa0',name:'Cottage cheese fat-free 300g',kcal:210,prot:33,carb:9},{id:'sa1',name:'Huevos duros x3',kcal:210,prot:18,carb:1},{id:'sa2',name:'Pan integral x2',kcal:160,prot:7,carb:30}];
-const CHARLY_SB=[{id:'sb0',name:'Cottage cheese fat-free 300g',kcal:210,prot:33,carb:9},{id:'sb1',name:'Huevos duros x3',kcal:210,prot:18,carb:1},{id:'sb2',name:'Biltong Tesco 40g',kcal:110,prot:20,carb:1},{id:'sb3',name:'Pan integral x2',kcal:160,prot:7,carb:30}];
-const ATUN={name:'Atún en agua x1 lata',kcal:130,prot:28,carb:0};
-const CHARLY_EXT=[{id:'se0',name:'Skyr Arla 150g',kcal:90,prot:15,carb:6},{id:'se1',name:'Skyr Arla 200g',kcal:120,prot:20,carb:8},{id:'se2',name:'Greek yogurt 0% 200g',kcal:120,prot:20,carb:6},{id:'se3',name:'Edamame beans 150g',kcal:182,prot:17,carb:10},{id:'se4',name:'Sardinas en tomate 120g',kcal:200,prot:24,carb:3},{id:'se5',name:'Jamón York 100g',kcal:120,prot:18,carb:2}];
-const CHARLY_EX=[{id:'ex0',name:'Galletas de arroz x4',kcal:100,prot:3,carb:21},{id:'ex1',name:'Pan pita integral x1',kcal:170,prot:6,carb:33},{id:'ex2',name:'Plátano mediano',kcal:90,prot:1,carb:23},{id:'ex3',name:'Manzana mediana',kcal:80,prot:0,carb:21},{id:'ex4',name:'Aguacate 100g',kcal:160,prot:2,carb:9},{id:'ex5',name:'Arroz blanco 150g',kcal:195,prot:4,carb:43},{id:'ex6',name:'Arroz integral 150g',kcal:165,prot:4,carb:35}];
+const CHARLY_SA=(l)=>[
+  {id:'sa0',name:'Cottage cheese fat-free 300g',kcal:210,prot:33,carb:9},
+  {id:'sa1',name:l==='es'?'Huevos duros x3':'Hard-boiled eggs x3',kcal:210,prot:18,carb:1},
+  {id:'sa2',name:l==='es'?'Pan integral x2':'Wholemeal bread x2',kcal:160,prot:7,carb:30},
+];
+const CHARLY_SB=(l)=>[
+  {id:'sb0',name:'Cottage cheese fat-free 300g',kcal:210,prot:33,carb:9},
+  {id:'sb1',name:l==='es'?'Huevos duros x3':'Hard-boiled eggs x3',kcal:210,prot:18,carb:1},
+  {id:'sb2',name:'Biltong Tesco 40g',kcal:110,prot:20,carb:1},
+  {id:'sb3',name:l==='es'?'Pan integral x2':'Wholemeal bread x2',kcal:160,prot:7,carb:30},
+];
+const getATUN=(l)=>({name:l==='es'?'Atún en agua x1 lata':'Tuna in water x1 tin',kcal:130,prot:28,carb:0});
+const CHARLY_EXT=(l)=>[
+  {id:'se0',name:'Skyr Arla 150g',kcal:90,prot:15,carb:6},
+  {id:'se1',name:'Skyr Arla 200g',kcal:120,prot:20,carb:8},
+  {id:'se2',name:'Greek yogurt 0% 200g',kcal:120,prot:20,carb:6},
+  {id:'se3',name:'Edamame beans 150g',kcal:182,prot:17,carb:10},
+  {id:'se4',name:l==='es'?'Sardinas en tomate 120g':'Sardines in tomato 120g',kcal:200,prot:24,carb:3},
+  {id:'se5',name:l==='es'?'Jamón York 100g':'Ham York 100g',kcal:120,prot:18,carb:2},
+];
+const CHARLY_EX=(l)=>[
+  {id:'ex0',name:l==='es'?'Galletas de arroz x4':'Rice cakes x4',kcal:100,prot:3,carb:21},
+  {id:'ex1',name:l==='es'?'Pan pita integral x1':'Wholemeal pitta x1',kcal:170,prot:6,carb:33},
+  {id:'ex2',name:l==='es'?'Plátano mediano':'Banana medium',kcal:90,prot:1,carb:23},
+  {id:'ex3',name:l==='es'?'Manzana mediana':'Apple medium',kcal:80,prot:0,carb:21},
+  {id:'ex4',name:l==='es'?'Aguacate 100g':'Avocado 100g',kcal:160,prot:2,carb:9},
+  {id:'ex5',name:l==='es'?'Arroz blanco 150g':'White rice 150g',kcal:195,prot:4,carb:43},
+  {id:'ex6',name:l==='es'?'Arroz integral 150g':'Brown rice 150g',kcal:165,prot:4,carb:35},
+];
 
 const buildCharlyRests=(d)=>{
-const N={id:'nandos',name:"Nando's",icon:'🍗',src:'Uber Eats · Presencial',meals:[
-  {name:'4 muslos + spicy rice + maíz',note:'Pedir Lemon & Herb — no picante',items:[{name:'4 boneless thighs L&H',kcal:716,prot:85,carb:3},{name:'Spicy rice',kcal:246,prot:5,carb:45},{name:'Maíz a la brasa',kcal:189,prot:5,carb:34}],snack:'A'},
-  {name:'1/2 pollo + spicy rice + maíz',note:'Pedir Lemon & Herb',items:[{name:'1/2 pollo L&H',kcal:550,prot:68,carb:0},{name:'Spicy rice',kcal:246,prot:5,carb:45},{name:'Maíz a la brasa',kcal:189,prot:5,carb:34}],snack:'A'},
-  {name:'Chicken butterfly + spicy rice + maíz',note:'Pedir Lemon & Herb',items:[{name:'Chicken butterfly L&H',kcal:341,prot:60,carb:0},{name:'Spicy rice',kcal:246,prot:5,carb:45},{name:'Maíz a la brasa',kcal:189,prot:5,carb:34}],snack:'A'},
-  {name:'4 muslos + maíz (sin arroz)',items:[{name:'4 boneless thighs L&H',kcal:716,prot:85,carb:3},{name:'Maíz a la brasa',kcal:189,prot:5,carb:34}],snack:'B',atun:1},
-  {name:'1/2 pollo + maíz (sin arroz)',items:[{name:'1/2 pollo L&H',kcal:550,prot:68,carb:0},{name:'Maíz a la brasa',kcal:189,prot:5,carb:34}],snack:'B',atun:1},
-  {name:'Chicken butterfly + maíz',items:[{name:'Chicken butterfly L&H',kcal:341,prot:60,carb:0},{name:'Maíz a la brasa',kcal:189,prot:5,carb:34}],snack:'B',atun:1},
-  {name:'1/4 pollo breast + spicy rice + maíz',items:[{name:'1/4 chicken breast L&H',kcal:299,prot:42,carb:0},{name:'Spicy rice',kcal:246,prot:5,carb:45},{name:'Maíz a la brasa',kcal:189,prot:5,carb:34}],snack:'B',atun:1},
+const l=APP.lang||'en';
+const SRC_PRESENCIAL=l==='es'?'Presencial':'Walk-in';
+const NOTE_LH=l==='es'?'Pedir Lemon & Herb — no picante':'Order Lemon & Herb — not spicy';
+const NOTE_LH2=l==='es'?'Pedir Lemon & Herb':'Order Lemon & Herb';
+const NOTE_CF=l==='es'?'Solo CF o refeed':'CF days or refeed only';
+const NOTE_GRILLED=l==='es'?'Pedir GRILLED siempre':'Always order GRILLED';
+const NOTE_NOSPICY=l==='es'?'Sin salsas picantes':'No spicy sauces';
+const NOTE_GARLIC=l==='es'?'Sin chilli sauce — solo garlic yogurt':'No chilli sauce — garlic yogurt only';
+const NOTE_REFEED=l==='es'?'Solo refeed/CF':'CF days or refeed only';
+const CORN=l==='es'?'Maíz a la brasa':'Corn on the cob';
+const RICE_SPICY=l==='es'?'Spicy rice':'Spicy rice';
+const N={id:'nandos',name:"Nando's",icon:'🍗',src:'Uber Eats',meals:[
+  {name:l==='es'?'4 muslos + spicy rice + maíz':'4 thighs + spicy rice + corn',note:NOTE_LH,items:[{name:'4 boneless thighs L&H',kcal:716,prot:85,carb:3},{name:RICE_SPICY,kcal:246,prot:5,carb:45},{name:CORN,kcal:189,prot:5,carb:34}],snack:'A'},
+  {name:l==='es'?'1/2 pollo + spicy rice + maíz':'1/2 chicken + spicy rice + corn',note:NOTE_LH2,items:[{name:'1/2 chicken L&H',kcal:550,prot:68,carb:0},{name:RICE_SPICY,kcal:246,prot:5,carb:45},{name:CORN,kcal:189,prot:5,carb:34}],snack:'A'},
+  {name:l==='es'?'Chicken butterfly + spicy rice + maíz':'Chicken butterfly + spicy rice + corn',note:NOTE_LH2,items:[{name:'Chicken butterfly L&H',kcal:341,prot:60,carb:0},{name:RICE_SPICY,kcal:246,prot:5,carb:45},{name:CORN,kcal:189,prot:5,carb:34}],snack:'A'},
+  {name:l==='es'?'4 muslos + maíz (sin arroz)':'4 thighs + corn (no rice)',items:[{name:'4 boneless thighs L&H',kcal:716,prot:85,carb:3},{name:CORN,kcal:189,prot:5,carb:34}],snack:'B',atun:1},
+  {name:l==='es'?'1/2 pollo + maíz (sin arroz)':'1/2 chicken + corn (no rice)',items:[{name:'1/2 chicken L&H',kcal:550,prot:68,carb:0},{name:CORN,kcal:189,prot:5,carb:34}],snack:'B',atun:1},
+  {name:l==='es'?'Chicken butterfly + maíz':'Chicken butterfly + corn',items:[{name:'Chicken butterfly L&H',kcal:341,prot:60,carb:0},{name:CORN,kcal:189,prot:5,carb:34}],snack:'B',atun:1},
+  {name:l==='es'?'1/4 pollo breast + spicy rice + maíz':'1/4 chicken breast + spicy rice + corn',items:[{name:'1/4 chicken breast L&H',kcal:299,prot:42,carb:0},{name:RICE_SPICY,kcal:246,prot:5,carb:45},{name:CORN,kcal:189,prot:5,carb:34}],snack:'B',atun:1},
 ]};
 const I={id:'itsu',name:'Itsu',icon:'🍱',src:'Uber Eats',meals:[
   {name:'Double chicken teriyaki + gyoza',items:[{name:'Double chicken teriyaki',kcal:625,prot:43,carb:75},{name:'Chicken gyoza',kcal:251,prot:20,carb:25}],snack:'B',atun:1},
@@ -617,15 +726,15 @@ const I={id:'itsu',name:'Itsu',icon:'🍱',src:'Uber Eats',meals:[
   {name:'Salmon tartare poké + edamame',items:[{name:'Salmon tartare poké',kcal:545,prot:22,carb:65},{name:'Edamame',kcal:132,prot:12,carb:10}],snack:'B',atun:2},
 ]};
 const TB={id:'tacobell',name:'Taco Bell',icon:'🌮',src:'Uber Eats',meals:[
-  {name:'2x Power Bowl + Chicken Quesadilla',items:[{name:'Power Bowl pollo x2',kcal:780,prot:58,carb:80},{name:'Chicken Quesadilla',kcal:510,prot:26,carb:41}],snack:'A',atun:1},
-  {name:'3x Soft Taco + Power Bowl',items:[{name:'Soft Taco pollo x3',kcal:570,prot:48,carb:72},{name:'Power Bowl pollo',kcal:390,prot:29,carb:40}],snack:'A'},
-  {name:'4x Soft Taco pollo grillado',items:[{name:'Soft Taco pollo x4',kcal:760,prot:64,carb:96}],snack:'A'},
-  {name:'2x Power Bowl pollo',items:[{name:'Power Bowl pollo x2',kcal:780,prot:58,carb:80}],snack:'B',atun:1},
+  {name:'2x Power Bowl + Chicken Quesadilla',items:[{name:'Power Bowl grilled chicken x2',kcal:780,prot:58,carb:80},{name:'Chicken Quesadilla',kcal:510,prot:26,carb:41}],snack:'A',atun:1},
+  {name:'3x Soft Taco + Power Bowl',items:[{name:'Soft Taco grilled chicken x3',kcal:570,prot:48,carb:72},{name:'Power Bowl grilled chicken',kcal:390,prot:29,carb:40}],snack:'A'},
+  {name:'4x Soft Taco grilled chicken',items:[{name:'Soft Taco grilled chicken x4',kcal:760,prot:64,carb:96}],snack:'A'},
+  {name:'2x Power Bowl grilled chicken',items:[{name:'Power Bowl grilled chicken x2',kcal:780,prot:58,carb:80}],snack:'B',atun:1},
 ]};
 const WA={id:'wagamama',name:'Wagamama',icon:'🍜',src:'Deliveroo',meals:[
   {name:'Chicken ramen + chicken yakitori',items:[{name:'Chicken ramen',kcal:540,prot:40,carb:65},{name:'Chicken yakitori',kcal:220,prot:28,carb:6}],snack:'B',atun:1},
   {name:'Teriyaki donburi + yakitori',items:[{name:'Teriyaki chicken donburi',kcal:720,prot:45,carb:80},{name:'Chicken yakitori',kcal:220,prot:28,carb:6}],snack:'B',atun:1},
-  {name:'Chicken katsu curry',note:'Solo CF o refeed',items:[{name:'Chicken katsu curry',kcal:988,prot:50,carb:108}],snack:'B',atun:2},
+  {name:'Chicken katsu curry',note:NOTE_CF,items:[{name:'Chicken katsu curry',kcal:988,prot:50,carb:108}],snack:'B',atun:2},
 ]};
 const KF={id:'kfc',name:'KFC',icon:'🍗',src:'Uber Eats',meals:[
   {name:'3x OR Breast + corn',items:[{name:'OR chicken breast x3',kcal:1170,prot:117,carb:33},{name:'Corn on the cob',kcal:70,prot:3,carb:15}],snack:'A'},
@@ -633,22 +742,22 @@ const KF={id:'kfc',name:'KFC',icon:'🍗',src:'Uber Eats',meals:[
   {name:'4x Original Recipe Thigh',items:[{name:'OR chicken thigh x4',kcal:1120,prot:76,carb:32}],snack:'A'},
 ]};
 const MC={id:'mcds',name:"McDonald's",icon:'🍟',src:'Uber Eats',meals:[
-  {name:'3x Garlic Mayo Wrap grillado',note:'Pedir GRILLED siempre',items:[{name:'Garlic Mayo Wrap grillado x3',kcal:1035,prot:75,carb:114}],snack:'A'},
-  {name:'2x Garlic Mayo Wrap grillado',items:[{name:'Garlic Mayo Wrap grillado x2',kcal:690,prot:50,carb:76}],snack:'B',atun:1},
+  {name:'3x Garlic Mayo Wrap grilled',note:NOTE_GRILLED,items:[{name:'Garlic Mayo Wrap grilled x3',kcal:1035,prot:75,carb:114}],snack:'A'},
+  {name:'2x Garlic Mayo Wrap grilled',items:[{name:'Garlic Mayo Wrap grilled x2',kcal:690,prot:50,carb:76}],snack:'B',atun:1},
 ]};
 const NA={id:'nany',name:'Nany Bills',icon:'🍔',src:'Uber Eats',meals:[
-  {name:'Burger bacon + papas chicas (CF)',items:[{name:'Burger con bacon + queso',kcal:850,prot:50,carb:45},{name:'Papas chicas',kcal:300,prot:4,carb:40}],snack:'B',atun:1},
-  {name:'Burger bacon sin papas',items:[{name:'Burger con bacon + queso',kcal:850,prot:50,carb:45}],snack:'B',atun:2},
+  {name:l==='es'?'Burger bacon + papas chicas (CF)':'Bacon burger + small fries (CF)',items:[{name:l==='es'?'Burger con bacon + queso':'Bacon cheeseburger',kcal:850,prot:50,carb:45},{name:l==='es'?'Papas chicas':'Small fries',kcal:300,prot:4,carb:40}],snack:'B',atun:1},
+  {name:l==='es'?'Burger bacon sin papas':'Bacon burger no fries',items:[{name:l==='es'?'Burger con bacon + queso':'Bacon cheeseburger',kcal:850,prot:50,carb:45}],snack:'B',atun:2},
 ]};
 const PE={id:'pevangelists',name:'Pasta Evangelists',icon:'🍝',src:'Uber Eats',meals:[
   {name:'Bolognese ragù + tagliatelle',items:[{name:'Bolognese ragù + tagliatelle',kcal:600,prot:35,carb:65}],snack:'B',atun:1},
   {name:'Chicken Cacciatora + fusilli',items:[{name:'Chicken Cacciatora + fusilli',kcal:500,prot:35,carb:55}],snack:'B',atun:1},
 ]};
 const FW={id:'fireaway',name:'Fireaway Pizza',icon:'🍕',src:'Uber Eats',meals:[
-  {name:'Chicken + mozzarella 10"',note:'Sin salsas picantes',items:[{name:'Pizza pollo + mozzarella 10"',kcal:750,prot:45,carb:85}],snack:'B',atun:1},
-  {name:'Ham + mozzarella 10"',note:'Sin salsas picantes',items:[{name:'Pizza jamón + mozzarella 10"',kcal:720,prot:42,carb:88}],snack:'B',atun:1},
+  {name:'Chicken + mozzarella 10"',note:NOTE_NOSPICY,items:[{name:'Pizza chicken + mozzarella 10"',kcal:750,prot:45,carb:85}],snack:'B',atun:1},
+  {name:'Ham + mozzarella 10"',note:NOTE_NOSPICY,items:[{name:'Pizza ham + mozzarella 10"',kcal:720,prot:42,carb:88}],snack:'B',atun:1},
 ]};
-const ZI={id:'pizzaexpress',name:'Pizza Express',icon:'🍕',src:'Presencial',meals:[
+const ZI={id:'pizzaexpress',name:'Pizza Express',icon:'🍕',src:SRC_PRESENCIAL,meals:[
   {name:'Pollo Forza Romana',note:'No spicy',items:[{name:'Pollo Forza Romana',kcal:910,prot:48,carb:113}],snack:'B',atun:1},
   {name:'Fiorentina Classic',note:'No spicy — spinach, egg',items:[{name:'Fiorentina Classic',kcal:942,prot:52,carb:108}],snack:'A'},
   {name:'La Reine Classic',note:'No spicy — ham, mushroom',items:[{name:'La Reine Classic',kcal:898,prot:47,carb:109}],snack:'A'},
@@ -659,13 +768,13 @@ const YM={id:'youme',name:'You Me Sushi',icon:'🍣',src:'Uber Eats',meals:[
   {name:'Salmon & avocado rolls x16 + gyoza',items:[{name:'Salmon & avocado uramaki x16',kcal:640,prot:28,carb:84},{name:'Chicken gyoza x5',kcal:220,prot:18,carb:22}],snack:'B',atun:2},
   {name:'Chicken teriyaki + rolls x8 + gyoza',items:[{name:'Chicken teriyaki',kcal:380,prot:35,carb:30},{name:'Salmon & avocado rolls x8',kcal:320,prot:14,carb:42},{name:'Chicken gyoza x5',kcal:220,prot:18,carb:22}],snack:'B',atun:1},
 ]};
-const KE={id:'kebab',name:'Kebab turco',icon:'🥙',src:'Uber Eats',meals:[
-  {name:'Chicken doner wrap',note:'Sin chilli sauce — solo garlic yogurt',items:[{name:'Chicken doner wrap',kcal:575,prot:40,carb:50}],snack:'B',atun:1},
-  {name:'Chicken doner box (sin wrap)',items:[{name:'Chicken doner + arroz sin wrap',kcal:600,prot:45,carb:55}],snack:'B',atun:1},
+const KE={id:'kebab',name:l==='es'?'Kebab turco':'Turkish kebab',icon:'🥙',src:'Uber Eats',meals:[
+  {name:'Chicken doner wrap',note:NOTE_GARLIC,items:[{name:'Chicken doner wrap',kcal:575,prot:40,carb:50}],snack:'B',atun:1},
+  {name:l==='es'?'Chicken doner box (sin wrap)':'Chicken doner box (no wrap)',items:[{name:l==='es'?'Chicken doner + arroz sin wrap':'Chicken doner + rice no wrap',kcal:600,prot:45,carb:55}],snack:'B',atun:1},
 ]};
-const FG={id:'fiveguys',name:'Five Guys',icon:'🍟',src:'Presencial',meals:[
-  {name:'Little Bacon Cheeseburger sin papas',items:[{name:'Little Bacon Cheeseburger',kcal:760,prot:38,carb:40}],snack:'B',atun:1},
-  {name:'Little Bacon Cheeseburger + fries',note:'Solo refeed/CF',items:[{name:'Little Bacon Cheeseburger',kcal:760,prot:38,carb:40},{name:'Little fries',kcal:528,prot:7,carb:68}],snack:'B',atun:2},
+const FG={id:'fiveguys',name:'Five Guys',icon:'🍟',src:SRC_PRESENCIAL,meals:[
+  {name:l==='es'?'Little Bacon Cheeseburger sin papas':'Little Bacon Cheeseburger no fries',items:[{name:'Little Bacon Cheeseburger',kcal:760,prot:38,carb:40}],snack:'B',atun:1},
+  {name:'Little Bacon Cheeseburger + fries',note:NOTE_REFEED,items:[{name:'Little Bacon Cheeseburger',kcal:760,prot:38,carb:40},{name:'Little fries',kcal:528,prot:7,carb:68}],snack:'B',atun:2},
 ]};
 const mp={lun:[N,I,TB,KF,MC,NA,PE,FW],mar:[N,I,TB,WA,KF,MC,ZI,YM,KE,PE],mie:[N,I,TB,NA,FG,KF,MC,PE,FW],jue:[N,I,TB,WA,KF,MC,ZI,YM,KE,PE],vie:[N,I,WA,TB,KF,MC,NA,PE,FW],sab:[N,I,WA,TB,KF,MC,YM,KE,FW,ZI],dom:[N,WA,I,FG,KF,MC,PE,FW,ZI]};
 return mp[d]||[];
@@ -882,18 +991,19 @@ function getSupps() {
   // Generic: no specific supplements
   return [];
 }
-function getSnackA() { return CHARLY_SA; }
-function getSnackB() { return CHARLY_SB; }
+function getSnackA() { return CHARLY_SA(APP.lang); }
+function getSnackB() { return CHARLY_SB(APP.lang); }
 function getSnackItems(type) { return type === 'A' ? getSnackA() : getSnackB(); }
 function getExtras(d) {
   const p = getProfile();
-  if (!p || !p.isCharly) return CHARLY_EX.slice(0,4);
+  const l = APP.lang;
+  if (!p || !p.isCharly) return CHARLY_EX(l).slice(0,4);
   const m = getMeal(d);
-  if (!m) return CHARLY_EX;
+  if (!m) return CHARLY_EX(l);
   const sn = getSnackItems(m.snack).map(x => x.name);
-  return CHARLY_EX.filter(e => !sn.includes(e.name));
+  return CHARLY_EX(l).filter(e => !sn.includes(e.name));
 }
-function getExtraSnacks() { return CHARLY_EXT; }
+function getExtraSnacks() { return CHARLY_EXT(APP.lang); }
 
 // ══════════════════════════════════════════════
 // RESTAURANTS / MEALS
@@ -918,7 +1028,7 @@ function allItems(d) {
   if (!m) return [];
   const main = m.items.map((x,j) => ({...x, id:'m'+j}));
   const snk = m.snack ? getSnackItems(m.snack) : [];
-  const at = getProfile()?.isCharly ? Array.from({length:m.atun||0}, (_,j) => ({...ATUN, id:'at'+j})) : [];
+  const at = getProfile()?.isCharly ? Array.from({length:m.atun||0}, (_,j) => ({...getATUN(APP.lang), id:'at'+j})) : [];
   return [...main, ...snk, ...at];
 }
 function exItems(d) { return getExtras(d); }
@@ -962,9 +1072,11 @@ function srch(q){
   const protKeys=['proteina','proteína','protein','high protein','alta proteina','alta proteína'];
   const lcKeys=['bajo cal','low cal','lowcal','bajo calorias','bajo calorías'];
   const hcKeys=['alta carbos','high carb','carbos altos','alto carbo'];
+  const hmKeys=['home cooked','homemade','home meal','home meals','casero','comida casera','cocinado en casa','home cook'];
   if(protKeys.includes(ql))return{list:PROT.slice(0,15),type:'p'};
   if(lcKeys.includes(ql))return{list:LCAL.slice(0,15),type:'l'};
   if(hcKeys.includes(ql))return{list:HCARB.slice(0,15),type:'h'};
+  if(hmKeys.includes(ql))return{list:HOMEMEALS.slice(0,20),type:'hm'};
   const ts=ql.split(/\s+/).filter(Boolean);
   return{list:FDB.filter(f=>ts.every(t2=>f.n.toLowerCase().includes(t2))).slice(0,10),type:'n'};
 }
@@ -1005,8 +1117,13 @@ function row(d,it,tp){
 // ══════════════════════════════════════════════
 
 function renderTopbar(showSettings=true) {
+  const p = getProfile();
+  const userName = p?.name ? p.name : null;
   return `<div class="topbar">
-    <span class="topbar-title">${t('appName')}</span>
+    <div style="flex:1;min-width:0">
+      <div class="topbar-title">${t('appName')}</div>
+      ${userName ? `<div style="font-size:11px;color:var(--green);font-weight:600;margin-top:1px">👤 ${userName}</div>` : ''}
+    </div>
     <div class="lang-toggle">
       <button class="lang-btn${APP.lang==='en'?' active':''}" onclick="setLang('en')">EN</button>
       <button class="lang-btn${APP.lang==='es'?' active':''}" onclick="setLang('es')">ES</button>
@@ -1200,7 +1317,74 @@ function obCanNext(step, od, tl) {
 function renderSettings() {
   const p = getProfile();
   const tl = T[APP.lang];
+  const isEdit = APP.settings_edit_mode;
+
+  // ── EDIT MODE (shared for Charly and generic users) ──
+  if (isEdit) {
+    const ed = APP.settings_edit_data || {};
+    return renderTopbar(false) + `<div class="settings-screen">
+      <button class="back-btn" onclick="cancelEdit()">← ${tl.back.replace('← ','')}</button>
+      <div class="settings-title">${tl.edit_profile}</div>
+
+      <div class="sec">${tl.ob_data_title||'Body stats'}</div>
+      <div class="ob-inputs">
+        <div class="ob-input-row">
+          <div class="ob-input-group">
+            <label class="ob-label">${tl.ob_weight} (kg)</label>
+            <input class="ob-input" type="number" inputmode="decimal" value="${ed.weight||p.weight||''}" oninput="seSet('weight',this.value)">
+          </div>
+          <div class="ob-input-group">
+            <label class="ob-label">${tl.ob_waist} (cm)</label>
+            <input class="ob-input" type="number" inputmode="numeric" value="${ed.waist||p.waist||''}" oninput="seSet('waist',this.value)">
+          </div>
+        </div>
+      </div>
+
+      <div class="sec">${tl.ob_goal_title||'Goal'}</div>
+      <div class="ob-cards">
+        ${tl.ob_goals.map(g=>`<div class="ob-card${(ed.goal||p.goal)===g.id?' selected':''}" onclick="seSet('goal','${g.id}')">
+          <div class="ob-card-icon">${g.icon}</div>
+          <div class="ob-card-body"><div class="ob-card-title">${g.title}</div><div class="ob-card-desc">${g.desc}</div></div>
+          <div class="ob-check"></div>
+        </div>`).join('')}
+      </div>
+
+      <div class="sec">${tl.ob_activity_title||'Activity'}</div>
+      <div class="ob-cards">
+        ${tl.ob_activities.map(a=>`<div class="ob-card${(ed.activity||p.activity)===a.id?' selected':''}" onclick="seSet('activity','${a.id}')">
+          <div class="ob-card-icon">${a.icon}</div>
+          <div class="ob-card-body"><div class="ob-card-title">${a.title}</div><div class="ob-card-desc">${a.desc}</div></div>
+          <div class="ob-check"></div>
+        </div>`).join('')}
+      </div>
+
+      <div class="sec">${tl.ob_eating_title||'Eating pattern'}</div>
+      <div class="ob-cards">
+        ${tl.ob_eatings.map(e=>`<div class="ob-card${(ed.eating||p.eating)===e.id?' selected':''}" onclick="seSet('eating','${e.id}')">
+          <div class="ob-card-icon">${e.icon}</div>
+          <div class="ob-card-body"><div class="ob-card-title">${e.title}</div><div class="ob-card-desc">${e.desc}</div></div>
+          <div class="ob-check"></div>
+        </div>`).join('')}
+      </div>
+
+      <button class="ob-btn" onclick="saveEdit()" style="margin-top:8px">
+        ${APP.lang==='es'?'Guardar cambios ✓':'Save changes ✓'}
+      </button>
+      <button class="ob-btn ob-btn-secondary" onclick="cancelEdit()">
+        ${APP.lang==='es'?'Cancelar':'Cancel'}
+      </button>
+    </div>`;
+  }
+
+  // ── NORMAL SETTINGS VIEW ──
   const m = p && !p.isCharly ? calcMacros(p) : null;
+  const bmrVal = p?.isCharly ? CHARLY_PROFILE.bmr : (m?.bmr || 0);
+  const tdeeVal = p?.isCharly ? CHARLY_PROFILE.tdee_cf : (m?.tdee || 0);
+  const targetVal = p?.isCharly ? CHARLY_PROFILE.target_cf : (m?.target_kcal || 0);
+
+  const goalLabel = (tl.ob_goals||[]).find(g=>g.id===p?.goal)?.title || p?.goal || '';
+  const actLabel = (tl.ob_activities||[]).find(a=>a.id===p?.activity)?.title || p?.activity || '';
+  const eatLabel = (tl.ob_eatings||[]).find(e=>e.id===p?.eating)?.title || p?.eating || '';
 
   let html = renderTopbar(false);
   html += `<div class="settings-screen">
@@ -1208,30 +1392,43 @@ function renderSettings() {
     <div class="settings-title">${tl.settings}</div>`;
 
   if (p) {
-    const goalLabel = (tl.ob_goals||[]).find(g=>g.id===p.goal)?.title || p.goal || '';
-    const actLabel = (tl.ob_activities||[]).find(a=>a.id===p.activity)?.title || p.activity || '';
-    const eatLabel = (tl.ob_eatings||[]).find(e=>e.id===p.eating)?.title || p.eating || '';
-
     html += `<div class="sec">${tl.my_profile}</div>
     <div class="profile-card">
       <div class="profile-name">${p.name || 'Profile'}</div>
-      <div style="font-size:12px;color:var(--text3)">${p.height}cm · ${p.weight}kg · ${p.sex==='male'?(tl.ob_male||'Male'):(tl.ob_female||'Female')}</div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:8px">${p.height}cm · ${p.weight}kg · ${p.sex==='male'?(tl.ob_male||'Male'):(tl.ob_female||'Female')}</div>
       <div class="profile-stats">
-        <div class="pstat"><div class="pstat-v">${m?m.bmr:p.bmr||0}</div><div class="pstat-l">BMR</div></div>
-        <div class="pstat"><div class="pstat-v">${m?m.tdee:p.tdee_cf||0}</div><div class="pstat-l">TDEE</div></div>
-        <div class="pstat"><div class="pstat-v">${m?m.target_kcal:p.target_cf||0}</div><div class="pstat-l">${tl.intake_target||'Target'}</div></div>
+        <div class="pstat"><div class="pstat-v">${bmrVal}</div><div class="pstat-l">BMR</div></div>
+        <div class="pstat"><div class="pstat-v">${tdeeVal}</div><div class="pstat-l">TDEE</div></div>
+        <div class="pstat"><div class="pstat-v">${targetVal}</div><div class="pstat-l">${tl.intake_target||'Target'}</div></div>
       </div>
     </div>
+
     <div class="settings-card">
-      <div class="settings-row"><span class="settings-row-label">${tl.goal}</span><span class="settings-row-val">${goalLabel}</span></div>
-      <div class="settings-row"><span class="settings-row-label">${tl.activity_level}</span><span class="settings-row-val">${actLabel}</span></div>
-      <div class="settings-row"><span class="settings-row-label">${tl.eating_pattern}</span><span class="settings-row-val">${eatLabel}</span></div>
-      <div class="settings-row"><span class="settings-row-label">${tl.weight_kg}</span><span class="settings-row-val">${p.weight} kg</span></div>
-    </div>`;
-    if (!p.isCharly) {
-      html += `<button class="ob-btn" onclick="resetProfile()" style="margin-top:8px;background:var(--red)">Reset profile / create new</button>`;
-    }
+      <div class="settings-row" style="cursor:default"><span class="settings-row-label">${tl.goal}</span><span class="settings-row-val">${goalLabel}</span></div>
+      <div class="settings-row" style="cursor:default"><span class="settings-row-label">${tl.activity_level}</span><span class="settings-row-val">${actLabel}</span></div>
+      <div class="settings-row" style="cursor:default"><span class="settings-row-label">${tl.eating_pattern}</span><span class="settings-row-val">${eatLabel}</span></div>
+      <div class="settings-row" style="cursor:default"><span class="settings-row-label">${tl.weight_kg}</span><span class="settings-row-val">${p.weight} kg</span></div>
+    </div>
+
+    <button class="ob-btn" onclick="startEdit()" style="margin-top:4px">
+      ✏️ ${tl.edit_profile}
+    </button>`;
   }
+
+  // ── ADD NEW PROFILE / SWITCH ──
+  html += `<div class="sec" style="margin-top:16px">${APP.lang==='es'?'Perfiles adicionales':'Additional profiles'}</div>
+  <div class="settings-card">
+    <div class="settings-row" onclick="addNewProfile()" style="cursor:pointer">
+      <span class="settings-row-label">➕ ${APP.lang==='es'?'Crear nuevo perfil (para otra persona)':'Create new profile (for someone else)'}</span>
+      <span class="settings-row-arrow">›</span>
+    </div>
+  </div>
+  <div style="font-size:11px;color:var(--text3);padding:0 4px 8px;line-height:1.5">
+    ${APP.lang==='es'
+      ? 'Esto inicia el flujo de setup para un nuevo usuario. Tu perfil Charly no se borra — podés volver a él borrando la app y reinstalando, o contactando al desarrollador.'
+      : 'This starts the setup flow for a new user. Your existing profile is replaced. To restore Charly\'s profile, reinstall the app or contact the developer.'}
+  </div>`;
+
   html += `</div>`;
   return html;
 }
@@ -1344,7 +1541,7 @@ function renderTracker() {
           h+=`<div class="glbl">Snack ${m.snack}</div>`;
           getSnackItems(m.snack).forEach(x=>{h+=row(d,x,'m');});
         }
-        if(p.isCharly&&(m.atun||0)>0){h+=`<div class="glbl">Atún</div>`;for(let j=0;j<m.atun;j++)h+=row(d,{...ATUN,id:'at'+j},'m');}
+        if(p.isCharly&&(m.atun||0)>0){h+=`<div class="glbl">${APP.lang==='es'?'Atún':'Tuna'}</div>`;for(let j=0;j<m.atun;j++)h+=row(d,{...getATUN(APP.lang),id:'at'+j},'m');}
         h+=`<div class="exbox"><div class="exhdr">${t('extra_protein_snacks')}</div>`;
         getExtraSnacks().forEach(x=>{h+=row(d,x,'e');});
         h+=`</div><div class="exbox" style="margin-top:6px"><div class="exhdr">${t('optional_extras')}</div>`;
@@ -1379,10 +1576,18 @@ function renderSearch() {
         <button class="tbtn tp" onclick="setSearch('proteina')">🟢 ${t('high_protein')}</button>
         <button class="tbtn tl" onclick="setSearch('bajo cal')">🔵 ${t('low_cal')}</button>
         <button class="tbtn th" onclick="setSearch('alta carbos')">🟠 ${t('high_carb')}</button>
+        <button class="tbtn" style="border-color:#8B5CF6;color:#8B5CF6" onclick="setSearch('home cooked')">🏠 ${t('home_meals_tag')||'home cooked'}</button>
       </div>
       <input id="si" class="sinp" type="text" placeholder="${t('search_placeholder')}">
       <div id="sr"></div>
       <div class="shint">${t('search_hint')}</div>
+    </div>
+  </div>
+  <div style="margin:20px 16px 8px;text-align:center">
+    <div style="display:inline-block;padding:12px 20px;border-radius:12px;background:linear-gradient(135deg,#0a2218,#1a1a2e);border:1px solid var(--green);box-shadow:0 0 18px rgba(29,158,117,0.18)">
+      <div style="font-size:13px;font-style:italic;color:#e0f7ef;letter-spacing:0.02em;line-height:1.5">
+        ✨ <strong style="font-style:normal;color:var(--green)">"</strong>Lo esencial es invisible a los ojos<strong style="font-style:normal;color:var(--green)">"</strong> ✨
+      </div>
     </div>
   </div>`;
 }
@@ -1413,12 +1618,19 @@ function updateSR(){
   if(q.length<2){el.innerHTML='';return;}
   const {list,type}=srch(q);
   if(!list.length){el.innerHTML=`<div class="nores">${t('no_results')}</div>`;return;}
+  const hmLabel=t('home_meals_tag')||'Home cooked meals';
   const hdr=type==='p'?`<div style="font-size:10px;color:var(--green);margin-bottom:5px;font-weight:700">🟢 ${t('high_protein')}</div>`
     :type==='l'?`<div style="font-size:10px;color:var(--blue);margin-bottom:5px;font-weight:700">🔵 ${t('low_cal')}</div>`
     :type==='h'?`<div style="font-size:10px;color:#9B5000;margin-bottom:5px;font-weight:700">🟠 ${t('high_carb')}</div>`
+    :type==='hm'?`<div style="font-size:10px;color:#8B5CF6;margin-bottom:5px;font-weight:700">🏠 ${hmLabel} — ${list.length} meals</div>`
     :`<div style="font-size:10px;color:var(--text3);margin-bottom:5px">${list.length} ${list.length>1?t('results_pl'):t('results')} — ${t('add')}</div>`;
   el.innerHTML=hdr+list.map((f,i)=>{
-    const tags=[f.hi?`<span class="tp2">${t('high_protein')}</span>`:'',f.lc?`<span class="tl2">${t('low_cal')}</span>`:'',f.hc?`<span class="th2">${t('high_carb')}</span>`:''].filter(Boolean).join('');
+    const tags=[
+      f.hi?`<span class="tp2">${t('high_protein')}</span>`:'',
+      f.lc?`<span class="tl2">${t('low_cal')}</span>`:'',
+      f.hc?`<span class="th2">${t('high_carb')}</span>`:'',
+      f.hm?`<span style="font-size:9px;padding:1px 5px;border-radius:4px;background:#2d1f4e;color:#a78bfa;flex-shrink:0">🏠 ${hmLabel}</span>`:'',
+    ].filter(Boolean).join('');
     return`<div class="sri" onclick="addFood(${i},'${q.replace(/'/g,"\\'")}')">
       <div style="flex:1"><div class="sriname">${f.n}${tags}</div><div class="sricat">${f.cat}</div></div>
       <div class="srimac">${f.k}kcal<br>${f.p}g P · ${f.c}g C</div>
@@ -1442,11 +1654,47 @@ function setSearch(v){const si=document.getElementById('si');if(si){si.value=v;s
 // ══════════════════════════════════════════════
 // ACTIONS
 // ══════════════════════════════════════════════
-function setLang(l){APP.lang=l;save();render();}
-function goSettings(){APP.screen='settings';render();}
+function setLang(l){APP.lang=l;APP.langSetByUser=true;save();render();}
+function goSettings(){APP.screen='settings';APP.settings_edit_mode=false;render();}
 function goTracker(){APP.screen='tracker';render();}
 function goOnboard(){APP.screen='onboard';APP.ob_step=0;APP.ob_data={lang:APP.lang,sex:null,age:'',height:'',weight:'',waist:'',goal:null,activity:null,eating:null,mealstyle:null,diet:[],name:''};render();}
 function resetProfile(){if(confirm('Reset profile? This will start the setup again.')){APP.profile=null;goOnboard();}}
+function addNewProfile(){
+  const msg = APP.lang==='es'
+    ? '¿Crear un nuevo perfil? Esto reemplazará el perfil actual. Si querés restaurar el perfil de Charly, reinstalá la app.'
+    : 'Create a new profile? This will replace the current profile. To restore Charly\'s profile, reinstall the app.';
+  if(confirm(msg)){APP.profile=null;goOnboard();}
+}
+// Edit profile in place
+function startEdit(){
+  APP.settings_edit_mode=true;
+  APP.settings_edit_data={};
+  render();
+}
+function cancelEdit(){APP.settings_edit_mode=false;APP.settings_edit_data={};render();}
+function seSet(key,val){if(!APP.settings_edit_data)APP.settings_edit_data={};APP.settings_edit_data[key]=val;}
+function saveEdit(){
+  const ed=APP.settings_edit_data||{};
+  const p=APP.profile;
+  if(!p)return;
+  // Apply edits
+  if(ed.weight)p.weight=parseFloat(ed.weight);
+  if(ed.waist)p.waist=parseFloat(ed.waist);
+  if(ed.goal)p.goal=ed.goal;
+  if(ed.activity)p.activity=ed.activity;
+  if(ed.eating)p.eating=ed.eating;
+  // Recalculate macros if not Charly
+  if(!p.isCharly){
+    const m=calcMacros(p);
+    p.bmr=m.bmr;p.tdee=m.tdee;p.target_kcal=m.target_kcal;
+    p.prot_min=m.prot_min;p.deficit_min=m.deficit_min;p.deficit_max=m.deficit_max;p.carb_max=m.carb_max;
+  } else {
+    // For Charly, update the live profile object only (Charly's TDEE stays hardcoded)
+    // goal/activity changes affect display only
+  }
+  APP.settings_edit_mode=false;APP.settings_edit_data={};
+  save();render();
+}
 
 // Onboarding actions
 function obSetLang(l){APP.ob_data.lang=l;APP.lang=l;render();}
@@ -1514,14 +1762,17 @@ function resetD(d){
 // ══════════════════════════════════════════════
 function init() {
   load();
+  // Fix 3: lang defaults to 'en' always unless user explicitly changed it.
+  // We detect "explicitly changed" by checking if APP.langSetByUser is true.
+  if (!APP.langSetByUser) APP.lang = 'en';
+
   // If no profile, check if we should load Charly's profile or show onboard
   if (!APP.profile) {
     // Check if this is Charly's device (was previously used as Charly's tracker)
     const prevData = localStorage.getItem('tracker_s');
     if (prevData) {
-      // Migrate from old tracker
+      // Migrate from old tracker — keep Charly's profile but DON'T force lang
       APP.profile = CHARLY_PROFILE;
-      APP.lang = 'es';
       APP.screen = 'tracker';
       APP.day = currentDayId();
       save();
