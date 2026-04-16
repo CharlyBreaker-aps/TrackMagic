@@ -1699,7 +1699,8 @@ function saveEdit(){
 // Onboarding actions
 function obSetLang(l){APP.ob_data.lang=l;APP.lang=l;render();}
 function obSet(key,val){APP.ob_data[key]=val;save();render();}
-function obSetInput(key,val){APP.ob_data[key]=val;save();} // for text/number inputs — no render to preserve cursor
+function obSetInput(key,val){APP.ob_data[key]=val;save();}
+function obToggleDiet(id){
   const d=APP.ob_data.diet;
   if(id==='none'){APP.ob_data.diet=['none'];render();return;}
   const idx=d.indexOf(id);
