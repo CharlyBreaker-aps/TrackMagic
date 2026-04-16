@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v1.6 (By Charly)</title>
+<title>MagicTracker v1.9 (By Charly)</title>
 <link rel="manifest" href="manifest.json">
 <style>
 :root{
@@ -223,7 +223,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v1.6 (By Charly)",
+    appName: "MagicTracker v1.9 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -355,7 +355,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v1.6 (By Charly)",
+    appName: "MagicTracker v1.9 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -901,35 +901,74 @@ function calcMacros(profile) {
 // APP STATE
 // ══════════════════════════════════════════════
 let APP = {
-  screen: 'loading', // loading | onboard | tracker | settings
+  screen: 'loading',
   lang: 'en',
+  langSetByUser: false,
   ob_step: 0,
   ob_data: { lang:'en', sex:null, age:'', height:'', weight:'', waist:'', goal:null, activity:null, eating:null, mealstyle:null, diet:[], name:'' },
-  profile: null, // null = no profile yet
-  // tracker state
+  profile: null,
+  // ── MULTI-PROFILE ──
+  profiles: [],        // array of all profile objects
+  activeProfileId: null, // id of active profile
+  allTrackingData: {}, // keyed by profileId → {day,rest,meal,chk,qty,mult,act,sup,echk,eqty,emult,cust,cchk,cqty,cmult,atun}
+  // ── TRACKER STATE (active profile's data, synced from allTrackingData) ──
   day: null,
   rest: {}, meal: {}, chk: {}, qty: {}, mult: {}, act: {}, sup: {},
   echk: {}, eqty: {}, emult: {}, cust: {}, cchk: {}, cqty: {}, cmult: {}, atun: 0,
 };
 
 function save() {
-  try { localStorage.setItem('cvr_app', JSON.stringify(APP)); } catch(e){}
+  try {
+    if (APP.activeProfileId) {
+      APP.allTrackingData[APP.activeProfileId] = {
+        day:APP.day, rest:APP.rest, meal:APP.meal, chk:APP.chk, qty:APP.qty,
+        mult:APP.mult, act:APP.act, sup:APP.sup, echk:APP.echk, eqty:APP.eqty,
+        emult:APP.emult, cust:APP.cust, cchk:APP.cchk, cqty:APP.cqty, cmult:APP.cmult, atun:APP.atun
+      };
+    }
+    localStorage.setItem('cvr_app', JSON.stringify(APP));
+  } catch(e){}
 }
 function load() {
   try {
     const d = localStorage.getItem('cvr_app');
-    if (d) {
-      const p = JSON.parse(d);
-      // Sanity check — if screen or profile look broken, reset
-      if (p && typeof p === 'object') {
-        Object.assign(APP, p);
-      }
-    }
-  } catch(e) {
-    // Corrupted storage — wipe and start fresh
-    try { localStorage.removeItem('cvr_app'); } catch(e2){}
-    console.log('Storage reset due to error:', e.message);
+    if (d) { const p = JSON.parse(d); if (p && typeof p==='object') Object.assign(APP, p); }
+  } catch(e) { try { localStorage.removeItem('cvr_app'); } catch(e2){} }
+}
+
+function loadProfileTracking(profileId) {
+  const td = (APP.allTrackingData||{})[profileId] || {};
+  APP.day = td.day || currentDayId();
+  APP.rest = td.rest||{}; APP.meal = td.meal||{}; APP.chk = td.chk||{};
+  APP.qty = td.qty||{}; APP.mult = td.mult||{}; APP.act = td.act||{};
+  APP.sup = td.sup||{}; APP.echk = td.echk||{}; APP.eqty = td.eqty||{};
+  APP.emult = td.emult||{}; APP.cust = td.cust||{}; APP.cchk = td.cchk||{};
+  APP.cqty = td.cqty||{}; APP.cmult = td.cmult||{}; APP.atun = td.atun||0;
+}
+
+function ensureCharlyProfile() {
+  if (!APP.profiles) APP.profiles = [];
+  const idx = APP.profiles.findIndex(p => p.id==='charly');
+  if (idx < 0) APP.profiles.unshift({...CHARLY_PROFILE});
+  else APP.profiles[idx] = {...CHARLY_PROFILE};
+}
+
+function switchProfile(profileId) {
+  const p = APP.profiles.find(x => x.id===profileId);
+  if (!p) return;
+  if (APP.activeProfileId) {
+    if (!APP.allTrackingData) APP.allTrackingData = {};
+    APP.allTrackingData[APP.activeProfileId] = {
+      day:APP.day, rest:APP.rest, meal:APP.meal, chk:APP.chk, qty:APP.qty,
+      mult:APP.mult, act:APP.act, sup:APP.sup, echk:APP.echk, eqty:APP.eqty,
+      emult:APP.emult, cust:APP.cust, cchk:APP.cchk, cqty:APP.cqty, cmult:APP.cmult, atun:APP.atun
+    };
   }
+  APP.profile = p.isCharly ? {...CHARLY_PROFILE} : p;
+  APP.activeProfileId = profileId;
+  loadProfileTracking(profileId);
+  APP.screen = 'tracker';
+  save(); render();
 }
 
 // ══════════════════════════════════════════════
@@ -1442,18 +1481,24 @@ function renderSettings() {
     </button>`;
   }
 
-  // ── ADD NEW PROFILE / SWITCH ──
-  html += `<div class="sec" style="margin-top:16px">${APP.lang==='es'?'Perfiles adicionales':'Additional profiles'}</div>
-  <div class="settings-card">
-    <div class="settings-row" onclick="addNewProfile()" style="cursor:pointer">
-      <span class="settings-row-label">➕ ${APP.lang==='es'?'Crear nuevo perfil (para otra persona)':'Create new profile (for someone else)'}</span>
-      <span class="settings-row-arrow">›</span>
-    </div>
+  // ── PROFILES LIST ──
+  const allProfiles = APP.profiles || [];
+  html += `<div class="sec" style="margin-top:16px">${APP.lang==='es'?'Todos los perfiles':'All profiles'}</div>
+  <div class="settings-card">`;
+  allProfiles.forEach(prof => {
+    const isActive = prof.id === APP.activeProfileId;
+    html += `<div class="settings-row" onclick="${isActive?'':` switchProfile('${prof.id}')`}" style="cursor:${isActive?'default':'pointer'}">
+      <span style="font-size:16px;margin-right:4px">${prof.isCharly?'⭐':'👤'}</span>
+      <span class="settings-row-label" style="${isActive?'color:var(--green);font-weight:700':''}">
+        ${prof.name||'User'}${isActive?` ✓ (${APP.lang==='es'?'activo':'active'})`:' '}
+      </span>
+      ${!isActive?`<span class="settings-row-arrow" style="color:var(--green)">Switch →</span>`:''}
+    </div>`;
+  });
+  html += `<div class="settings-row" onclick="addNewProfile()" style="cursor:pointer;border-top:0.5px solid var(--border)">
+    <span class="settings-row-label">➕ ${APP.lang==='es'?'Agregar nuevo perfil':'Add new profile'}</span>
+    <span class="settings-row-arrow">›</span>
   </div>
-  <div style="font-size:11px;color:var(--text3);padding:0 4px 8px;line-height:1.5">
-    ${APP.lang==='es'
-      ? 'Esto inicia el flujo de setup para un nuevo usuario. Tu perfil Charly no se borra — podés volver a él borrando la app y reinstalando, o contactando al desarrollador.'
-      : 'This starts the setup flow for a new user. Your existing profile is replaced. To restore Charly\'s profile, reinstall the app or contact the developer.'}
   </div>`;
 
   html += `</div>`;
@@ -1687,10 +1732,10 @@ function goTracker(){APP.screen='tracker';render();}
 function goOnboard(){APP.screen='onboard';APP.ob_step=0;APP.ob_data={lang:APP.lang,sex:null,age:'',height:'',weight:'',waist:'',goal:null,activity:null,eating:null,mealstyle:null,diet:[],name:''};render();}
 function resetProfile(){if(confirm('Reset profile? This will start the setup again.')){APP.profile=null;goOnboard();}}
 function addNewProfile(){
-  const msg = APP.lang==='es'
-    ? '¿Crear un nuevo perfil? Esto reemplazará el perfil actual. Si querés restaurar el perfil de Charly, reinstalá la app.'
-    : 'Create a new profile? This will replace the current profile. To restore Charly\'s profile, reinstall the app.';
-  if(confirm(msg)){APP.profile=null;goOnboard();}
+  APP.screen='onboard';
+  APP.ob_step=0;
+  APP.ob_data={lang:APP.lang,sex:null,age:'',height:'',weight:'',waist:'',goal:null,activity:null,eating:null,mealstyle:null,diet:[],name:''};
+  save();render();
 }
 // Edit profile in place
 function startEdit(){
@@ -1751,19 +1796,26 @@ function obBack(){if(APP.ob_step>0){APP.ob_step--;save();render();}}
 function obFinish(){
   const od=APP.ob_data;
   const m=calcMacros({sex:od.sex,age:parseInt(od.age),height:parseInt(od.height),weight:parseFloat(od.weight),goal:od.goal,activity:od.activity});
-  APP.profile={
+  const newProfile={
     id:'user_'+Date.now(),
     name:od.name,
     sex:od.sex,age:parseInt(od.age),height:parseInt(od.height),weight:parseFloat(od.weight),waist:parseInt(od.waist)||0,
     goal:od.goal,activity:od.activity,eating:od.eating,mealstyle:od.mealstyle,diet:od.diet,
     bmr:m.bmr,tdee:m.tdee,target_kcal:m.target_kcal,prot_min:m.prot_min,
     deficit_min:m.deficit_min,deficit_max:m.deficit_max,carb_max:m.carb_max,
-    cf_days:[1,3,5], // default Mon/Wed/Fri
+    cf_days:[1,3,5],
     isCharly:false,
   };
+  // Add to profiles list (never replace existing ones)
+  if (!APP.profiles) APP.profiles = [];
+  APP.profiles.push(newProfile);
+  // Switch to new profile
   APP.lang=od.lang||'en';
+  APP.langSetByUser=true;
+  APP.profile=newProfile;
+  APP.activeProfileId=newProfile.id;
+  loadProfileTracking(newProfile.id);
   APP.screen='tracker';
-  APP.day=currentDayId();
   save();render();
 }
 
@@ -1803,32 +1855,39 @@ function resetD(d){
 function init() {
   load();
   if (!APP.langSetByUser) APP.lang = 'en';
+  if (!APP.allTrackingData) APP.allTrackingData = {};
 
-  // Restore Charly's profile if missing or corrupted
-  if (!APP.profile || !APP.profile.isCharly === undefined) {
-    const prevData = localStorage.getItem('tracker_s');
-    const prevApp = localStorage.getItem('cvr_app');
-    if (prevData || prevApp) {
-      // Had previous data — restore Charly profile, keep all tracking data
-      APP.profile = {...CHARLY_PROFILE};
-      APP.screen = 'tracker';
-      APP.day = currentDayId();
-      save();
-    } else {
-      APP.screen = 'onboard';
-      APP.ob_step = 0;
-      APP.ob_data = { lang:'en', sex:null, age:'', height:'', weight:'', waist:'', goal:null, activity:null, eating:null, mealstyle:null, diet:[], name:'' };
+  // Always ensure Charly is in the profiles list
+  ensureCharlyProfile();
+
+  // Migrate old single-profile data if needed
+  if (!APP.activeProfileId) {
+    // Check if there's legacy data
+    const hadPrevData = localStorage.getItem('tracker_s') || (APP.profile && APP.profile.id);
+    if (hadPrevData && APP.profile && !APP.profile.isCharly) {
+      // Had a non-Charly profile — add it to list if not already there
+      const exists = APP.profiles.find(p => p.id === APP.profile.id);
+      if (!exists) APP.profiles.push(APP.profile);
     }
-  } else {
-    // Profile exists — if isCharly, always refresh the profile object from CHARLY_PROFILE
-    // so any hardcoded updates (macros etc) are picked up, while tracking data is preserved
-    if (APP.profile.isCharly) {
-      APP.profile = {...CHARLY_PROFILE};
-    }
-    APP.screen = 'tracker';
-    if (!APP.day) APP.day = currentDayId();
+    // Default to Charly
+    APP.activeProfileId = 'charly';
   }
+
+  // Ensure activeProfileId exists in profiles
+  const activeProf = APP.profiles.find(p => p.id === APP.activeProfileId);
+  if (!activeProf) APP.activeProfileId = 'charly';
+
+  // Load the active profile
+  const prof = APP.profiles.find(p => p.id === APP.activeProfileId);
+  APP.profile = prof.isCharly ? {...CHARLY_PROFILE} : prof;
+
+  // Load tracking data for active profile
+  loadProfileTracking(APP.activeProfileId);
+
+  APP.screen = 'tracker';
+  save();
   render();
+
   if('serviceWorker' in navigator){
     window.addEventListener('load',()=>{
       navigator.serviceWorker.register('./sw.js').catch(()=>{});
