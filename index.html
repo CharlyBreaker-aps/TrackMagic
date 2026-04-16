@@ -1011,9 +1011,12 @@ function getDeficitRange(d) {
 function getSupps() {
   const p = getProfile();
   if (!p) return [];
+  // Supplements show for all users — Charly has specific ones, others get generic creatine
   if (p.isCharly) return CHARLY_SUPPS;
-  // Generic: no specific supplements
-  return [];
+  return [
+    {id:'am', label:{en:'Creatine 5g + electrolytes',es:'Creatina 5g + electrolitos'}, time:{en:'Morning',es:'Mañana'}},
+    {id:'pm', label:{en:'Creatine 5g + electrolytes',es:'Creatina 5g + electrolitos'}, time:{en:'Afternoon',es:'Tarde'}},
+  ];
 }
 function getSnackA() { return CHARLY_SA(APP.lang); }
 function getSnackB() { return CHARLY_SB(APP.lang); }
@@ -1799,27 +1802,29 @@ function resetD(d){
 // ══════════════════════════════════════════════
 function init() {
   load();
-  // Fix 3: lang defaults to 'en' always unless user explicitly changed it.
-  // We detect "explicitly changed" by checking if APP.langSetByUser is true.
   if (!APP.langSetByUser) APP.lang = 'en';
 
-  // If no profile, check if we should load Charly's profile or show onboard
-  if (!APP.profile) {
-    // Check if this is Charly's device (was previously used as Charly's tracker)
+  // Restore Charly's profile if missing or corrupted
+  if (!APP.profile || !APP.profile.isCharly === undefined) {
     const prevData = localStorage.getItem('tracker_s');
-    if (prevData) {
-      // Migrate from old tracker — keep Charly's profile but DON'T force lang
-      APP.profile = CHARLY_PROFILE;
+    const prevApp = localStorage.getItem('cvr_app');
+    if (prevData || prevApp) {
+      // Had previous data — restore Charly profile, keep all tracking data
+      APP.profile = {...CHARLY_PROFILE};
       APP.screen = 'tracker';
       APP.day = currentDayId();
       save();
     } else {
-      // New user — show language selection then onboard
       APP.screen = 'onboard';
       APP.ob_step = 0;
       APP.ob_data = { lang:'en', sex:null, age:'', height:'', weight:'', waist:'', goal:null, activity:null, eating:null, mealstyle:null, diet:[], name:'' };
     }
   } else {
+    // Profile exists — if isCharly, always refresh the profile object from CHARLY_PROFILE
+    // so any hardcoded updates (macros etc) are picked up, while tracking data is preserved
+    if (APP.profile.isCharly) {
+      APP.profile = {...CHARLY_PROFILE};
+    }
     APP.screen = 'tracker';
     if (!APP.day) APP.day = currentDayId();
   }
