@@ -1183,23 +1183,23 @@ function renderOnboard() {
       <div class="ob-input-row">
         <div class="ob-input-group">
           <label class="ob-label">${tl.ob_age}</label>
-          <input class="ob-input" type="number" inputmode="numeric" placeholder="30" value="${od.age||''}" onchange="obSet('age',this.value)" oninput="obSet('age',this.value)">
+          <input class="ob-input" type="number" inputmode="numeric" placeholder="30" value="${od.age||''}" onchange="obSetInput('age',this.value)" oninput="obSetInput('age',this.value)">
         </div>
         <div class="ob-input-group">
           <label class="ob-label">${tl.ob_weight}</label>
-          <input class="ob-input" type="number" inputmode="decimal" placeholder="75" value="${od.weight||''}" onchange="obSet('weight',this.value)" oninput="obSet('weight',this.value)">
+          <input class="ob-input" type="number" inputmode="decimal" placeholder="75" value="${od.weight||''}" onchange="obSetInput('weight',this.value)" oninput="obSetInput('weight',this.value)">
           <span class="ob-unit">kg</span>
         </div>
       </div>
       <div class="ob-input-row">
         <div class="ob-input-group">
           <label class="ob-label">${tl.ob_height}</label>
-          <input class="ob-input" type="number" inputmode="numeric" placeholder="175" value="${od.height||''}" onchange="obSet('height',this.value)" oninput="obSet('height',this.value)">
+          <input class="ob-input" type="number" inputmode="numeric" placeholder="175" value="${od.height||''}" onchange="obSetInput('height',this.value)" oninput="obSetInput('height',this.value)">
           <span class="ob-unit">cm</span>
         </div>
         <div class="ob-input-group">
           <label class="ob-label">${tl.ob_waist}</label>
-          <input class="ob-input" type="number" inputmode="numeric" placeholder="85" value="${od.waist||''}" onchange="obSet('waist',this.value)" oninput="obSet('waist',this.value)">
+          <input class="ob-input" type="number" inputmode="numeric" placeholder="85" value="${od.waist||''}" onchange="obSetInput('waist',this.value)" oninput="obSetInput('waist',this.value)">
           <span class="ob-unit">cm</span>
         </div>
       </div>
@@ -1283,7 +1283,7 @@ function renderOnboard() {
     <div class="ob-sub">${tl.ob_name_sub}</div>
     <div class="ob-inputs">
       <div class="ob-input-group">
-        <input class="ob-input" type="text" placeholder="${tl.ob_name_placeholder}" value="${od.name||''}" onchange="obSet('name',this.value)" oninput="obSet('name',this.value)" style="font-size:17px;padding:14px">
+        <input class="ob-input" type="text" placeholder="${tl.ob_name_placeholder}" value="${od.name||''}" onchange="obSetInput('name',this.value)" oninput="obSetInput('name',this.value)" style="font-size:17px;padding:14px">
       </div>
     </div>`;
   }
@@ -1698,8 +1698,8 @@ function saveEdit(){
 
 // Onboarding actions
 function obSetLang(l){APP.ob_data.lang=l;APP.lang=l;render();}
-function obSet(key,val){APP.ob_data[key]=val;save();}
-function obToggleDiet(id){
+function obSet(key,val){APP.ob_data[key]=val;save();render();}
+function obSetInput(key,val){APP.ob_data[key]=val;save();} // for text/number inputs — no render to preserve cursor
   const d=APP.ob_data.diet;
   if(id==='none'){APP.ob_data.diet=['none'];render();return;}
   const idx=d.indexOf(id);
