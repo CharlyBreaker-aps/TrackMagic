@@ -1,6 +1,6 @@
 {
-  "name": "Charly VR Tracker",
-  "short_name": "CVR Tracker",
+  "name": "MagicTracker (By Charly)",
+  "short_name": "Track Magic",
   "description": "Personal nutrition & fitness tracker",
   "start_url": "./index.html",
   "display": "standalone",
