@@ -204,6 +204,20 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 <div id="root"></div>
 
 <script>
+// Global error handler — shows error + reset button instead of black screen
+window.onerror = function(msg, src, line, col, err) {
+  const root = document.getElementById('root');
+  if (root && root.innerHTML.length < 100) {
+    root.innerHTML = '<div style="padding:24px;font-family:sans-serif;background:#1a0000;min-height:100vh">'
+      + '<div style="font-size:18px;color:#ff6b6b;margin-bottom:12px">⚠️ Something went wrong</div>'
+      + '<div style="font-size:12px;color:#ff9999;font-family:monospace">' + msg + ' (line ' + line + ')</div>'
+      + '<div style="margin-top:20px"><button onclick="localStorage.clear();location.reload()" '
+      + 'style="padding:12px 24px;background:#c0392b;color:#fff;border:none;border-radius:10px;font-size:15px;cursor:pointer">'
+      + '🔄 Reset &amp; reload</button></div>'
+      + '<div style="margin-top:12px;font-size:11px;color:#666">This will clear your local data and restart the app.</div></div>';
+  }
+};
+
 // ══════════════════════════════════════════════
 // TRANSLATIONS
 // ══════════════════════════════════════════════
@@ -904,8 +918,18 @@ function save() {
 function load() {
   try {
     const d = localStorage.getItem('cvr_app');
-    if (d) { const p = JSON.parse(d); Object.assign(APP, p); }
-  } catch(e){}
+    if (d) {
+      const p = JSON.parse(d);
+      // Sanity check — if screen or profile look broken, reset
+      if (p && typeof p === 'object') {
+        Object.assign(APP, p);
+      }
+    }
+  } catch(e) {
+    // Corrupted storage — wipe and start fresh
+    try { localStorage.removeItem('cvr_app'); } catch(e2){}
+    console.log('Storage reset due to error:', e.message);
+  }
 }
 
 // ══════════════════════════════════════════════
@@ -1699,7 +1723,19 @@ function saveEdit(){
 // Onboarding actions
 function obSetLang(l){APP.ob_data.lang=l;APP.lang=l;render();}
 function obSet(key,val){APP.ob_data[key]=val;save();render();}
-function obSetInput(key,val){APP.ob_data[key]=val;save();}
+function obSetInput(key,val){
+  APP.ob_data[key]=val;save();
+  clearTimeout(window._obInputTimer);
+  window._obInputTimer=setTimeout(()=>{ 
+    // Re-render only the Next button state without full re-render (preserve focus)
+    const btn=document.querySelector('.ob-btn:not(.ob-btn-secondary)');
+    if(btn){
+      const od=APP.ob_data;
+      const tl=T[od.lang||APP.lang];
+      btn.disabled=!obCanNext(APP.ob_step,od,tl);
+    }
+  },100);
+}
 function obToggleDiet(id){
   const d=APP.ob_data.diet;
   if(id==='none'){APP.ob_data.diet=['none'];render();return;}
