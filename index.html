@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v2.2 (By Charly)</title>
+<title>MagicTracker v2.3 (By Charly)</title>
 <link rel="manifest" href="manifest.json">
 <style>
 :root{
@@ -223,7 +223,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v2.2 (By Charly)",
+    appName: "MagicTracker v2.3 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -366,7 +366,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v2.2 (By Charly)",
+    appName: "MagicTracker v2.3 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -946,7 +946,7 @@ function save() {
         day:APP.day, rest:APP.rest, meal:APP.meal, chk:APP.chk, qty:APP.qty,
         mult:APP.mult, act:APP.act, sup:APP.sup, echk:APP.echk, eqty:APP.eqty,
         emult:APP.emult, cust:APP.cust, cchk:APP.cchk, cqty:APP.cqty, cmult:APP.cmult,
-        atun:APP.atun, actBurn:APP.actBurn||{}
+        atun:APP.atun, actBurn:APP.actBurn||{}, walkMins:APP.walkMins||{}
       };
     }
     localStorage.setItem('cvr_app', JSON.stringify(APP));
@@ -967,7 +967,7 @@ function loadProfileTracking(profileId) {
   APP.sup = td.sup||{}; APP.echk = td.echk||{}; APP.eqty = td.eqty||{};
   APP.emult = td.emult||{}; APP.cust = td.cust||{}; APP.cchk = td.cchk||{};
   APP.cqty = td.cqty||{}; APP.cmult = td.cmult||{}; APP.atun = td.atun||0;
-  APP.actBurn = td.actBurn||{}; APP.actEditMode = {};
+  APP.actBurn = td.actBurn||{}; APP.actEditMode = {}; APP.walkMins = td.walkMins||{};
 }
 
 function ensureCharlyProfile() {
@@ -986,7 +986,7 @@ function switchProfile(profileId) {
       day:APP.day, rest:APP.rest, meal:APP.meal, chk:APP.chk, qty:APP.qty,
       mult:APP.mult, act:APP.act, sup:APP.sup, echk:APP.echk, eqty:APP.eqty,
       emult:APP.emult, cust:APP.cust, cchk:APP.cchk, cqty:APP.cqty, cmult:APP.cmult, atun:APP.atun,
-      actBurn:APP.actBurn||{}
+      actBurn:APP.actBurn||{}, walkMins:APP.walkMins||{}
     };
   }
   APP.profile = p.isCharly ? {...CHARLY_PROFILE} : p;
@@ -1143,9 +1143,12 @@ function calc(d) {
     walkBurn=150;
     cfBurn=pr.exercise_burn||400;
   }
-  // Apply manual overrides
+  // walkMins takes priority: duration * 4 kcal/min
+  const walkMinsVal = (APP.walkMins&&APP.walkMins[d]) || (pr&&pr.isCharly?75:30);
+  walkBurn = Math.round(walkMinsVal * 4);
+  // Manual burn overrides (for workout row)
   const customBurns=(APP.actBurn&&APP.actBurn[d])||{};
-  const wBurn=customBurns.walk||walkBurn;
+  const wBurn=walkBurn; // walk always derives from minutes
   const cBurn=customBurns.cf||cfBurn;
   const acts=cf?[{id:'walk',burn:wBurn},{id:'cf',burn:cBurn}]:[{id:'walk',burn:wBurn}];
   acts.forEach(a=>{if(ac[a.id])b+=a.burn;});
@@ -1254,11 +1257,26 @@ function renderOnboard() {
     <div class="ob-sub">${tl.ob_lang_sub}</div>
     <div class="ob-sex-row">
       <div class="ob-sex-card${od.lang==='en'?' selected':''}" onclick="obSetLang('en')">
-        <div style="font-size:52px;margin-bottom:10px;line-height:1">🇬🇧</div>
+        <div style="margin-bottom:10px;width:64px;height:42px;border-radius:5px;overflow:hidden;border:1px solid #aaa;display:inline-block;position:relative;background:#012169">
+          <div style="position:absolute;inset:0;background:linear-gradient(to bottom right,transparent calc(50% - 4px),#C8102E calc(50% - 4px),#C8102E calc(50% + 4px),transparent calc(50% + 4px))"></div>
+          <div style="position:absolute;inset:0;background:linear-gradient(to top right,transparent calc(50% - 4px),#C8102E calc(50% - 4px),#C8102E calc(50% + 4px),transparent calc(50% + 4px))"></div>
+          <div style="position:absolute;inset:0;background:linear-gradient(to bottom right,transparent calc(50% - 2px),#fff calc(50% - 2px),#fff calc(50% + 2px),transparent calc(50% + 2px))"></div>
+          <div style="position:absolute;inset:0;background:linear-gradient(to top right,transparent calc(50% - 2px),#fff calc(50% - 2px),#fff calc(50% + 2px),transparent calc(50% + 2px))"></div>
+          <div style="position:absolute;top:0;bottom:0;left:50%;transform:translateX(-50%);width:10px;background:#fff"></div>
+          <div style="position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:10px;background:#fff"></div>
+          <div style="position:absolute;top:0;bottom:0;left:50%;transform:translateX(-50%);width:6px;background:#C8102E"></div>
+          <div style="position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:6px;background:#C8102E"></div>
+        </div>
         <div class="ob-sex-label">English</div>
       </div>
       <div class="ob-sex-card${od.lang==='es'?' selected':''}" onclick="obSetLang('es')">
-        <div style="font-size:52px;margin-bottom:10px;line-height:1">🇦🇷</div>
+        <div style="margin-bottom:10px;width:64px;height:42px;border-radius:5px;overflow:hidden;border:1px solid #aaa;display:inline-block">
+          <div style="height:25%;background:#74ACDF"></div>
+          <div style="height:50%;background:#F6B40E;display:flex;align-items:center;justify-content:center">
+            <div style="width:8px;height:8px;background:#843511;border-radius:50%;margin-right:20px"></div>
+          </div>
+          <div style="height:25%;background:#74ACDF"></div>
+        </div>
         <div class="ob-sex-label">Español</div>
       </div>
     </div>`;
@@ -1677,28 +1695,47 @@ function renderTracker() {
   }
 
   h+=`<div class="sec">${t('physical_activity')}</div>`;
-  // Column header for serving size hint (fix #4)
   if(actDef.length>0){
     h+=`<div style="display:flex;justify-content:flex-end;padding:0 12px 2px;font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">${APP.lang==='es'?'kcal quemadas':'kcal burned'}</div>`;
   }
   actDef.forEach(a=>{
     const dn=acNow[a.id]?'done':'';
     const customBurn = APP.actBurn && APP.actBurn[d] && APP.actBurn[d][a.id];
-    const displayBurn = customBurn || a.burn;
     const showEdit = APP.actEditMode && APP.actEditMode[d+a.id];
-    const editBtn=`<button onclick="openEditBurn('${d}','${a.id}')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer">✏️</button>`;
-    const editInput=`<input id="burn_${d}_${a.id}" type="number" inputmode="numeric" value="${displayBurn}" style="width:60px;padding:4px 6px;border-radius:6px;border:1px solid var(--green);background:var(--bg2);color:var(--text);font-size:12px;text-align:center" oninput="setCustomBurn('${d}','${a.id}',this.value)">
-      <button onclick="closeEditBurn('${d}','${a.id}')" style="font-size:11px;padding:3px 8px;border-radius:5px;border:none;background:var(--green);color:#fff;cursor:pointer">✓</button>`;
-    // Both walk and workout get the edit button (fix #3)
-    h+=`<div class="arow ${dn}" style="flex-wrap:wrap">
-      <div style="display:flex;align-items:center;gap:10px;flex:1;cursor:pointer" onclick="tA('${d}','${a.id}')">
-        <div class="chkr ${dn}"></div>
-        <span class="aname">${a.name}</span>
-      </div>
-      <div style="display:flex;align-items:center;gap:6px">
-        ${showEdit ? editInput : `<span class="akcal">+${displayBurn} kcal${customBurn?'*':''}</span>${editBtn}`}
-      </div>
-    </div>`;
+
+    if(a.id==='walk') {
+      // Walk: duration picker → auto-calculates kcal at ~4 kcal/min
+      const walkMins = (APP.walkMins && APP.walkMins[d]) || (p.isCharly ? 75 : 30);
+      const walkKcal = customBurn || Math.round(walkMins * 4);
+      const showWalkEdit = showEdit;
+      const walkDurations = [15,20,30,45,60,75,90];
+      h+=`<div class="arow ${dn}" style="flex-wrap:wrap;gap:6px">
+        <div style="display:flex;align-items:center;gap:10px;flex:1;cursor:pointer;min-width:120px" onclick="tA('${d}','walk')">
+          <div class="chkr ${dn}"></div>
+          <span class="aname">${APP.lang==='es'?'Caminata':'Walk'}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
+          <span style="font-size:10px;color:var(--text3)">${APP.lang==='es'?'min:':'min:'}</span>
+          ${walkDurations.map(m=>`<button onclick="setWalkMins('${d}',${m})" style="padding:3px 7px;border-radius:12px;border:1.5px solid ${walkMins===m?'var(--green)':'var(--border2)'};background:${walkMins===m?'var(--green)':'transparent'};color:${walkMins===m?'#fff':'var(--text3)'};font-size:11px;font-weight:600;cursor:pointer">${m}</button>`).join('')}
+          <span class="akcal" style="margin-left:4px">+${walkKcal} kcal</span>
+        </div>
+      </div>`;
+    } else {
+      // Workout: shows calculated kcal with manual override ✏️
+      const displayBurn = customBurn || a.burn;
+      const editBtn=`<button onclick="openEditBurn('${d}','${a.id}')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer">✏️</button>`;
+      const editInput=`<input id="burn_${d}_${a.id}" type="number" inputmode="numeric" value="${displayBurn}" style="width:60px;padding:4px 6px;border-radius:6px;border:1px solid var(--green);background:var(--bg2);color:var(--text);font-size:12px;text-align:center" oninput="setCustomBurn('${d}','${a.id}',this.value)">
+        <button onclick="closeEditBurn('${d}','${a.id}')" style="font-size:11px;padding:3px 8px;border-radius:5px;border:none;background:var(--green);color:#fff;cursor:pointer">✓</button>`;
+      h+=`<div class="arow ${dn}" style="flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:10px;flex:1;cursor:pointer" onclick="tA('${d}','${a.id}')">
+          <div class="chkr ${dn}"></div>
+          <span class="aname">${a.name}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          ${showEdit ? editInput : `<span class="akcal">+${displayBurn} kcal${customBurn?'*':''}</span>${editBtn}`}
+        </div>
+      </div>`;
+    }
   });
 
   // Main meal
@@ -1996,6 +2033,15 @@ function tC(d,id){if(!APP.cchk[d])APP.cchk[d]={};APP.cchk[d][id]=!APP.cchk[d][id
 function iC(d,id,e){e.stopPropagation();if(!APP.cqty[d])APP.cqty[d]={};APP.cqty[d][id]=(APP.cqty[d][id]||0)+1;save();render();}
 function dC(d,id,e){e.stopPropagation();if(!APP.cqty[d])APP.cqty[d]={};const c=APP.cqty[d][id]||0;if(c>0)APP.cqty[d][id]=c-1;save();render();}
 function tA(d,id){if(!APP.act[d])APP.act[d]={};APP.act[d][id]=!APP.act[d][id];save();render();}
+function setWalkMins(d,mins){
+  if(!APP.walkMins)APP.walkMins={};
+  APP.walkMins[d]=mins;
+  // Auto-calc kcal at 4 kcal/min and store as custom burn
+  if(!APP.actBurn)APP.actBurn={};
+  if(!APP.actBurn[d])APP.actBurn[d]={};
+  APP.actBurn[d].walk=Math.round(mins*4);
+  save();render();
+}
 function openEditBurn(d,id){if(!APP.actEditMode)APP.actEditMode={};APP.actEditMode[d+id]=true;render();setTimeout(()=>{const el=document.getElementById('burn_'+d+'_'+id);if(el){el.focus();el.select();}},50);}
 function closeEditBurn(d,id){if(APP.actEditMode)delete APP.actEditMode[d+id];save();render();}
 function setCustomBurn(d,id,val){if(!APP.actBurn)APP.actBurn={};if(!APP.actBurn[d])APP.actBurn[d]={};APP.actBurn[d][id]=parseInt(val)||0;}
