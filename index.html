@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v2.4 (By Charly)</title>
+<title>MagicTracker v2.6 (By Charly)</title>
 <link rel="manifest" href="manifest.json">
 <style>
 :root{
@@ -223,7 +223,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v2.4 (By Charly)",
+    appName: "MagicTracker v2.6 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -366,7 +366,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v2.4 (By Charly)",
+    appName: "MagicTracker v2.6 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -1240,7 +1240,8 @@ function renderTopbar(showSettings=true) {
       <button class="lang-btn${APP.lang==='en'?' active':''}" onclick="setLang('en')">EN</button>
       <button class="lang-btn${APP.lang==='es'?' active':''}" onclick="setLang('es')">ES</button>
     </div>
-    ${showSettings?`<button class="settings-btn" onclick="goSettings()">⚙️</button>`:''}
+    ${showSettings?`<button class="settings-btn" onclick="goHelp()" style="margin-right:4px;font-size:13px;font-weight:700;background:var(--bg3);border:none;border-radius:50%;width:34px;height:34px;cursor:pointer;color:var(--text2)">?</button>
+    <button class="settings-btn" onclick="goSettings()">⚙️</button>`:''}
   </div>`;
 }
 
@@ -1249,7 +1250,7 @@ function renderOnboard() {
   const od = APP.ob_data;
   const lang = od.lang || APP.lang;
   const tl = T[lang];
-  const TOTAL_STEPS = 9;
+  const TOTAL_STEPS = 10;
 
   let html = `<div class="onboard">`;
   // Progress dots
@@ -1432,6 +1433,42 @@ function renderOnboard() {
     });
     html += `</div>`;
   } else if (step === 8) {
+    // Goal targets (weight + body fat %)
+    const goal = od.goal || 'cut';
+    const showFat = ['cut','recomp'].includes(goal);
+    const showWeight = ['cut','bulk','recomp'].includes(goal);
+    const isMaintain = goal === 'maintain';
+    html += `<div class="ob-title">${lang==='es'?'Tu objetivo específico':'Your specific target'}</div>
+    <div class="ob-sub">${lang==='es'
+      ?'Esto nos permite mostrarte el progreso hacia tu meta en la pantalla principal.'
+      :'This lets us show your progress towards your goal on the main screen.'}</div>`;
+    if(isMaintain){
+      html += `<div style="padding:20px;text-align:center;background:var(--bg2);border-radius:var(--radius);border:0.5px solid var(--border2);margin-bottom:20px">
+        <div style="font-size:32px;margin-bottom:8px">➡️</div>
+        <div style="font-size:14px;color:var(--text2)">${lang==='es'?'Tu objetivo es mantener el peso actual. No necesitás un target específico.':'Your goal is to maintain your current weight. No specific target needed.'}</div>
+      </div>`;
+    } else {
+      html += `<div class="ob-inputs">`;
+      if(showWeight){
+        html += `<div class="ob-input-group">
+          <label class="ob-label">${lang==='es'?'Peso objetivo':'Target weight'}</label>
+          <input class="ob-input" type="number" inputmode="decimal" placeholder="${od.weight?Math.round(parseFloat(od.weight||75)*0.9):68}" value="${od.target_weight||''}" onchange="obSetInput('target_weight',this.value)" oninput="obSetInput('target_weight',this.value)">
+          <span class="ob-unit">kg</span>
+        </div>`;
+      }
+      if(showFat){
+        html += `<div class="ob-input-group">
+          <label class="ob-label">${lang==='es'?'% grasa objetivo':'Target body fat %'}</label>
+          <input class="ob-input" type="number" inputmode="decimal" placeholder="${goal==='cut'?'12':'15'}" value="${od.target_fat||''}" onchange="obSetInput('target_fat',this.value)" oninput="obSetInput('target_fat',this.value)">
+          <span class="ob-unit">%</span>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:-4px;padding:0 2px;line-height:1.4">${lang==='es'
+          ?'Referencia: atlético 10-14% · fitness 15-19% · promedio 20-24%'
+          :'Reference: athletic 10-14% · fitness 15-19% · average 20-24%'}</div>`;
+      }
+      html += `</div>`;
+    }
+  } else if (step === 9) {
     // Diet + name
     html += `<div class="ob-title">${tl.ob_diet_title}</div>
     <div class="ob-sub">${tl.ob_diet_sub}</div>
@@ -1473,7 +1510,8 @@ function obCanNext(step, od, tl) {
   if (step === 5) return !!od.exercise_type && (od.exercise_days||[]).length > 0;
   if (step === 6) return !!od.eating;
   if (step === 7) return !!od.mealstyle;
-  if (step === 8) return od.name && od.name.trim().length > 0;
+  if (step === 8) return true; // goal targets optional for maintain, others can skip
+  if (step === 9) return od.name && od.name.trim().length > 0;
   return true;
 }
 
@@ -1493,12 +1531,26 @@ function renderSettings() {
       <div class="ob-inputs">
         <div class="ob-input-row">
           <div class="ob-input-group">
-            <label class="ob-label">${tl.ob_weight} (kg)</label>
-            <input class="ob-input" type="number" inputmode="decimal" value="${ed.weight||p.weight||''}" oninput="seSet('weight',this.value)">
+            <label class="ob-label">${tl.ob_weight}</label>
+            <input class="ob-input" type="number" inputmode="decimal" placeholder="kg" value="${ed.weight||p.weight||''}" oninput="seSetInput('weight',this.value)">
+            <span class="ob-unit">kg</span>
           </div>
           <div class="ob-input-group">
-            <label class="ob-label">${tl.ob_waist} (cm)</label>
-            <input class="ob-input" type="number" inputmode="numeric" value="${ed.waist||p.waist||''}" oninput="seSet('waist',this.value)">
+            <label class="ob-label">${tl.ob_waist}</label>
+            <input class="ob-input" type="number" inputmode="numeric" placeholder="cm" value="${ed.waist||p.waist||''}" oninput="seSetInput('waist',this.value)">
+            <span class="ob-unit">cm</span>
+          </div>
+        </div>
+        <div class="ob-input-row">
+          <div class="ob-input-group">
+            <label class="ob-label">${tl.ob_age}</label>
+            <input class="ob-input" type="number" inputmode="numeric" placeholder="30" value="${ed.age||p.age||''}" oninput="seSetInput('age',this.value)">
+            <span class="ob-unit">${APP.lang==='es'?'años':'years'}</span>
+          </div>
+          <div class="ob-input-group">
+            <label class="ob-label">${tl.ob_height}</label>
+            <input class="ob-input" type="number" inputmode="numeric" placeholder="cm" value="${ed.height||p.height||''}" oninput="seSetInput('height',this.value)">
+            <span class="ob-unit">cm</span>
           </div>
         </div>
       </div>
@@ -1529,6 +1581,42 @@ function renderSettings() {
           <div class="ob-check"></div>
         </div>`).join('')}
       </div>
+
+      ${!p.isCharly ? `<div class="sec">${tl.ob_exercise_title||'Exercise'}</div>
+      <div class="ob-cards">
+        ${tl.ob_exercise_types.map(e=>`<div class="ob-card${(ed.exercise_type||p.exercise_type)===e.id?' selected':''}" onclick="seSet('exercise_type','${e.id}')">
+          <div class="ob-card-icon">${e.icon}</div>
+          <div class="ob-card-body"><div class="ob-card-title">${e.title}</div><div class="ob-card-desc">${e.desc}</div></div>
+          <div class="ob-check"></div>
+        </div>`).join('')}
+      </div>
+      <div class="sec" style="margin-top:4px">${APP.lang==='es'?'Días de entreno':'Training days'}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;padding:0 12px 12px">
+        ${(APP.lang==='es'?['Lun','Mar','Mié','Jue','Vie','Sáb','Dom']:['Mon','Tue','Wed','Thu','Fri','Sat','Sun']).map((dl,i)=>{
+          const curDays = ed.exercise_days||p.exercise_days||p.cf_days||[];
+          const sel = curDays.includes(i);
+          return `<div onclick="seToggleDay(${i})" style="width:40px;height:40px;border-radius:50%;border:2px solid ${sel?'var(--green)':'var(--border2)'};background:${sel?'var(--green)':'transparent'};display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;font-weight:700;color:${sel?'#fff':'var(--text2)'}">${dl}</div>`;
+        }).join('')}
+      </div>` : ''}
+
+      ${!p.isCharly ? `<div class="sec">${APP.lang==='es'?'Objetivo específico':'Specific target'}</div>
+      <div class="ob-inputs">
+        <div class="ob-input-row">
+          <div class="ob-input-group">
+            <label class="ob-label">${APP.lang==='es'?'Peso objetivo':'Target weight'}</label>
+            <input class="ob-input" type="number" inputmode="decimal" placeholder="kg" value="${ed.target_weight||p.target_weight||''}" oninput="seSetInput('target_weight',this.value)">
+            <span class="ob-unit">kg</span>
+          </div>
+          <div class="ob-input-group">
+            <label class="ob-label">${APP.lang==='es'?'% grasa objetivo':'Target body fat'}</label>
+            <input class="ob-input" type="number" inputmode="decimal" placeholder="%" value="${ed.target_fat||p.target_fat||''}" oninput="seSetInput('target_fat',this.value)">
+            <span class="ob-unit">%</span>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--text3);line-height:1.4;padding:0 2px">${APP.lang==='es'
+          ?'Al guardar cambios de peso se actualiza automáticamente la fecha de última medición (usada para el recordatorio semanal).'
+          :'When you save weight changes, the last measurement date updates automatically (used for the weekly reminder).'}</div>
+      </div>` : ''}
 
       <button class="ob-btn" onclick="saveEdit()" style="margin-top:8px">
         ${APP.lang==='es'?'Guardar cambios ✓':'Save changes ✓'}
@@ -1604,6 +1692,74 @@ function renderSettings() {
   return html;
 }
 
+function renderHelp() {
+  const isEs = APP.lang === 'es';
+  const glossary = [
+    { term:'BMR', full: isEs?'Tasa Metabólica Basal':'Basal Metabolic Rate', desc: isEs?'Las calorías que tu cuerpo quema en reposo absoluto — solo para mantenerte vivo (respirar, corazón, órganos). Es el piso de tu consumo calórico.':'Calories your body burns at complete rest — just to stay alive (breathing, heart, organs). It\'s the floor of your calorie needs.' },
+    { term:'TDEE', full: isEs?'Gasto Energético Total Diario':'Total Daily Energy Expenditure', desc: isEs?'BMR + todas las calorías que quemás durante el día (actividad, ejercicio, digestión). Es tu consumo calórico real si querés mantener el peso.':'BMR + all calories you burn during the day (activity, exercise, digestion). This is your real calorie need to maintain weight.' },
+    { term:'NEAT', full: isEs?'Termogénesis por Actividad sin Ejercicio':'Non-Exercise Activity Thermogenesis', desc: isEs?'Calorías quemadas por movimiento cotidiano que no es ejercicio estructurado: caminar, pararte, gesticular, cocinar, etc.':'Calories burned by daily movement that isn\'t structured exercise: walking, standing, gesturing, cooking, etc.' },
+    { term:'Déficit calórico', full: isEs?'Déficit calórico':'Caloric deficit', desc: isEs?'Cuando comés menos calorías de las que gastás. Es la única forma real de perder grasa. Un déficit de 500 kcal/día produce ~0.5kg de pérdida por semana.':'When you eat fewer calories than you burn. The only real way to lose fat. A 500 kcal/day deficit produces ~0.5kg of loss per week.' },
+    { term:'Superávit calórico', full: isEs?'Superávit calórico':'Caloric surplus', desc: isEs?'Cuando comés más calorías de las que gastás. Necesario para ganar masa muscular. Un superávit de 200-300 kcal/día minimiza la ganancia de grasa.':'When you eat more calories than you burn. Needed to gain muscle. A 200-300 kcal/day surplus minimizes fat gain.' },
+    { term: isEs?'Proteína (P)':'Protein (P)', full: isEs?'Macronutriente proteína':'Protein macronutrient', desc: isEs?'El macronutriente más importante en déficit. Preserva músculo mientras perdés grasa. Target: 2g por kg de peso corporal. Fuentes: pollo, pescado, huevos, lácteos, legumbres.':'The most important macronutrient in a deficit. Preserves muscle while losing fat. Target: 2g per kg of body weight. Sources: chicken, fish, eggs, dairy, legumes.' },
+    { term: isEs?'Carbos (C)':'Carbs (C)', full: isEs?'Carbohidratos':'Carbohydrates', desc: isEs?'La principal fuente de energía del cuerpo. No son el enemigo — la cantidad importa. En días de entreno podés comer más. Fuentes: arroz, pasta, pan, frutas, avena.':'The body\'s main energy source. Not the enemy — quantity matters. On training days you can eat more. Sources: rice, pasta, bread, fruit, oats.' },
+    { term: isEs?'Kcal':'Kcal', full: isEs?'Kilocaloría':'Kilocalorie', desc: isEs?'Unidad de energía de los alimentos. Lo que comunmente llamamos "caloría" es en realidad una kilocaloría. 1 kcal = 1 Cal (con C mayúscula).':'Unit of energy in food. What we commonly call a "calorie" is technically a kilocalorie. 1 kcal = 1 Cal (capital C).' },
+    { term:'OMAD', full: isEs?'Una Comida Al Día':'One Meal A Day', desc: isEs?'Patrón de alimentación donde se concentra toda la ingesta calórica en una sola comida con una ventana de 1-14 horas. Popular por simplicidad y control de porciones.':'Eating pattern where all caloric intake is concentrated in a single meal within a 1-14 hour window. Popular for simplicity and portion control.' },
+    { term: isEs?'Recomposición':'Recomposition', full: isEs?'Recomposición corporal':'Body recomposition', desc: isEs?'Perder grasa y ganar músculo al mismo tiempo. Posible con déficit mínimo + entrenamiento de fuerza. Proceso más lento que hacer cut o bulk por separado.':'Losing fat and gaining muscle simultaneously. Possible with a minimal deficit + strength training. Slower process than doing a dedicated cut or bulk.' },
+    { term: isEs?'Cut':'Cut', full: isEs?'Fase de definición':'Cutting phase', desc: isEs?'Período de déficit calórico para reducir grasa corporal mientras se preserva músculo. Requiere alta proteína y entrenamiento de fuerza.':'Period of caloric deficit to reduce body fat while preserving muscle. Requires high protein and strength training.' },
+    { term: isEs?'Bulk':'Bulk', full: isEs?'Fase de volumen':'Bulking phase', desc: isEs?'Período de superávit calórico para maximizar la ganancia muscular. Se acepta cierta ganancia de grasa. Se combina con entrenamiento de fuerza progresivo.':'Period of caloric surplus to maximize muscle gain. Some fat gain is accepted. Combined with progressive strength training.' },
+    { term:'CF day', full: isEs?'Día de crossfit/entrenamiento':'CrossFit/training day', desc: isEs?'Día en que hacés ejercicio de alta intensidad. Podés comer más calorías porque gastaste más. La app ajusta automáticamente tu objetivo calórico según el día.':'Day when you do high-intensity exercise. You can eat more calories because you burned more. The app automatically adjusts your calorie target based on the day.' },
+    { term: isEs?'Refeed':'Refeed', full: isEs?'Día de recarga':'Refeed day', desc: isEs?'Día estratégico donde comés en mantenimiento o superávit leve. Recarga el glucógeno muscular, sube leptina y ayuda psicológicamente. Útil después de períodos prolongados en déficit.':'Strategic day where you eat at maintenance or slight surplus. Recharges muscle glycogen, raises leptin and helps psychologically. Useful after extended deficit periods.' },
+    { term: isEs?'Snack A / Snack B':'Snack A / Snack B', full: isEs?'Paquetes de snacks de Charly':'Charly\'s snack packs', desc: isEs?'Opciones de snack predefinidas para Charly. Snack A = cottage + huevos + pan (alta proteína, sin biltong). Snack B = todo lo anterior + biltong (mayor proteína y saciedad).':'Predefined snack options for Charly. Snack A = cottage + eggs + bread (high protein, no biltong). Snack B = everything above + biltong (higher protein and satiety).' },
+  ];
+
+  const sections = [
+    { icon:'📊', title: isEs?'Stats del día (los 4 números arriba)':'Daily stats (4 numbers at top)', desc: isEs?'Muestra en tiempo real: kcal ingeridas, proteína total, carbos totales, y calorías quemadas por actividad. Los colores indican si estás en objetivo (verde), cerca (naranja) o fuera (rojo).':'Shows in real time: kcal ingested, total protein, total carbs, and calories burned by activity. Colors indicate if you\'re on target (green), close (orange), or off (red).' },
+    { icon:'🎯', title: isEs?'Caja de déficit':'Deficit box', desc: isEs?'Muestra tu balance calórico del día: BMR + NEAT + actividad - lo que comiste = déficit real. Verde = estás en el rango objetivo. Naranja = comiste poco (déficit demasiado alto). Rojo = comiste de más.':'Shows your daily calorie balance: BMR + NEAT + activity - what you ate = real deficit. Green = you\'re in target range. Orange = ate too little (deficit too high). Red = ate too much.' },
+    { icon:'🏋️', title: isEs?'Actividad física':'Physical activity', desc: isEs?'Marcá las actividades que hiciste hoy. El tiempo de caminata se puede ajustar con los botones de minutos. El ejercicio muestra las kcal calculadas automáticamente con opción de ajuste manual (✏️).':'Mark activities you did today. Walk duration can be adjusted with the minute buttons. Exercise shows auto-calculated kcal with manual adjustment option (✏️).' },
+    { icon:'🍽️', title: isEs?'Plato principal':'Main meal', desc: isEs?'Elegí tu restaurant o tipo de comida, luego seleccioná el plato. Los ítems se despliegan con checkboxes para marcar lo que comiste. + agrega porciones extra, los botones −/+ ajustan el gramaje (½× hasta 2×).':'Choose your restaurant or food type, then select a dish. Items unfold with checkboxes to mark what you ate. + adds extra portions, −/+ buttons adjust serving size (½× to 2×).' },
+    { icon:'🔍', title: isEs?'Buscador':'Search', desc: isEs?'Buscá cualquier alimento por nombre. Los tags filtran categorías: 🟢 alta proteína, 🔵 bajo cal, 🟠 alta carbos, 🏠 comida casera. Al agregar un alimento buscado aparece en la sección "Alimentos buscados" del plato.':'Search any food by name. Tags filter categories: 🟢 high protein, 🔵 low cal, 🟠 high carb, 🏠 home cooked. Adding a searched food shows it in the "Searched foods" section of your meal.' },
+    { icon:'⚙️', title: isEs?'Settings':'Settings', desc: isEs?'Editá tu perfil (peso, edad, objetivo, ejercicio), cambiá entre perfiles, creá perfiles nuevos para otras personas, o eliminá perfiles que no uses.':'Edit your profile (weight, age, goal, exercise), switch between profiles, create new profiles for other people, or delete unused profiles.' },
+  ];
+
+  let html = renderTopbar(false);
+  html += `<div class="settings-screen">
+    <button class="back-btn" onclick="goTracker()">← ${isEs?'Volver':'Back'}</button>
+    <div class="settings-title">❓ ${isEs?'Ayuda y Glosario':'Help & Glossary'}</div>
+
+    <div style="margin-bottom:16px">
+      <input id="help-search" class="sinp" type="text" placeholder="${isEs?'Buscar término...':'Search term...'}" oninput="filterHelp(this.value)" style="margin:0">
+    </div>
+
+    <div class="sec">${isEs?'Cómo usar la app':'How to use the app'}</div>
+    <div id="help-sections">
+      ${sections.map(s=>`<div class="settings-card" style="margin-bottom:8px;padding:12px 14px;border-radius:var(--radius);border:0.5px solid var(--border2);background:var(--bg2)">
+        <div style="font-size:20px;margin-bottom:6px">${s.icon}</div>
+        <div style="font-size:13px;font-weight:700;margin-bottom:4px">${s.title}</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.5">${s.desc}</div>
+      </div>`).join('')}
+    </div>
+
+    <div class="sec" style="margin-top:8px">${isEs?'Glosario de términos':'Glossary'}</div>
+    <div id="help-glossary">
+      ${glossary.map(g=>`<div class="settings-card" style="margin-bottom:6px;border-radius:var(--radius);border:0.5px solid var(--border2);overflow:hidden" data-term="${g.term.toLowerCase()} ${g.full.toLowerCase()} ${g.desc.toLowerCase()}">
+        <div style="display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--bg2)">
+          <span style="font-size:13px;font-weight:800;color:var(--green);min-width:80px">${g.term}</span>
+          <span style="font-size:11px;color:var(--text3);font-style:italic">${g.full}</span>
+        </div>
+        <div style="padding:8px 14px 10px;font-size:12px;color:var(--text2);line-height:1.5;background:var(--bg)">${g.desc}</div>
+      </div>`).join('')}
+    </div>
+  </div>`;
+  return html;
+}
+
+function filterHelp(q){
+  const ql=q.toLowerCase().trim();
+  document.querySelectorAll('#help-glossary [data-term]').forEach(el=>{
+    el.style.display=(!ql||el.dataset.term.includes(ql))?'':'none';
+  });
+}
+
 function renderTracker() {
   const p = getProfile();
   if (!p) { goOnboard(); return ''; }
@@ -1653,7 +1809,56 @@ function renderTracker() {
     <div class="dhint">${t('target_range')}: ${dm}–${dx} · ${t('intake_target')}: ${tK} kcal · ${t('carbs_target')}: ≤${tC}g</div>
   </div>`;
 
-  // Meal timing
+  // ── GOAL PROGRESS CARD ──
+  const hasTarget = p.target_weight || p.target_fat;
+  if(hasTarget) {
+    const isEs = APP.lang==='es';
+    const startW = p.start_weight || p.weight;
+    const curW = p.weight;
+    const tgtW = p.target_weight;
+    const tgtF = p.target_fat;
+    const curF = p.current_fat || p.waist_fat || null;
+    const lastUpd = p.weight_updated_at || 0;
+    const daysSinceUpd = Math.floor((Date.now()-lastUpd)/(1000*60*60*24));
+    const needsReminder = daysSinceUpd >= 7;
+
+    let progressHtml = '';
+    if(tgtW && curW) {
+      const total = Math.abs(startW - tgtW)||1;
+      const done = Math.abs(startW - curW);
+      const pctDone = Math.min(100,Math.round(done/total*100));
+      const remaining = Math.abs(curW - tgtW).toFixed(1);
+      const closer = (p.goal==='bulk') ? curW<tgtW : curW>tgtW;
+      progressHtml += `<div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">
+          <span style="color:var(--text2)">${isEs?'Peso actual':'Current weight'}: <strong style="color:var(--text)">${curW}kg</strong></span>
+          <span style="color:var(--text2)">${isEs?'Objetivo':'Target'}: <strong style="color:var(--green)">${tgtW}kg</strong></span>
+        </div>
+        <div style="height:8px;background:var(--bg3);border-radius:4px;overflow:hidden">
+          <div style="height:8px;background:var(--green);border-radius:4px;width:${pctDone}%;transition:width .4s"></div>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:4px">${closer
+          ? `${remaining}kg ${isEs?'para llegar al objetivo':'to reach your goal'} · ${pctDone}% ${isEs?'completado':'done'}`
+          : (pctDone>0 ? `${pctDone}% ${isEs?'del camino':'of the way there'}` : (isEs?'Empezaste hoy 💪':'You started today 💪'))}</div>
+      </div>`;
+    }
+    if(tgtF) {
+      progressHtml += `<div style="font-size:12px;color:var(--text2)">
+        ${isEs?'% grasa objetivo':'Target body fat'}: <strong style="color:var(--green)">${tgtF}%</strong>
+        ${curF?` · ${isEs?'Actual':'Current'}: ${curF}%`:''}
+      </div>`;
+    }
+
+    h+=`<div style="margin:6px 12px;background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--radius);padding:12px 14px">
+      <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">🎯 ${isEs?'Progreso hacia tu objetivo':'Progress towards your goal'}</div>
+      ${progressHtml}
+      ${needsReminder?`<div style="margin-top:8px;padding:8px 10px;background:#2e1c00;border:0.5px solid var(--amber);border-radius:var(--radius-sm);font-size:11px;color:var(--amber)">
+        ⚠️ ${isEs
+          ?`Hace ${daysSinceUpd} días que no actualizás tu peso/cintura. Actualizá en ⚙️ Settings → Edit profile para ver tu progreso real.`
+          :`It's been ${daysSinceUpd} days since you updated your weight/waist. Update in ⚙️ Settings → Edit profile to track real progress.`}
+      </div>`:''}
+    </div>`
+  }
   if (timing && timing.length) {
     h+=`<div class="sec">${t('meal_timing')}</div>
     <div class="timing-banner">`;
@@ -1847,6 +2052,8 @@ function render() {
     root.innerHTML = renderOnboard();
   } else if (APP.screen === 'settings') {
     root.innerHTML = renderSettings();
+  } else if (APP.screen === 'help') {
+    root.innerHTML = renderHelp();
   } else {
     root.innerHTML = renderTracker() + renderSearch();
     const si = document.getElementById('si');
@@ -1900,6 +2107,7 @@ function setSearch(v){const si=document.getElementById('si');if(si){si.value=v;s
 // ACTIONS
 // ══════════════════════════════════════════════
 function setLang(l){APP.lang=l;APP.langSetByUser=true;save();render();}
+function goHelp(){APP.screen='help';render();}
 function goSettings(){APP.screen='settings';APP.settings_edit_mode=false;render();}
 function goTracker(){APP.screen='tracker';render();}
 function goOnboard(){APP.screen='onboard';APP.ob_step=0;APP.ob_data={lang:APP.lang,sex:null,age:'',height:'',weight:'',waist:'',goal:null,activity:null,eating:null,mealstyle:null,diet:[],name:''};render();}
@@ -1907,7 +2115,7 @@ function resetProfile(){if(confirm('Reset profile? This will start the setup aga
 function addNewProfile(){
   APP.screen='onboard';
   APP.ob_step=0;
-  APP.ob_data={lang:APP.lang,sex:null,age:'',height:'',weight:'',waist:'',goal:null,activity:null,eating:null,mealstyle:null,diet:[],name:'',exercise_type:null,exercise_days:[],exercise_duration:'60'};
+  APP.ob_data={lang:APP.lang,sex:null,age:'',height:'',weight:'',waist:'',goal:null,activity:null,eating:null,mealstyle:null,diet:[],name:'',exercise_type:null,exercise_days:[],exercise_duration:'60',target_weight:'',target_fat:''};
   save();render();
 }
 function deleteProfile(profileId){
@@ -1936,25 +2144,46 @@ function startEdit(){
   render();
 }
 function cancelEdit(){APP.settings_edit_mode=false;APP.settings_edit_data={};render();}
-function seSet(key,val){if(!APP.settings_edit_data)APP.settings_edit_data={};APP.settings_edit_data[key]=val;}
+function seSet(key,val){if(!APP.settings_edit_data)APP.settings_edit_data={};APP.settings_edit_data[key]=val;render();}
+function seSetInput(key,val){if(!APP.settings_edit_data)APP.settings_edit_data={};APP.settings_edit_data[key]=val;}
+function seToggleDay(i){
+  if(!APP.settings_edit_data)APP.settings_edit_data={};
+  const p=getProfile();
+  const cur=APP.settings_edit_data.exercise_days||(p.exercise_days?[...p.exercise_days]:(p.cf_days?[...p.cf_days]:[]));
+  const idx=cur.indexOf(i);
+  if(idx>=0)cur.splice(idx,1);else cur.push(i);
+  APP.settings_edit_data.exercise_days=[...cur];
+  render();
+}
 function saveEdit(){
   const ed=APP.settings_edit_data||{};
   const p=APP.profile;
   if(!p)return;
-  // Apply edits
-  if(ed.weight)p.weight=parseFloat(ed.weight);
-  if(ed.waist)p.waist=parseFloat(ed.waist);
+  if(ed.weight!==undefined&&ed.weight!==''){p.weight=parseFloat(ed.weight);p.weight_updated_at=Date.now();}
+  if(ed.waist!==undefined&&ed.waist!=='')p.waist=parseFloat(ed.waist);
+  if(ed.age!==undefined&&ed.age!=='')p.age=parseInt(ed.age);
+  if(ed.height!==undefined&&ed.height!=='')p.height=parseInt(ed.height);
   if(ed.goal)p.goal=ed.goal;
   if(ed.activity)p.activity=ed.activity;
   if(ed.eating)p.eating=ed.eating;
-  // Recalculate macros if not Charly
+  if(ed.exercise_type)p.exercise_type=ed.exercise_type;
+  if(ed.exercise_days){p.exercise_days=[...ed.exercise_days];p.cf_days=[...ed.exercise_days];}
+  if(ed.target_weight!==undefined&&ed.target_weight!=='')p.target_weight=parseFloat(ed.target_weight);
+  if(ed.target_fat!==undefined&&ed.target_fat!=='')p.target_fat=parseFloat(ed.target_fat);
+  // Store start weight if not already set
+  if(!p.start_weight)p.start_weight=p.weight;
   if(!p.isCharly){
     const m=calcMacros(p);
     p.bmr=m.bmr;p.tdee=m.tdee;p.target_kcal=m.target_kcal;
     p.prot_min=m.prot_min;p.deficit_min=m.deficit_min;p.deficit_max=m.deficit_max;p.carb_max=m.carb_max;
-  } else {
-    // For Charly, update the live profile object only (Charly's TDEE stays hardcoded)
-    // goal/activity changes affect display only
+    if(ed.exercise_type||ed.exercise_duration){
+      const tl2=T[APP.lang];
+      const exType=tl2.ob_exercise_types.find(e=>e.id===p.exercise_type)||{kcal:400};
+      const dur=p.exercise_duration||60;
+      p.exercise_burn=Math.round(exType.kcal*dur/60);
+    }
+    const idx=APP.profiles.findIndex(x=>x.id===p.id);
+    if(idx>=0)APP.profiles[idx]={...p};
   }
   APP.settings_edit_mode=false;APP.settings_edit_data={};
   save();render();
@@ -2002,9 +2231,12 @@ function obFinish(){
     goal:od.goal,activity:od.activity,eating:od.eating,mealstyle:od.mealstyle,diet:od.diet,
     exercise_type:od.exercise_type,exercise_days:od.exercise_days||[],exercise_duration:dur,
     exercise_burn:burnPerSession,
+    target_weight:od.target_weight?parseFloat(od.target_weight):null,
+    target_fat:od.target_fat?parseFloat(od.target_fat):null,
+    weight_updated_at:Date.now(),
     bmr:m.bmr,tdee:m.tdee,target_kcal:m.target_kcal,prot_min:m.prot_min,
     deficit_min:m.deficit_min,deficit_max:m.deficit_max,carb_max:m.carb_max,
-    cf_days:od.exercise_days||[1,3,5],
+    cf_days:od.exercise_days||[0,2,4],
     isCharly:false,
   };
   if (!APP.profiles) APP.profiles = [];
