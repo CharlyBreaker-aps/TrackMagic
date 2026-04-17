@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v1.9 (By Charly)</title>
+<title>MagicTracker v2.1 (By Charly)</title>
 <link rel="manifest" href="manifest.json">
 <style>
 :root{
@@ -223,7 +223,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v1.9 (By Charly)",
+    appName: "MagicTracker v2.1 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -276,6 +276,17 @@ const T = {
     ob_name_title: 'What should we call you?',
     ob_name_sub: 'Your name will appear on your profile.',
     ob_name_placeholder: 'Your name',
+    ob_exercise_title: 'Your workout routine',
+    ob_exercise_sub: 'This lets us calculate your daily calorie burn and set training vs rest days.',
+    ob_exercise_types: [
+      {id:'crossfit', icon:'🏋️', title:'CrossFit / HIIT', desc:'High-intensity functional training', kcal:500},
+      {id:'gym', icon:'💪', title:'Gym / Weight training', desc:'Resistance training, bodybuilding', kcal:400},
+      {id:'running', icon:'🏃', title:'Running / Cardio', desc:'Running, jogging, cycling, rowing', kcal:550},
+      {id:'swimming', icon:'🏊', title:'Swimming', desc:'Pool or open water swimming', kcal:480},
+      {id:'sports', icon:'⚽', title:'Team sports', desc:'Football, basketball, tennis, etc.', kcal:450},
+      {id:'yoga', icon:'🧘', title:'Yoga / Pilates', desc:'Flexibility, mobility, mindfulness', kcal:250},
+      {id:'mixed', icon:'🔀', title:'Mixed / varies', desc:'Different activities each session', kcal:420},
+    ],
     ob_next: 'Next →',
     ob_back: '← Back',
     ob_finish: 'Start tracking 🚀',
@@ -355,7 +366,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v1.9 (By Charly)",
+    appName: "MagicTracker v2.1 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -408,6 +419,17 @@ const T = {
     ob_name_title: '¿Cómo te llamamos?',
     ob_name_sub: 'Tu nombre aparecerá en tu perfil.',
     ob_name_placeholder: 'Tu nombre',
+    ob_exercise_title: 'Tu rutina de ejercicio',
+    ob_exercise_sub: 'Esto nos permite calcular tus calorías quemadas y marcar días de entreno vs descanso.',
+    ob_exercise_types: [
+      {id:'crossfit', icon:'🏋️', title:'CrossFit / HIIT', desc:'Entrenamiento funcional de alta intensidad', kcal:500},
+      {id:'gym', icon:'💪', title:'Gimnasio / Musculación', desc:'Entrenamiento de fuerza, hipertrofia', kcal:400},
+      {id:'running', icon:'🏃', title:'Running / Cardio', desc:'Correr, ciclismo, remo, cardio', kcal:550},
+      {id:'swimming', icon:'🏊', title:'Natación', desc:'Pileta o aguas abiertas', kcal:480},
+      {id:'sports', icon:'⚽', title:'Deportes de equipo', desc:'Fútbol, básquet, tenis, etc.', kcal:450},
+      {id:'yoga', icon:'🧘', title:'Yoga / Pilates', desc:'Flexibilidad, movilidad, mindfulness', kcal:250},
+      {id:'mixed', icon:'🔀', title:'Mixto / varía', desc:'Diferentes actividades cada sesión', kcal:420},
+    ],
     ob_next: 'Siguiente →',
     ob_back: '← Atrás',
     ob_finish: 'Empezar a trackear 🚀',
@@ -923,7 +945,8 @@ function save() {
       APP.allTrackingData[APP.activeProfileId] = {
         day:APP.day, rest:APP.rest, meal:APP.meal, chk:APP.chk, qty:APP.qty,
         mult:APP.mult, act:APP.act, sup:APP.sup, echk:APP.echk, eqty:APP.eqty,
-        emult:APP.emult, cust:APP.cust, cchk:APP.cchk, cqty:APP.cqty, cmult:APP.cmult, atun:APP.atun
+        emult:APP.emult, cust:APP.cust, cchk:APP.cchk, cqty:APP.cqty, cmult:APP.cmult,
+        atun:APP.atun, actBurn:APP.actBurn||{}
       };
     }
     localStorage.setItem('cvr_app', JSON.stringify(APP));
@@ -944,6 +967,7 @@ function loadProfileTracking(profileId) {
   APP.sup = td.sup||{}; APP.echk = td.echk||{}; APP.eqty = td.eqty||{};
   APP.emult = td.emult||{}; APP.cust = td.cust||{}; APP.cchk = td.cchk||{};
   APP.cqty = td.cqty||{}; APP.cmult = td.cmult||{}; APP.atun = td.atun||0;
+  APP.actBurn = td.actBurn||{}; APP.actEditMode = {};
 }
 
 function ensureCharlyProfile() {
@@ -961,7 +985,8 @@ function switchProfile(profileId) {
     APP.allTrackingData[APP.activeProfileId] = {
       day:APP.day, rest:APP.rest, meal:APP.meal, chk:APP.chk, qty:APP.qty,
       mult:APP.mult, act:APP.act, sup:APP.sup, echk:APP.echk, eqty:APP.eqty,
-      emult:APP.emult, cust:APP.cust, cchk:APP.cchk, cqty:APP.cqty, cmult:APP.cmult, atun:APP.atun
+      emult:APP.emult, cust:APP.cust, cchk:APP.cchk, cqty:APP.cqty, cmult:APP.cmult, atun:APP.atun,
+      actBurn:APP.actBurn||{}
     };
   }
   APP.profile = p.isCharly ? {...CHARLY_PROFILE} : p;
@@ -1112,7 +1137,17 @@ function calc(d) {
   (APP.cust[d]||[]).forEach(x=>{const m=cm[x.id]||1,tt=((cc[x.id]?1:0)+(cq[x.id]||0))*m;k+=x.kcal*tt;p+=x.prot*tt;cb+=(x.carb||0)*tt;});
   const cf=isCFDay(d);
   const ac=APP.act[d]||{};let b=0;
-  const acts=cf?[{id:'walk',burn:300},{id:'cf',burn:450}]:[{id:'walk',burn:300}];
+  const pr=getProfile();
+  let walkBurn=300, cfBurn=450;
+  if(pr && !pr.isCharly){
+    walkBurn=150;
+    cfBurn=pr.exercise_burn||400;
+  }
+  // Apply manual overrides
+  const customBurns=(APP.actBurn&&APP.actBurn[d])||{};
+  const wBurn=customBurns.walk||walkBurn;
+  const cBurn=customBurns.cf||cfBurn;
+  const acts=cf?[{id:'walk',burn:wBurn},{id:'cf',burn:cBurn}]:[{id:'walk',burn:wBurn}];
   acts.forEach(a=>{if(ac[a.id])b+=a.burn;});
   const tdee=getTDEE(d),def=tdee-Math.round(k);
   const [dm,dx]=getDeficitRange(d);
@@ -1203,7 +1238,7 @@ function renderOnboard() {
   const od = APP.ob_data;
   const lang = od.lang || APP.lang;
   const tl = T[lang];
-  const TOTAL_STEPS = 8;
+  const TOTAL_STEPS = 9;
 
   let html = `<div class="onboard">`;
   // Progress dots
@@ -1287,7 +1322,7 @@ function renderOnboard() {
     });
     html += `</div>`;
   } else if (step === 4) {
-    // Activity
+    // Activity level
     html += `<div class="ob-title">${tl.ob_activity_title}</div>
     <div class="ob-sub">${tl.ob_activity_sub}</div>
     <div class="ob-cards">`;
@@ -1303,6 +1338,42 @@ function renderOnboard() {
     });
     html += `</div>`;
   } else if (step === 5) {
+    // ── NEW: Exercise details ──
+    const exTypes = tl.ob_exercise_types;
+    const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const daysEs = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+    const dayLabels = APP.lang==='es' ? daysEs : days;
+    const selDays = od.exercise_days || [];
+    const selDur = od.exercise_duration || '60';
+    html += `<div class="ob-title">${tl.ob_exercise_title}</div>
+    <div class="ob-sub">${tl.ob_exercise_sub}</div>
+    <div class="ob-cards" style="margin-bottom:16px">`;
+    exTypes.forEach(e => {
+      html += `<div class="ob-card${od.exercise_type===e.id?' selected':''}" onclick="obSet('exercise_type','${e.id}')">
+        <div class="ob-card-icon">${e.icon}</div>
+        <div class="ob-card-body">
+          <div class="ob-card-title">${e.title}</div>
+          <div class="ob-card-desc">${e.desc} · ~${e.kcal} kcal/h</div>
+        </div>
+        <div class="ob-check"></div>
+      </div>`;
+    });
+    html += `</div>`;
+    html += `<div class="ob-title" style="font-size:16px;margin-bottom:6px">${APP.lang==='es'?'¿Qué días entrenás?':'Which days do you train?'}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">`;
+    dayLabels.forEach((d,i) => {
+      const sel = selDays.includes(i);
+      html += `<div onclick="obToggleDay(${i})" style="width:42px;height:42px;border-radius:50%;border:2px solid ${sel?'var(--green)':'var(--border2)'};background:${sel?'var(--green)':'transparent'};display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:12px;font-weight:700;color:${sel?'#fff':'var(--text2)'}">${d}</div>`;
+    });
+    html += `</div>`;
+    html += `<div class="ob-title" style="font-size:16px;margin-bottom:6px">${APP.lang==='es'?'Duración por sesión':'Session duration'}</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px">`;
+    [['30','30 min'],['45','45 min'],['60','60 min'],['75','75 min'],['90','90+ min']].forEach(([val,lbl]) => {
+      const sel = selDur===val;
+      html += `<button onclick="obSet('exercise_duration','${val}')" style="padding:8px 16px;border-radius:20px;border:2px solid ${sel?'var(--green)':'var(--border2)'};background:${sel?'var(--green)':'transparent'};color:${sel?'#fff':'var(--text2)'};font-size:12px;font-weight:600;cursor:pointer">${lbl}</button>`;
+    });
+    html += `</div>`;
+  } else if (step === 6) {
     // Eating pattern
     html += `<div class="ob-title">${tl.ob_eating_title}</div>
     <div class="ob-sub">${tl.ob_eating_sub}</div>
@@ -1318,7 +1389,7 @@ function renderOnboard() {
       </div>`;
     });
     html += `</div>`;
-  } else if (step === 6) {
+  } else if (step === 7) {
     // Meal style
     html += `<div class="ob-title">${tl.ob_mealstyle_title}</div>
     <div class="ob-sub">${tl.ob_mealstyle_sub}</div>
@@ -1334,8 +1405,8 @@ function renderOnboard() {
       </div>`;
     });
     html += `</div>`;
-  } else if (step === 7) {
-    // Diet restrictions
+  } else if (step === 8) {
+    // Diet + name
     html += `<div class="ob-title">${tl.ob_diet_title}</div>
     <div class="ob-sub">${tl.ob_diet_sub}</div>
     <div class="ob-multi">`;
@@ -1344,7 +1415,6 @@ function renderOnboard() {
       html += `<div class="ob-chip${sel?' selected':''}" onclick="obToggleDiet('${d.id}')">${sel?'✓ ':''}${d.label}</div>`;
     });
     html += `</div>`;
-    // Name
     html += `<div class="ob-title" style="margin-top:8px">${tl.ob_name_title}</div>
     <div class="ob-sub">${tl.ob_name_sub}</div>
     <div class="ob-inputs">
@@ -1374,9 +1444,10 @@ function obCanNext(step, od, tl) {
   if (step === 2) return od.age && od.weight && od.height;
   if (step === 3) return !!od.goal;
   if (step === 4) return !!od.activity;
-  if (step === 5) return !!od.eating;
-  if (step === 6) return !!od.mealstyle;
-  if (step === 7) return od.name && od.name.trim().length > 0;
+  if (step === 5) return !!od.exercise_type && (od.exercise_days||[]).length > 0;
+  if (step === 6) return !!od.eating;
+  if (step === 7) return !!od.mealstyle;
+  if (step === 8) return od.name && od.name.trim().length > 0;
   return true;
 }
 
@@ -1487,12 +1558,14 @@ function renderSettings() {
   <div class="settings-card">`;
   allProfiles.forEach(prof => {
     const isActive = prof.id === APP.activeProfileId;
-    html += `<div class="settings-row" onclick="${isActive?'':` switchProfile('${prof.id}')`}" style="cursor:${isActive?'default':'pointer'}">
-      <span style="font-size:16px;margin-right:4px">${prof.isCharly?'⭐':'👤'}</span>
-      <span class="settings-row-label" style="${isActive?'color:var(--green);font-weight:700':''}">
-        ${prof.name||'User'}${isActive?` ✓ (${APP.lang==='es'?'activo':'active'})`:' '}
+    const isCharly = prof.isCharly;
+    html += `<div class="settings-row" style="cursor:${isActive?'default':'pointer'}">
+      <span style="font-size:16px;margin-right:6px">${isCharly?'⭐':'👤'}</span>
+      <span style="flex:1;font-size:13px;${isActive?'color:var(--green);font-weight:700':''}">
+        ${prof.name||'User'}${isActive?` ✓`:''}
       </span>
-      ${!isActive?`<span class="settings-row-arrow" style="color:var(--green)">Switch →</span>`:''}
+      ${!isActive?`<button onclick="switchProfile('${prof.id}')" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--green);color:var(--green);background:transparent;cursor:pointer;margin-right:6px">Switch</button>`:''}
+      ${!isCharly?`<button onclick="deleteProfile('${prof.id}')" style="font-size:11px;padding:4px 8px;border-radius:6px;border:1px solid var(--red);color:var(--red);background:transparent;cursor:pointer">🗑</button>`:''}
     </div>`;
   });
   html += `<div class="settings-row" onclick="addNewProfile()" style="cursor:pointer;border-top:0.5px solid var(--border)">
@@ -1574,11 +1647,60 @@ function renderTracker() {
     h+=`</div>`;
   }
 
-  // Activity
+  // Activity — preload training days for non-Charly users if not yet set
   const ac=APP.act[d]||{};
-  const actDef=cf?[{id:'walk',name:APP.lang==='es'?'Caminata diaria (~75 min)':'Daily walk (~75 min)',burn:300},{id:'cf',name:APP.lang==='es'?'Sesión de crossfit (~60 min)':'Crossfit session (~60 min)',burn:450}]:[{id:'walk',name:APP.lang==='es'?'Caminata diaria (~75 min)':'Daily walk (~75 min)',burn:300}];
+  if(!p.isCharly && p.cf_days && ac._preloaded === undefined) {
+    if (!APP.act[d]) APP.act[d]={};
+    APP.act[d]._preloaded = true;
+    if (isCFDay(d)) APP.act[d].cf = true;
+    APP.act[d].walk = false; // walk starts unchecked, user decides
+    save();
+  }
+  const acNow = APP.act[d]||{};
+
+  // Build activity list based on profile
+  let actDef;
+  if(p.isCharly){
+    actDef=cf
+      ?[{id:'walk',name:APP.lang==='es'?'Caminata diaria (~75 min)':'Daily walk (~75 min)',burn:300},{id:'cf',name:APP.lang==='es'?'Sesión de crossfit (~60 min)':'Crossfit session (~60 min)',burn:450}]
+      :[{id:'walk',name:APP.lang==='es'?'Caminata diaria (~75 min)':'Daily walk (~75 min)',burn:300}];
+  } else {
+    const exTypes=T[APP.lang].ob_exercise_types||[];
+    const exType=exTypes.find(e=>e.id===p.exercise_type)||{title:'Workout',kcal:400};
+    const dur=p.exercise_duration||60;
+    const burn=p.exercise_burn||Math.round(exType.kcal*dur/60);
+    const walkName=APP.lang==='es'?'Caminata (~30 min)':'Walk (~30 min)';
+    const trainName=`${exType.title} (~${dur} min)`;
+    actDef=cf
+      ?[{id:'walk',name:walkName,burn:150},{id:'cf',name:trainName,burn}]
+      :[{id:'walk',name:walkName,burn:150}];
+  }
+
   h+=`<div class="sec">${t('physical_activity')}</div>`;
-  actDef.forEach(a=>{const dn=ac[a.id]?'done':'';h+=`<div class="arow ${dn}" onclick="tA('${d}','${a.id}')"><div class="chkr ${dn}"></div><span class="aname">${a.name}</span><span class="akcal">+${a.burn} kcal</span></div>`;});
+  actDef.forEach(a=>{
+    const dn=acNow[a.id]?'done':'';
+    // For workout row (id='cf'): show auto-calculated burn with manual override option
+    const customBurn = APP.actBurn && APP.actBurn[d] && APP.actBurn[d][a.id];
+    const displayBurn = customBurn || a.burn;
+    const showEdit = APP.actEditMode && APP.actEditMode[d+a.id];
+    if(a.id==='cf' && !p.isCharly) {
+      h+=`<div class="arow ${dn}" style="flex-wrap:wrap">
+        <div style="display:flex;align-items:center;gap:10px;flex:1;cursor:pointer" onclick="tA('${d}','${a.id}')">
+          <div class="chkr ${dn}"></div>
+          <span class="aname">${a.name}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px">
+          ${showEdit
+            ?`<input id="burn_${d}_${a.id}" type="number" inputmode="numeric" value="${displayBurn}" style="width:60px;padding:4px 6px;border-radius:6px;border:1px solid var(--green);background:var(--bg2);color:var(--text);font-size:12px;text-align:center" oninput="setCustomBurn('${d}','${a.id}',this.value)">
+               <button onclick="closeEditBurn('${d}','${a.id}')" style="font-size:11px;padding:3px 7px;border-radius:5px;border:none;background:var(--green);color:#fff;cursor:pointer">✓</button>`
+            :`<span class="akcal">+${displayBurn} kcal${customBurn?'*':''}</span>
+               <button onclick="openEditBurn('${d}','${a.id}')" style="font-size:10px;padding:2px 6px;border-radius:5px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer" title="${APP.lang==='es'?'Ajustar manualmente':'Adjust manually'}">✏️</button>`}
+        </div>
+      </div>`;
+    } else {
+      h+=`<div class="arow ${dn}" onclick="tA('${d}','${a.id}')"><div class="chkr ${dn}"></div><span class="aname">${a.name}</span><span class="akcal">+${displayBurn} kcal</span></div>`;
+    }
+  });
 
   // Main meal
   h+=`<div class="sec">${t('main_meal')}</div>`;
@@ -1734,7 +1856,26 @@ function resetProfile(){if(confirm('Reset profile? This will start the setup aga
 function addNewProfile(){
   APP.screen='onboard';
   APP.ob_step=0;
-  APP.ob_data={lang:APP.lang,sex:null,age:'',height:'',weight:'',waist:'',goal:null,activity:null,eating:null,mealstyle:null,diet:[],name:''};
+  APP.ob_data={lang:APP.lang,sex:null,age:'',height:'',weight:'',waist:'',goal:null,activity:null,eating:null,mealstyle:null,diet:[],name:'',exercise_type:null,exercise_days:[],exercise_duration:'60'};
+  save();render();
+}
+function deleteProfile(profileId){
+  if(profileId==='charly')return; // never delete Charly
+  const prof=APP.profiles.find(p=>p.id===profileId);
+  const name=prof?prof.name:'this profile';
+  const msg=APP.lang==='es'
+    ?`¿Eliminar el perfil de ${name}? Esto no se puede deshacer.`
+    :`Delete ${name}'s profile? This cannot be undone.`;
+  if(!confirm(msg))return;
+  APP.profiles=APP.profiles.filter(p=>p.id!==profileId);
+  if(APP.allTrackingData)delete APP.allTrackingData[profileId];
+  // If deleted profile was active, switch to Charly
+  if(APP.activeProfileId===profileId){
+    APP.activeProfileId='charly';
+    const charlyProf=APP.profiles.find(p=>p.id==='charly');
+    APP.profile={...CHARLY_PROFILE};
+    loadProfileTracking('charly');
+  }
   save();render();
 }
 // Edit profile in place
@@ -1774,15 +1915,17 @@ function obSet(key,val){APP.ob_data[key]=val;save();render();}
 function obSetInput(key,val){
   APP.ob_data[key]=val;save();
   clearTimeout(window._obInputTimer);
-  window._obInputTimer=setTimeout(()=>{ 
-    // Re-render only the Next button state without full re-render (preserve focus)
+  window._obInputTimer=setTimeout(()=>{
     const btn=document.querySelector('.ob-btn:not(.ob-btn-secondary)');
-    if(btn){
-      const od=APP.ob_data;
-      const tl=T[od.lang||APP.lang];
-      btn.disabled=!obCanNext(APP.ob_step,od,tl);
-    }
+    if(btn){const od=APP.ob_data;const tl=T[od.lang||APP.lang];btn.disabled=!obCanNext(APP.ob_step,od,tl);}
   },100);
+}
+function obToggleDay(i){
+  if(!APP.ob_data.exercise_days)APP.ob_data.exercise_days=[];
+  const d=APP.ob_data.exercise_days;
+  const idx=d.indexOf(i);
+  if(idx>=0)d.splice(idx,1);else d.push(i);
+  save();render();
 }
 function obToggleDiet(id){
   const d=APP.ob_data.diet;
@@ -1796,20 +1939,25 @@ function obBack(){if(APP.ob_step>0){APP.ob_step--;save();render();}}
 function obFinish(){
   const od=APP.ob_data;
   const m=calcMacros({sex:od.sex,age:parseInt(od.age),height:parseInt(od.height),weight:parseFloat(od.weight),goal:od.goal,activity:od.activity});
+  // Calculate exercise burn per session
+  const tl=T[od.lang||'en'];
+  const exType=tl.ob_exercise_types.find(e=>e.id===od.exercise_type)||{kcal:400};
+  const dur=parseInt(od.exercise_duration||'60');
+  const burnPerSession=Math.round(exType.kcal * dur/60);
   const newProfile={
     id:'user_'+Date.now(),
     name:od.name,
     sex:od.sex,age:parseInt(od.age),height:parseInt(od.height),weight:parseFloat(od.weight),waist:parseInt(od.waist)||0,
     goal:od.goal,activity:od.activity,eating:od.eating,mealstyle:od.mealstyle,diet:od.diet,
+    exercise_type:od.exercise_type,exercise_days:od.exercise_days||[],exercise_duration:dur,
+    exercise_burn:burnPerSession,
     bmr:m.bmr,tdee:m.tdee,target_kcal:m.target_kcal,prot_min:m.prot_min,
     deficit_min:m.deficit_min,deficit_max:m.deficit_max,carb_max:m.carb_max,
-    cf_days:[1,3,5],
+    cf_days:od.exercise_days||[1,3,5],
     isCharly:false,
   };
-  // Add to profiles list (never replace existing ones)
   if (!APP.profiles) APP.profiles = [];
   APP.profiles.push(newProfile);
-  // Switch to new profile
   APP.lang=od.lang||'en';
   APP.langSetByUser=true;
   APP.profile=newProfile;
@@ -1842,6 +1990,9 @@ function tC(d,id){if(!APP.cchk[d])APP.cchk[d]={};APP.cchk[d][id]=!APP.cchk[d][id
 function iC(d,id,e){e.stopPropagation();if(!APP.cqty[d])APP.cqty[d]={};APP.cqty[d][id]=(APP.cqty[d][id]||0)+1;save();render();}
 function dC(d,id,e){e.stopPropagation();if(!APP.cqty[d])APP.cqty[d]={};const c=APP.cqty[d][id]||0;if(c>0)APP.cqty[d][id]=c-1;save();render();}
 function tA(d,id){if(!APP.act[d])APP.act[d]={};APP.act[d][id]=!APP.act[d][id];save();render();}
+function openEditBurn(d,id){if(!APP.actEditMode)APP.actEditMode={};APP.actEditMode[d+id]=true;render();setTimeout(()=>{const el=document.getElementById('burn_'+d+'_'+id);if(el){el.focus();el.select();}},50);}
+function closeEditBurn(d,id){if(APP.actEditMode)delete APP.actEditMode[d+id];save();render();}
+function setCustomBurn(d,id,val){if(!APP.actBurn)APP.actBurn={};if(!APP.actBurn[d])APP.actBurn[d]={};APP.actBurn[d][id]=parseInt(val)||0;}
 function tS(d,id){if(!APP.sup[d])APP.sup[d]={};APP.sup[d][id]=!APP.sup[d][id];save();render();}
 function tAt(i){APP.atun=i<APP.atun?i:i+1;save();render();}
 function resetD(d){
@@ -1860,30 +2011,31 @@ function init() {
   // Always ensure Charly is in the profiles list
   ensureCharlyProfile();
 
-  // Migrate old single-profile data if needed
+  // FIRST TIME: no activeProfileId and no prior data → show onboarding
+  const hadPriorData = localStorage.getItem('tracker_s');
+  if (!APP.activeProfileId && !hadPriorData) {
+    // Brand new device — show onboarding
+    APP.screen = 'onboard';
+    APP.ob_step = 0;
+    APP.ob_data = { lang:'en', sex:null, age:'', height:'', weight:'', waist:'', goal:null, activity:null, eating:null, mealstyle:null, diet:[], name:'', exercise_type:null, exercise_days:[], exercise_duration:'60' };
+    render();
+    return;
+  }
+
+  // Migrate old data: had prior data but no activeProfileId → default to Charly
   if (!APP.activeProfileId) {
-    // Check if there's legacy data
-    const hadPrevData = localStorage.getItem('tracker_s') || (APP.profile && APP.profile.id);
-    if (hadPrevData && APP.profile && !APP.profile.isCharly) {
-      // Had a non-Charly profile — add it to list if not already there
-      const exists = APP.profiles.find(p => p.id === APP.profile.id);
-      if (!exists) APP.profiles.push(APP.profile);
-    }
-    // Default to Charly
     APP.activeProfileId = 'charly';
   }
 
-  // Ensure activeProfileId exists in profiles
-  const activeProf = APP.profiles.find(p => p.id === APP.activeProfileId);
-  if (!activeProf) APP.activeProfileId = 'charly';
+  // Ensure activeProfileId exists in profiles list
+  if (!APP.profiles.find(p => p.id === APP.activeProfileId)) {
+    APP.activeProfileId = 'charly';
+  }
 
-  // Load the active profile
+  // Load active profile
   const prof = APP.profiles.find(p => p.id === APP.activeProfileId);
   APP.profile = prof.isCharly ? {...CHARLY_PROFILE} : prof;
-
-  // Load tracking data for active profile
   loadProfileTracking(APP.activeProfileId);
-
   APP.screen = 'tracker';
   save();
   render();
