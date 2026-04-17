@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v2.7 (By Charly)</title>
+<title>MagicTracker v2.8 (By Charly)</title>
 <link rel="manifest" href="manifest.json">
 <style>
 :root{
@@ -223,7 +223,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v2.7 (By Charly)",
+    appName: "MagicTracker v2.8 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -366,7 +366,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v2.7 (By Charly)",
+    appName: "MagicTracker v2.8 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -700,6 +700,7 @@ const CHARLY_PROFILE = {
   target_weight: 69.5,
   target_fat: 11,
   start_weight: 72.2,
+  start_waist: 86,
   isCharly: true,
 };
 
@@ -1007,7 +1008,7 @@ function ensureCharlyProfile() {
   if (!APP.profiles) APP.profiles = [];
   const idx = APP.profiles.findIndex(p => p.id==='charly');
   // Fields that the user can change and should be preserved across const resets
-  const PRESERVE = ['weight','waist','age','target_weight','target_fat','start_weight','weight_updated_at','current_fat'];
+  const PRESERVE = ['weight','waist','age','target_weight','target_fat','start_weight','start_waist','weight_updated_at','current_fat'];
   if (idx < 0) {
     APP.profiles.unshift({...CHARLY_PROFILE});
   } else {
@@ -1866,51 +1867,115 @@ function renderTracker() {
   const hasTarget = p.target_weight || p.target_fat;
   if(hasTarget) {
     const isEs = APP.lang==='es';
-    const startW = p.start_weight || p.weight;
+
+    // US Navy Body Fat Formula (most accurate without DEXA/calipers)
+    // Male: BF% = 495/(1.0324 - 0.19077·log10(waist-neck) + 0.15456·log10(height)) - 450
+    // Neck estimated as height × 0.212 (male) or × 0.195 (female)
+    // Validated: 86cm waist / 173cm height male → ~18.8% BF
+    function estimateBF(waist, height, sex) {
+      if (!waist || !height) return null;
+      try {
+        if (sex === 'male') {
+          const neck = Math.round(height * 0.212);
+          if (waist <= neck) return null;
+          const bf = 495 / (1.0324 - 0.19077 * Math.log10(waist - neck) + 0.15456 * Math.log10(height)) - 450;
+          return Math.round(Math.max(4, Math.min(45, bf)) * 10) / 10;
+        } else {
+          const neck = Math.round(height * 0.195);
+          const hip = Math.round(waist * 1.12);
+          if (waist + hip <= neck) return null;
+          const bf = 495 / (1.29579 - 0.35004 * Math.log10(waist + hip - neck) + 0.22100 * Math.log10(height)) - 450;
+          return Math.round(Math.max(10, Math.min(50, bf)) * 10) / 10;
+        }
+      } catch(e) { return null; }
+    }
+
+    const curWaist = p.waist;
+    const startWaist = p.start_waist || p.waist;
     const curW = p.weight;
+    const startW = p.start_weight || p.weight;
     const tgtW = p.target_weight;
     const tgtF = p.target_fat;
-    const curF = p.current_fat || p.waist_fat || null;
+    const estBF = estimateBF(curWaist, p.height, p.sex);
+    const startBF = estimateBF(startWaist, p.height, p.sex);
+
     const lastUpd = p.weight_updated_at || 0;
     const daysSinceUpd = Math.floor((Date.now()-lastUpd)/(1000*60*60*24));
     const needsReminder = daysSinceUpd >= 7;
 
     let progressHtml = '';
-    if(tgtW && curW) {
-      const total = Math.abs(startW - tgtW)||1;
-      const done = Math.abs(startW - curW);
-      const pctDone = Math.min(100,Math.round(done/total*100));
-      const remaining = Math.abs(curW - tgtW).toFixed(1);
-      const closer = (p.goal==='bulk') ? curW<tgtW : curW>tgtW;
-      progressHtml += `<div style="margin-bottom:10px">
-        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:5px">
-          <span style="color:var(--text2)">${isEs?'Peso actual':'Current weight'}: <strong style="color:var(--text)">${curW}kg</strong></span>
-          <span style="color:var(--text2)">${isEs?'Objetivo':'Target'}: <strong style="color:var(--green)">${tgtW}kg</strong></span>
+
+    // ── PRIMARY: Body fat progress (waist-driven) ──
+    if (tgtF && estBF !== null) {
+      const bfStart = startBF || estBF;
+      const bfTotal = Math.abs(bfStart - tgtF) || 1;
+      const bfDone = Math.abs(bfStart - estBF);
+      const bfPct = Math.min(100, Math.round(bfDone / bfTotal * 100));
+      const bfRemaining = Math.abs(estBF - tgtF).toFixed(1);
+      const bfCloser = estBF > tgtF; // for cut goal
+      const bfColor = estBF <= tgtF ? 'var(--green)' : (estBF - tgtF < 3 ? 'var(--amber)' : 'var(--text)');
+
+      progressHtml += `<div style="margin-bottom:12px">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px">
+          📏 ${isEs?'Grasa corporal estimada (medida de cintura)':'Estimated body fat (waist measurement)'}
         </div>
-        <div style="height:8px;background:var(--bg3);border-radius:4px;overflow:hidden">
-          <div style="height:8px;background:var(--green);border-radius:4px;width:${pctDone}%;transition:width .4s"></div>
+        <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:6px">
+          <div>
+            <span style="font-size:26px;font-weight:800;color:${bfColor}">${estBF}%</span>
+            <span style="font-size:11px;color:var(--text3);margin-left:4px">${isEs?'actual':'current'}</span>
+          </div>
+          <div style="text-align:right">
+            <span style="font-size:14px;font-weight:700;color:var(--green)">${tgtF}%</span>
+            <span style="font-size:10px;color:var(--text3);display:block">${isEs?'objetivo':'target'}</span>
+          </div>
         </div>
-        <div style="font-size:11px;color:var(--text3);margin-top:4px">${closer
-          ? `${remaining}kg ${isEs?'para llegar al objetivo':'to reach your goal'} · ${pctDone}% ${isEs?'completado':'done'}`
-          : (pctDone>0 ? `${pctDone}% ${isEs?'del camino':'of the way there'}` : (isEs?'Empezaste hoy 💪':'You started today 💪'))}</div>
+        <div style="height:10px;background:var(--bg3);border-radius:5px;overflow:hidden;position:relative">
+          <div style="height:10px;background:${bfPct>=100?'var(--green)':'var(--green)'};border-radius:5px;width:${bfPct}%;transition:width .4s;opacity:${bfPct>=100?1:0.85}"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-top:4px">
+          <span>${bfCloser ? `${bfRemaining}% ${isEs?'para llegar':'to go'} · ${bfPct}% ${isEs?'del camino':'done'}` : (bfPct>0?`${isEs?'Objetivo alcanzado':'Target reached'} 🎉`:(isEs?'Empezaste hoy 💪':'Started today 💪'))}</span>
+          <span>${isEs?'Cintura':'Waist'}: ${curWaist}cm</span>
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:4px;font-style:italic">
+          ${isEs?'Estimación basada en cintura + altura. Actualizá la cintura en Settings para ver cambios reales.':'Estimate based on waist + height. Update waist in Settings to track real changes.'}
+        </div>
+      </div>`;
+    } else if (tgtF && !curWaist) {
+      progressHtml += `<div style="padding:10px;background:var(--bg3);border-radius:8px;font-size:12px;color:var(--text3);margin-bottom:10px">
+        📏 ${isEs?'Ingresá tu medida de cintura en Settings → Edit profile para ver tu % de grasa estimado.':'Add your waist measurement in Settings → Edit profile to see your estimated body fat %.'}
       </div>`;
     }
-    if(tgtF) {
-      progressHtml += `<div style="font-size:12px;color:var(--text2)">
-        ${isEs?'% grasa objetivo':'Target body fat'}: <strong style="color:var(--green)">${tgtF}%</strong>
-        ${curF?` · ${isEs?'Actual':'Current'}: ${curF}%`:''}
+
+    // ── SECONDARY: Weight progress ──
+    if (tgtW && curW) {
+      const wTotal = Math.abs(startW - tgtW) || 1;
+      const wDone = Math.abs(startW - curW);
+      const wPct = Math.min(100, Math.round(wDone / wTotal * 100));
+      const wRemaining = Math.abs(curW - tgtW).toFixed(1);
+      progressHtml += `<div style="margin-bottom:6px">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px">
+          ⚖️ ${isEs?'Peso':'Weight'}
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+          <span><strong style="color:var(--text)">${curW}kg</strong> <span style="color:var(--text3)">${isEs?'actual':'current'}</span></span>
+          <span><strong style="color:var(--green)">${tgtW}kg</strong> <span style="color:var(--text3)">${isEs?'objetivo':'target'}</span></span>
+        </div>
+        <div style="height:6px;background:var(--bg3);border-radius:3px;overflow:hidden">
+          <div style="height:6px;background:var(--blue);border-radius:3px;width:${wPct}%;transition:width .4s"></div>
+        </div>
+        <div style="font-size:10px;color:var(--text3);margin-top:3px">${wRemaining}kg ${isEs?'restantes':'remaining'} · ${wPct}% ${isEs?'completado':'done'}</div>
       </div>`;
     }
 
     h+=`<div style="margin:6px 12px;background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--radius);padding:12px 14px">
-      <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">🎯 ${isEs?'Progreso hacia tu objetivo':'Progress towards your goal'}</div>
+      <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">🎯 ${isEs?'Progreso hacia tu objetivo':'Progress towards your goal'}</div>
       ${progressHtml}
-      ${needsReminder?`<div style="margin-top:8px;padding:8px 10px;background:#2e1c00;border:0.5px solid var(--amber);border-radius:var(--radius-sm);font-size:11px;color:var(--amber)">
+      ${needsReminder?`<div style="margin-top:8px;padding:8px 10px;background:#2e1c00;border:0.5px solid var(--amber);border-radius:8px;font-size:11px;color:var(--amber)">
         ⚠️ ${isEs
-          ?`Hace ${daysSinceUpd} días que no actualizás tu peso/cintura. Actualizá en ⚙️ Settings → Edit profile para ver tu progreso real.`
-          :`It's been ${daysSinceUpd} days since you updated your weight/waist. Update in ⚙️ Settings → Edit profile to track real progress.`}
+          ?`Hace ${daysSinceUpd} días que no actualizás tu peso/cintura. Actualizá en ⚙️ Settings → Edit profile.`
+          :`It's been ${daysSinceUpd} days since you updated. Update in ⚙️ Settings → Edit profile.`}
       </div>`:''}
-    </div>`
+    </div>`;
   }
   if (timing && timing.length) {
     h+=`<div class="sec">${t('meal_timing')}</div>
@@ -2212,7 +2277,11 @@ function saveEdit(){
   const p=APP.profile;
   if(!p)return;
   if(ed.weight!==undefined&&ed.weight!==''){p.weight=parseFloat(ed.weight);p.weight_updated_at=Date.now();}
-  if(ed.waist!==undefined&&ed.waist!=='')p.waist=parseFloat(ed.waist);
+  if(ed.waist!==undefined&&ed.waist!==''){
+    if(!p.start_waist)p.start_waist=p.waist; // preserve starting waist
+    p.waist=parseFloat(ed.waist);
+    p.weight_updated_at=Date.now(); // waist update also resets reminder
+  }
   if(ed.age!==undefined&&ed.age!=='')p.age=parseInt(ed.age);
   if(ed.height!==undefined&&ed.height!=='')p.height=parseInt(ed.height);
   if(ed.goal)p.goal=ed.goal;
