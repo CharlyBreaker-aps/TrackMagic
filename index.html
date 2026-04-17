@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v2.6 (By Charly)</title>
+<title>MagicTracker v2.7 (By Charly)</title>
 <link rel="manifest" href="manifest.json">
 <style>
 :root{
@@ -192,7 +192,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 /* Profile summary card */
 .profile-card{background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--radius);padding:14px 16px;margin:0 12px 10px}
 .profile-name{font-size:16px;font-weight:700;margin-bottom:6px}
-.profile-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.profile-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
 .pstat{text-align:center;background:var(--bg3);border-radius:var(--radius-sm);padding:7px 4px}
 .pstat-v{font-size:14px;font-weight:700;color:var(--green)}
 .pstat-l{font-size:9px;color:var(--text3);margin-top:1px}
@@ -223,7 +223,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v2.6 (By Charly)",
+    appName: "MagicTracker v2.7 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -366,7 +366,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v2.6 (By Charly)",
+    appName: "MagicTracker v2.7 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -695,7 +695,11 @@ const CHARLY_PROFILE = {
   bmr: 1699, neat: 250, tdee_cf: 2699, tdee_rest: 2249,
   target_cf: 1900, target_rest: 1700, prot_min: 150, carb_cf: 200, carb_rest: 150,
   deficit_min_cf: 500, deficit_max_cf: 900, deficit_min_rest: 350, deficit_max_rest: 700,
-  cf_days: [0,2,4], // Mon=0, Wed=2, Fri=4 (0-based Mon-Sun)
+  cf_days: [0,2,4],
+  // Default targets — Charly's goal: reach 10-12% body fat at ~69-70kg
+  target_weight: 69.5,
+  target_fat: 11,
+  start_weight: 72.2,
   isCharly: true,
 };
 
@@ -882,41 +886,70 @@ function buildGenericRests(profile, lang) {
 // MACRO CALCULATOR
 // ══════════════════════════════════════════════
 function calcMacros(profile) {
-  const { sex, age, height, weight, goal, activity } = profile;
-  // Mifflin-St Jeor
+  const { sex, age, height, weight, goal, activity, exercise_days, exercise_burn, exercise_duration } = profile;
+
+  // Mifflin-St Jeor BMR
   const bmr = sex === 'male'
     ? Math.round(10*weight + 6.25*height - 5*age + 5)
     : Math.round(10*weight + 6.25*height - 5*age - 161);
 
-  const actMult = { sedentary:1.2, light:1.375, moderate:1.55, very:1.725 };
-  const tdee = Math.round(bmr * (actMult[activity] || 1.55));
+  // Activity multiplier — base (non-exercise movement only)
+  const baseMult = { sedentary:1.2, light:1.3, moderate:1.4, very:1.5 };
+  const base = bmr * (baseMult[activity] || 1.4);
 
-  let target_kcal, prot_min, deficit_min, deficit_max, carb_max;
+  // Weekly exercise calories
+  const daysPerWeek = (exercise_days||[]).length || 3;
+  const burnPerSession = exercise_burn || 400;
+  const weeklyExBurn = daysPerWeek * burnPerSession;
+  const dailyExBurn = Math.round(weeklyExBurn / 7);
+
+  // TDEE = base activity + average daily exercise burn
+  const tdee = Math.round(base + dailyExBurn);
+
+  // Training day TDEE (add full session burn)
+  const tdee_active = Math.round(base + burnPerSession);
+  // Rest day TDEE (no session)
+  const tdee_rest = Math.round(base);
+
+  let target_kcal, target_active, target_rest, prot_min, deficit_min, deficit_max, carb_max;
   const w = weight;
 
   if (goal === 'cut') {
+    // Deficit ~500 kcal from each day's TDEE
+    target_active = Math.max(1400, tdee_active - 500);
+    target_rest = Math.max(1200, tdee_rest - 400);
     target_kcal = Math.max(1200, tdee - 500);
-    prot_min = Math.round(w * 2.2);
-    deficit_min = 400; deficit_max = 700;
-    carb_max = 180;
+    prot_min = Math.round(w * 2.2); // 2.2g/kg preserves muscle in deficit
+    deficit_min = 400; deficit_max = 800;
+    carb_max = Math.round(target_rest * 0.35 / 4); // ~35% of rest calories from carbs
   } else if (goal === 'recomp') {
+    target_active = Math.max(1500, tdee_active - 200);
+    target_rest = Math.max(1300, tdee_rest - 150);
     target_kcal = Math.max(1400, tdee - 200);
     prot_min = Math.round(w * 2.4);
-    deficit_min = 150; deficit_max = 300;
-    carb_max = 200;
+    deficit_min = 100; deficit_max = 350;
+    carb_max = Math.round(target_rest * 0.40 / 4);
   } else if (goal === 'maintain') {
+    target_active = tdee_active;
+    target_rest = tdee_rest;
     target_kcal = tdee;
     prot_min = Math.round(w * 1.8);
-    deficit_min = -100; deficit_max = 100;
-    carb_max = 250;
+    deficit_min = -150; deficit_max = 150;
+    carb_max = Math.round(target_kcal * 0.45 / 4);
   } else { // bulk
+    target_active = tdee_active + 200;
+    target_rest = tdee_rest + 200;
     target_kcal = tdee + 300;
     prot_min = Math.round(w * 2.2);
-    deficit_min = -500; deficit_max = -200;
-    carb_max = 300;
+    deficit_min = -600; deficit_max = -150;
+    carb_max = Math.round(target_kcal * 0.50 / 4);
   }
 
-  return { bmr, tdee, target_kcal, prot_min, deficit_min, deficit_max, carb_max };
+  return {
+    bmr, tdee, tdee_active, tdee_rest,
+    target_kcal, target_active, target_rest,
+    prot_min, deficit_min, deficit_max, carb_max
+  };
 }
 
 // ══════════════════════════════════════════════
@@ -973,8 +1006,16 @@ function loadProfileTracking(profileId) {
 function ensureCharlyProfile() {
   if (!APP.profiles) APP.profiles = [];
   const idx = APP.profiles.findIndex(p => p.id==='charly');
-  if (idx < 0) APP.profiles.unshift({...CHARLY_PROFILE});
-  else APP.profiles[idx] = {...CHARLY_PROFILE};
+  // Fields that the user can change and should be preserved across const resets
+  const PRESERVE = ['weight','waist','age','target_weight','target_fat','start_weight','weight_updated_at','current_fat'];
+  if (idx < 0) {
+    APP.profiles.unshift({...CHARLY_PROFILE});
+  } else {
+    const existing = APP.profiles[idx];
+    const updated = {...CHARLY_PROFILE};
+    PRESERVE.forEach(k => { if(existing[k] !== undefined) updated[k] = existing[k]; });
+    APP.profiles[idx] = updated;
+  }
 }
 
 function switchProfile(profileId) {
@@ -989,7 +1030,7 @@ function switchProfile(profileId) {
       actBurn:APP.actBurn||{}, walkMins:APP.walkMins||{}
     };
   }
-  APP.profile = p.isCharly ? {...CHARLY_PROFILE} : p;
+  APP.profile = p.isCharly ? APP.profiles.find(x=>x.id==='charly')||{...CHARLY_PROFILE} : p;
   APP.activeProfileId = profileId;
   loadProfileTracking(profileId);
   APP.screen = 'tracker';
@@ -1040,40 +1081,46 @@ function getDayList() {
   }));
 }
 
+function _macros(p) {
+  // Cache calcMacros per profile to avoid recalculating on every getter call
+  if (!p._macroCache || p._macroCacheWeight !== p.weight) {
+    p._macroCache = calcMacros(p);
+    p._macroCacheWeight = p.weight;
+  }
+  return p._macroCache;
+}
+
 function getTDEE(d) {
   const p = getProfile();
   if (!p) return 2000;
-  if (p.isCharly) {
-    return charlyDayIsCF(d) ? CHARLY_PROFILE.tdee_cf : CHARLY_PROFILE.tdee_rest;
-  }
-  // Generic: use single TDEE
-  const m = calcMacros(p);
-  return m.tdee;
+  if (p.isCharly) return charlyDayIsCF(d) ? CHARLY_PROFILE.tdee_cf : CHARLY_PROFILE.tdee_rest;
+  const m = _macros(p);
+  return isCFDay(d) ? (m.tdee_active || m.tdee) : (m.tdee_rest || m.tdee);
 }
 function getTargetKcal(d) {
   const p = getProfile();
   if (!p) return 1700;
   if (p.isCharly) return charlyDayIsCF(d) ? CHARLY_PROFILE.target_cf : CHARLY_PROFILE.target_rest;
-  const m = calcMacros(p);
-  return m.target_kcal;
+  const m = _macros(p);
+  return isCFDay(d) ? (m.target_active || m.target_kcal) : (m.target_rest || m.target_kcal);
 }
 function getProtMin() {
   const p = getProfile();
   if (!p) return 150;
   if (p.isCharly) return CHARLY_PROFILE.prot_min;
-  return calcMacros(p).prot_min;
+  return _macros(p).prot_min;
 }
 function getCarbMax(d) {
   const p = getProfile();
   if (!p) return 200;
   if (p.isCharly) return charlyDayIsCF(d) ? 200 : 150;
-  return calcMacros(p).carb_max;
+  return _macros(p).carb_max;
 }
 function getDeficitRange(d) {
   const p = getProfile();
   if (!p) return [350,700];
   if (p.isCharly) return charlyDayIsCF(d) ? [500,900] : [350,700];
-  const m = calcMacros(p);
+  const m = _macros(p);
   return [m.deficit_min, m.deficit_max];
 }
 
@@ -1205,8 +1252,12 @@ function row(d,it,tp){
   const tf=isE?'tE':isC?'tC':'tI',inf=isE?'iE':isC?'iC':'iQ',df2=isE?'dE':isC?'dC':'dQ';
   const mpf=isE?'mEP':isC?'mCP':'mMP',mmf=isE?'mEM':isC?'mCM':'mMM';
   const dc=dn?'done':'';
-  const tk=Math.round(it.kcal*dq*mult),tp2=Math.round(it.prot*dq*mult),tc=Math.round((it.carb||0)*dq*mult);
-  const mac=dq>0?`${tk}kcal · ${tp2}g P · ${tc}g C`:`${it.kcal}kcal · ${it.prot}g P · ${it.carb||0}g C`;
+  // Always show multiplied macros so user sees effect before checking (fix #1)
+  const dispK=Math.round(it.kcal*mult),dispP=Math.round(it.prot*mult),dispC=Math.round((it.carb||0)*mult);
+  const totK=Math.round(it.kcal*dq*mult),totP=Math.round(it.prot*dq*mult),totC=Math.round((it.carb||0)*dq*mult);
+  const mac=dq>0
+    ?`${totK}kcal · ${totP}g P · ${totC}g C`
+    :`${dispK}kcal · ${dispP}g P · ${dispC}g C${mA?' <span style="font-size:9px;color:var(--amber)">×'+mult+'</span>':''}`;
   const bdg=isC?`<span class="cbadge">${t('searched')}</span>`:'';
   return`<div class="irow">
     <div class="chk ${dc}" onclick="${tf}('${d}','${it.id}')"></div>
@@ -1628,10 +1679,11 @@ function renderSettings() {
   }
 
   // ── NORMAL SETTINGS VIEW ──
-  const m = p && !p.isCharly ? calcMacros(p) : null;
+  const m = p && !p.isCharly ? _macros(p) : null;
   const bmrVal = p?.isCharly ? CHARLY_PROFILE.bmr : (m?.bmr || 0);
   const tdeeVal = p?.isCharly ? CHARLY_PROFILE.tdee_cf : (m?.tdee || 0);
-  const targetVal = p?.isCharly ? CHARLY_PROFILE.target_cf : (m?.target_kcal || 0);
+  const targetActiveVal = p?.isCharly ? CHARLY_PROFILE.target_cf : (m?.target_active || m?.target_kcal || 0);
+  const targetRestVal = p?.isCharly ? CHARLY_PROFILE.target_rest : (m?.target_rest || m?.target_kcal || 0);
 
   const goalLabel = (tl.ob_goals||[]).find(g=>g.id===p?.goal)?.title || p?.goal || '';
   const actLabel = (tl.ob_activities||[]).find(a=>a.id===p?.activity)?.title || p?.activity || '';
@@ -1650,7 +1702,8 @@ function renderSettings() {
       <div class="profile-stats">
         <div class="pstat"><div class="pstat-v">${bmrVal}</div><div class="pstat-l">BMR</div></div>
         <div class="pstat"><div class="pstat-v">${tdeeVal}</div><div class="pstat-l">TDEE</div></div>
-        <div class="pstat"><div class="pstat-v">${targetVal}</div><div class="pstat-l">${tl.intake_target||'Target'}</div></div>
+        <div class="pstat"><div class="pstat-v">${targetActiveVal}</div><div class="pstat-l">${APP.lang==='es'?'Target CF':'Target active'}</div></div>
+        <div class="pstat"><div class="pstat-v">${targetRestVal}</div><div class="pstat-l">${APP.lang==='es'?'Target descanso':'Target rest'}</div></div>
       </div>
     </div>
 
@@ -2131,8 +2184,7 @@ function deleteProfile(profileId){
   // If deleted profile was active, switch to Charly
   if(APP.activeProfileId===profileId){
     APP.activeProfileId='charly';
-    const charlyProf=APP.profiles.find(p=>p.id==='charly');
-    APP.profile={...CHARLY_PROFILE};
+    APP.profile=APP.profiles.find(p=>p.id==='charly')||{...CHARLY_PROFILE};
     loadProfileTracking('charly');
   }
   save();render();
@@ -2326,7 +2378,7 @@ function init() {
 
   // Load active profile
   const prof = APP.profiles.find(p => p.id === APP.activeProfileId);
-  APP.profile = prof.isCharly ? {...CHARLY_PROFILE} : prof;
+  APP.profile = prof.isCharly ? APP.profiles.find(x=>x.id==='charly')||{...CHARLY_PROFILE} : prof;
   loadProfileTracking(APP.activeProfileId);
   APP.screen = 'tracker';
   save();
