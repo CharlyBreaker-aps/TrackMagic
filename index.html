@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v2.3 (By Charly)</title>
+<title>MagicTracker v2.4 (By Charly)</title>
 <link rel="manifest" href="manifest.json">
 <style>
 :root{
@@ -223,7 +223,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v2.3 (By Charly)",
+    appName: "MagicTracker v2.4 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -366,7 +366,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v2.3 (By Charly)",
+    appName: "MagicTracker v2.4 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -695,7 +695,7 @@ const CHARLY_PROFILE = {
   bmr: 1699, neat: 250, tdee_cf: 2699, tdee_rest: 2249,
   target_cf: 1900, target_rest: 1700, prot_min: 150, carb_cf: 200, carb_rest: 150,
   deficit_min_cf: 500, deficit_max_cf: 900, deficit_min_rest: 350, deficit_max_rest: 700,
-  cf_days: [1,3,5], // Mon, Wed, Fri (0=Sun)
+  cf_days: [0,2,4], // Mon=0, Wed=2, Fri=4 (0-based Mon-Sun)
   isCharly: true,
 };
 
@@ -1005,16 +1005,24 @@ function getProfile() { return APP.profile || null; }
 function isCFDay(d) {
   const p = getProfile();
   if (!p) return false;
-  if (p.isCharly) return [1,3,5].includes(new Date().getDay()) ? (d === currentDayId()) : charlyDayIsCF(d);
-  // For generic users, use their activity level to estimate CF days
-  return p.cf_days ? p.cf_days.includes(dayIndex(d)) : false;
+  const idx = dayIndex(d);
+  if (p.isCharly) return [0,2,4].includes(idx); // Mon, Wed, Fri
+  return p.cf_days ? p.cf_days.includes(idx) : false;
 }
 function charlyDayIsCF(d) {
-  return ['lun','mie','vie'].includes(d);
+  return [0,2,4].includes(dayIndex(d)); // Mon=0, Wed=2, Fri=4
 }
 function dayIndex(d) {
-  return ['lun','mar','mié','jue','vie','sáb','dom','sun','mon','tue','wed','thu','fri','sat'].indexOf(d.toLowerCase());
+  // Maps day ID → 0-based Mon-Sun index (Mon=0 ... Sun=6)
+  const map = {
+    'lun':0,'mar':1,'mie':2,'mié':2,'jue':3,'vie':4,'sab':5,'sáb':5,'dom':6,
+    'mon':0,'tue':1,'wed':2,'thu':3,'fri':4,'sat':5,'sun':6
+  };
+  return map[d.toLowerCase()] ?? -1;
 }
+// JS getDay() → Mon-Sun 0-based index (Mon=0)
+function jsDayToIdx(jsDay){ return jsDay===0?6:jsDay-1; }
+function idxToJsDay(idx){ return idx===6?0:idx+1; }
 function currentDayId() {
   const i = new Date().getDay(); // 0=Sun
   const days7 = ['dom','lun','mar','mié','jue','vie','sáb'];
@@ -1271,11 +1279,11 @@ function renderOnboard() {
       </div>
       <div class="ob-sex-card${od.lang==='es'?' selected':''}" onclick="obSetLang('es')">
         <div style="margin-bottom:10px;width:64px;height:42px;border-radius:5px;overflow:hidden;border:1px solid #aaa;display:inline-block">
-          <div style="height:25%;background:#74ACDF"></div>
-          <div style="height:50%;background:#F6B40E;display:flex;align-items:center;justify-content:center">
-            <div style="width:8px;height:8px;background:#843511;border-radius:50%;margin-right:20px"></div>
+          <div style="height:33.3%;background:#74ACDF"></div>
+          <div style="height:33.4%;background:#fff;display:flex;align-items:center;justify-content:center">
+            <div style="width:10px;height:10px;background:#F6B40E;border-radius:50%;box-shadow:0 0 0 2px #F6B40E"></div>
           </div>
-          <div style="height:25%;background:#74ACDF"></div>
+          <div style="height:33.3%;background:#74ACDF"></div>
         </div>
         <div class="ob-sex-label">Español</div>
       </div>
