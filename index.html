@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v3.3 (By Charly)</title>
+<title>MagicTracker v3.5 (By Charly)</title>
 <link rel="manifest" href="manifest.json">
 <style>
 :root{
@@ -225,7 +225,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v3.3 (By Charly)",
+    appName: "MagicTracker v3.5 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -368,7 +368,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v3.3 (By Charly)",
+    appName: "MagicTracker v3.5 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -872,9 +872,17 @@ function buildGenericMeals(profile, t) {
 // Generic meal renderer for non-Charly users
 function buildGenericRests(profile, lang) {
   const tl = T[lang];
-  const { proteinMains, breakfastOptions } = buildGenericMeals(profile, tl);
+  const { proteinMains } = buildGenericMeals(profile, tl);
   const mealstyle = profile.mealstyle || 'home';
-  const isVeg = (profile.diet||[]).includes('veg');
+  const city = (profile.city||'').toLowerCase();
+
+  // Detect city zone
+  const isWembley = city.includes('wembley') || city.includes('wembley park');
+  const isLondon  = city.includes('london') || city.includes('londres') || isWembley;
+  const isMadrid  = city.includes('madrid');
+  const isBA      = city.includes('buenos aires') || city.includes('bsas');
+  const isNY      = city.includes('new york') || city.includes('nyc');
+  const isSydney  = city.includes('sydney');
 
   // Home meal options
   const homeMeals = proteinMains.map(m => ({
@@ -882,31 +890,79 @@ function buildGenericRests(profile, lang) {
     items: [{name: m.name, kcal: m.kcal, prot: m.prot, carb: m.carb}],
   }));
 
-  // Generic delivery/restaurant options (healthy, no spicy by default)
-  const deliveryMeals = [
-    {name: lang==='es'?'Pollo a la plancha + arroz + ensalada':'Grilled chicken + rice + salad', items:[{name:lang==='es'?'Pollo a la plancha + arroz + ensalada':'Grilled chicken + rice + salad',kcal:550,prot:48,carb:45}]},
-    {name: lang==='es'?'Salmón a la plancha + verduras':'Grilled salmon + vegetables', items:[{name:lang==='es'?'Salmón a la plancha + verduras':'Grilled salmon + vegetables',kcal:480,prot:42,carb:12}]},
-    {name: lang==='es'?'Bowl de proteína (pollo + quinoa + veggies)':'Protein bowl (chicken + quinoa + veggies)', items:[{name:lang==='es'?'Bowl de proteína':'Protein bowl',kcal:580,prot:45,carb:50}]},
-    {name: lang==='es'?'Poke bowl de atún':'Tuna poke bowl', items:[{name:lang==='es'?'Poke bowl de atún':'Tuna poke bowl',kcal:520,prot:38,carb:52}]},
-    !isVeg && {name: lang==='es'?'Wrap de pollo con ensalada':'Chicken wrap with salad', items:[{name:lang==='es'?'Wrap de pollo':'Chicken wrap',kcal:490,prot:36,carb:42}]},
-    {name: lang==='es'?'Sushi (10 piezas mix proteína)':'Sushi (10 pieces protein mix)', items:[{name:lang==='es'?'Sushi mix':'Sushi mix',kcal:460,prot:28,carb:68}]},
-  ].filter(Boolean);
+  // Build delivery restaurant list based on city
+  let deliveryRests = [];
+
+  if (isWembley) {
+    // Wembley Park — use same restaurants as Charly (already defined in code)
+    deliveryRests = [N, IT, TB, WA, KC, MC, NB, FG, PE, FP, ZI, YS].filter(Boolean);
+  } else if (isLondon) {
+    // Greater London — major chains with healthy options
+    deliveryRests = [N, IT, WA, KC, FG, ZI, YS].filter(Boolean);
+    // Add generic London chains
+    deliveryRests.push(
+      {id:'pret',name:"Pret A Manger",icon:'🥪',src:'Walk-in / Deliveroo',meals:[
+        {name:'Chicken & Avocado wrap',items:[{name:'Chicken & Avocado wrap',kcal:380,prot:28,carb:32}]},
+        {name:'Classic Super Club',items:[{name:'Classic Super Club',kcal:420,prot:34,carb:36}]},
+        {name:'Hummus & Red Pepper flatbread',items:[{name:'Hummus & Red Pepper flatbread',kcal:310,prot:12,carb:42}]},
+      ]},
+      {id:'leon',name:"LEON",icon:'🌿',src:'Walk-in / Uber Eats',meals:[
+        {name:'Chicken burger box',items:[{name:'Chicken burger box',kcal:490,prot:38,carb:44}]},
+        {name:'Super green falafel box',items:[{name:'Super green falafel box',kcal:440,prot:18,carb:52}]},
+      ]}
+    );
+  } else if (isBA) {
+    deliveryRests.push(
+      {id:'mcba',name:"McDonald's",icon:'🍟',src:'PedidosYa / Rappi',meals:[
+        {name:'McPollo + ensalada',items:[{name:'McPollo + ensalada',kcal:490,prot:32,carb:45}]},
+        {name:'Wrap de pollo grillado',items:[{name:'Wrap de pollo grillado',kcal:410,prot:28,carb:38}]},
+      ]},
+      {id:'subway_ba',name:"Subway",icon:'🥪',src:'PedidosYa / Rappi',meals:[
+        {name:'Sub de pechuga de pollo 30cm',items:[{name:'Sub de pechuga de pollo 30cm',kcal:480,prot:38,carb:52}]},
+        {name:'Sub de atún 30cm',items:[{name:'Sub de atún 30cm',kcal:510,prot:32,carb:50}]},
+      ]},
+      {id:'burger_ba',name:"Burger King",icon:'🍔',src:'PedidosYa / Rappi',meals:[
+        {name:'Whopper de pollo grillado',items:[{name:'Whopper de pollo grillado',kcal:520,prot:36,carb:48}]},
+      ]},
+      {id:'sushi_ba',name:"SushiClub",icon:'🍣',src:'PedidosYa',meals:[
+        {name:'Combo proteína (8 piezas nigiri)',items:[{name:'Combo proteína nigiri x8',kcal:440,prot:32,carb:56}]},
+      ]}
+    );
+  } else {
+    // International chains — works anywhere
+    deliveryRests.push(
+      {id:'kfc_int',name:"KFC",icon:'🍗',src:'Delivery',meals:[
+        {name:lang==='es'?'2 piezas de pollo + ensalada':'2 pc chicken + side salad',items:[{name:lang==='es'?'2 piezas de pollo + ensalada':'2 pc chicken + side salad',kcal:480,prot:38,carb:18}]},
+        {name:lang==='es'?'Wrap de pollo grillado':'Grilled chicken wrap',items:[{name:lang==='es'?'Wrap de pollo grillado':'Grilled chicken wrap',kcal:380,prot:28,carb:34}]},
+      ]},
+      {id:'mcint',name:"McDonald's",icon:'🍟',src:'Delivery / UberEats',meals:[
+        {name:lang==='es'?'McPollo grillado + ensalada':'McChicken grilled + salad',items:[{name:lang==='es'?'McPollo grillado':'McChicken grilled',kcal:490,prot:32,carb:45}]},
+        {name:lang==='es'?'Wrap de pollo grillado':'Grilled chicken wrap',items:[{name:lang==='es'?'Wrap grillado':'Grilled wrap',kcal:410,prot:28,carb:38}]},
+      ]},
+      {id:'subway_int',name:"Subway",icon:'🥪',src:'Delivery / Uber Eats',meals:[
+        {name:lang==='es'?'Sub de pechuga de pollo 30cm':'Chicken breast 12" sub',items:[{name:lang==='es'?'Sub pollo 30cm':'Chicken sub 12"',kcal:480,prot:38,carb:52}]},
+        {name:lang==='es'?'Sub de atún 30cm':'Tuna 12" sub',items:[{name:lang==='es'?'Sub atún 30cm':'Tuna sub 12"',kcal:510,prot:32,carb:50}]},
+      ]},
+      {id:'sushi_int',name:lang==='es'?'Sushi (local)':'Sushi restaurant',icon:'🍣',src:'Delivery',meals:[
+        {name:lang==='es'?'Mix de nigiri x10 (salmón/atún)':'Nigiri mix x10 (salmon/tuna)',items:[{name:lang==='es'?'Nigiri mix x10':'Nigiri mix x10',kcal:460,prot:30,carb:58}]},
+      ]},
+      {id:'grill_int',name:lang==='es'?'Parrilla / Grill local':'Local grill / steakhouse',icon:'🥩',src:'Delivery',meals:[
+        {name:lang==='es'?'Pollo a la plancha + vegetales':'Grilled chicken + vegetables',items:[{name:lang==='es'?'Pollo a la plancha':'Grilled chicken',kcal:520,prot:48,carb:14}]},
+        {name:lang==='es'?'Lomo/filete + ensalada':'Sirloin + salad',items:[{name:lang==='es'?'Lomo + ensalada':'Sirloin + salad',kcal:580,prot:52,carb:10}]},
+      ]}
+    );
+  }
 
   const results = [];
-
-  // NOTE: Breakfast is NOT added here — it's handled separately in renderTracker
-  // This prevents breakfast appearing multiple times in 3meals layout
-
   if (mealstyle === 'home') {
     results.push({id:'home_main', name: tl.home_lunch||'Home cooked', icon:'🏠', src: tl.home_cooking||'Home', meals: homeMeals});
   } else if (mealstyle === 'delivery') {
-    results.push({id:'delivery_main', name: lang==='es'?'Delivery / Restaurante':'Takeaway / Restaurant', icon:'🛵', src:'Delivery', meals: deliveryMeals});
+    deliveryRests.forEach(r => results.push(r));
   } else {
-    // both — show home AND delivery
+    // both
     results.push({id:'home_main', name: tl.home_lunch||'Home cooked', icon:'🏠', src: tl.home_cooking||'Home', meals: homeMeals});
-    results.push({id:'delivery_main', name: lang==='es'?'Delivery / Restaurante':'Takeaway / Restaurant', icon:'🛵', src:'Delivery', meals: deliveryMeals});
+    deliveryRests.forEach(r => results.push(r));
   }
-
   return results;
 }
 
@@ -1240,12 +1296,33 @@ function exItems(d) { return getExtras(d); }
 // ══════════════════════════════════════════════
 function calc(d) {
   let k=0,p=0,cb=0;
+  // Counting logic: qty button adds EXTRA portions on top of the 1 base unit.
+  // So total units = 1 (base) + qty — but only when item has any interaction (checked OR qty>0).
+  // If neither checked nor qty: item is not counted.
   const ch=APP.chk[d]||{},q=APP.qty[d]||{},mu=APP.mult[d]||{};
-  allItems(d).forEach(x=>{const m=mu[x.id]||1,tt=((ch[x.id]?1:0)+(q[x.id]||0))*m;k+=x.kcal*tt;p+=x.prot*tt;cb+=(x.carb||0)*tt;});
-  const ec=APP.echk[d]||{},eq=APP.eqty[d]||{},em=APP.emult[d]||{};
-  [...exItems(d),...getExtraSnacks()].forEach(x=>{const m=em[x.id]||1,tt=((ec[x.id]?1:0)+(eq[x.id]||0))*m;k+=x.kcal*tt;p+=x.prot*tt;cb+=(x.carb||0)*tt;});
+  allItems(d).forEach(x=>{
+    const m=mu[x.id]||1;
+    const hasQty=(q[x.id]||0)>0;
+    const isChecked=!!ch[x.id];
+    const tt = (isChecked||hasQty) ? (1+(q[x.id]||0))*m : 0;
+    k+=x.kcal*tt;p+=x.prot*tt;cb+=(x.carb||0)*tt;
+  });
+  const ec=APP.echk[d]||{},eq2=APP.eqty[d]||{},em=APP.emult[d]||{};
+  [...exItems(d),...getExtraSnacks()].forEach(x=>{
+    const m=em[x.id]||1;
+    const hasQty=(eq2[x.id]||0)>0;
+    const isChecked=!!ec[x.id];
+    const tt=(isChecked||hasQty)?(1+(eq2[x.id]||0))*m:0;
+    k+=x.kcal*tt;p+=x.prot*tt;cb+=(x.carb||0)*tt;
+  });
   const cc=APP.cchk[d]||{},cq=APP.cqty[d]||{},cm=APP.cmult[d]||{};
-  (APP.cust[d]||[]).forEach(x=>{const m=cm[x.id]||1,tt=((cc[x.id]?1:0)+(cq[x.id]||0))*m;k+=x.kcal*tt;p+=x.prot*tt;cb+=(x.carb||0)*tt;});
+  (APP.cust[d]||[]).forEach(x=>{
+    const m=cm[x.id]||1;
+    const hasQty=(cq[x.id]||0)>0;
+    const isChecked=!!cc[x.id];
+    const tt=(isChecked||hasQty)?(1+(cq[x.id]||0))*m:0;
+    k+=x.kcal*tt;p+=x.prot*tt;cb+=(x.carb||0)*tt;
+  });
   const cf=isCFDay(d);
   const ac=APP.act[d]||{};let b=0;
   const pr=getProfile();
@@ -1308,44 +1385,26 @@ function row(d,it,tp){
   const qs=isE?(APP.eqty[d]||{}):(isC?(APP.cqty[d]||{}):(APP.qty[d]||{}));
   const ms=isE?(APP.emult[d]||{}):(isC?(APP.cmult[d]||{}):(APP.mult[d]||{}));
   const dn=!!ch[it.id],eq=qs[it.id]||0,mult=ms[it.id]||1,mA=mult!==1;
-  // dq: how many portions will count toward totals
-  // When checked: 1 (base) + eq (extra). When not checked: just eq (qty-only additions)
-  const dqChecked = (dn?1:0)+eq; // used for calc
-  // For display: show what's currently "active" = checked portions + qty additions
-  const dispUnits = dn ? (1+eq) : eq; // units that are "active" for display
   const tf=isE?'tE':isC?'tC':'tI',inf=isE?'iE':isC?'iC':'iQ',df2=isE?'dE':isC?'dC':'dQ';
   const mpf=isE?'mEP':isC?'mCP':'mMP',mmf=isE?'mEM':isC?'mCM':'mMM';
   const dc=dn?'done':'';
 
-  // Macros to display:
-  // - If active units > 0: show total for those units × mult
-  // - If nothing active: show per-unit base (× mult if modified)
-  const activeUnits = dispUnits > 0 ? dispUnits : 1;
-  const showTotal = dispUnits > 0;
-  const dispK=Math.round(it.kcal*activeUnits*mult);
-  const dispP=Math.round(it.prot*activeUnits*mult);
-  const dispC=Math.round((it.carb||0)*activeUnits*mult);
-  const baseK=Math.round(it.kcal*mult);
-  const baseP=Math.round(it.prot*mult);
-  const baseC=Math.round((it.carb||0)*mult);
-
-  const macNums = showTotal
-    ? `${dispK}kcal · ${dispP}g P · ${dispC}g C`
-    : `${baseK}kcal · ${baseP}g P · ${baseC}g C${mA?` <span style="font-size:9px;color:var(--amber)">×${mult}</span>`:''}`;
+  // Display: always show 1 base unit + any extra qty pressed, multiplied by serving size
+  // This way pressing + immediately shows updated numbers before checking
+  const displayUnits = 1 + eq; // base (1) + extras added via +
+  const shownK = Math.round(it.kcal * displayUnits * mult);
+  const shownP = Math.round(it.prot * displayUnits * mult);
+  const shownC = Math.round((it.carb||0) * displayUnits * mult);
+  const mac = `${shownK}kcal · ${shownP}g P · ${shownC}g C${(displayUnits>1||mA)?` <span style="font-size:9px;color:${dn?'var(--green)':'var(--amber)'}">×${displayUnits}${mA?'·'+mult+'×':''}</span>`:''}`;
 
   const bdg=isC?`<span class="cbadge">${t('searched')}</span>`:'';
-  // Show unit count label: ×N when more than 1 unit active, or "+N" pending when not checked
-  const unitLabel = dn
-    ? (dispUnits > 1 ? ` <span style="font-size:10px;color:var(--green)">×${dispUnits}</span>` : '')
-    : (eq > 0 ? ` <span style="font-size:10px;color:var(--amber)">+${eq} ${APP.lang==='es'?'por agregar':'to add'}</span>` : '');
-
   return`<div class="irow">
     <div class="chk ${dc}" onclick="${tf}('${d}','${it.id}')"></div>
     <button class="qb p" onclick="${inf}('${d}','${it.id}',event)">+</button>
     ${eq>0?`<span class="qn">+${eq}</span><button class="qb" onclick="${df2}('${d}','${it.id}',event)">−</button>`:''}
     <div class="iinfo">
-      <span class="iname ${dc}">${it.name}${unitLabel}${bdg}</span>
-      <span class="imac ${dc}">${macNums}</span>
+      <span class="iname ${dc}">${it.name}${bdg}</span>
+      <span class="imac ${dc}">${mac}</span>
     </div>
     <div class="mwrap">
       <button class="mb" onclick="${mmf}('${d}','${it.id}',event)">−</button>
@@ -1573,6 +1632,22 @@ function renderOnboard() {
       </div>`;
     });
     html += `</div>`;
+    // Show city input if delivery or both selected
+    if (od.mealstyle === 'delivery' || od.mealstyle === 'both') {
+      const cityQuickPicks = ['Wembley Park, London','Central London','Manchester','Birmingham','Glasgow','Edinburgh','Dublin','Buenos Aires','Madrid','Barcelona','New York','Sydney','Toronto'];
+      html += `<div class="ob-title" style="font-size:16px;margin-bottom:6px;margin-top:8px">
+        ${lang==='es'?'¿En qué zona pedís delivery?':'Where do you order delivery?'}
+      </div>
+      <div class="ob-sub" style="margin-bottom:10px">${lang==='es'?'Esto nos permite mostrarte restaurantes y opciones relevantes a tu zona.':'This lets us show you relevant restaurants and options for your area.'}</div>
+      <div class="ob-inputs">
+        <div class="ob-input-group">
+          <input class="ob-input" type="text" placeholder="${lang==='es'?'Ej: Wembley Park, Londres':'E.g. Wembley Park, London'}" value="${od.city||''}" oninput="obSetInput('city',this.value)" onchange="obSetInput('city',this.value)" style="font-size:15px;padding:12px">
+        </div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">
+        ${cityQuickPicks.map(c=>`<button onclick="obSetCity('${c}')" style="padding:5px 10px;border-radius:16px;border:1.5px solid ${od.city===c?'var(--green)':'var(--border2)'};background:${od.city===c?'var(--green)':'transparent'};color:${od.city===c?'#fff':'var(--text3)'};font-size:11px;cursor:pointer">${c}</button>`).join('')}
+      </div>`;
+    }
   } else if (step === 8) {
     // Goal targets (weight + body fat %)
     const goal = od.goal || 'cut';
@@ -1738,6 +1813,13 @@ function renderSettings() {
           <div class="ob-check"></div>
         </div>`).join('')}
       </div>
+      ${((ed.mealstyle||p.mealstyle)==='delivery'||(ed.mealstyle||p.mealstyle)==='both')?`
+      <div class="sec">${APP.lang==='es'?'Zona de delivery':'Delivery area'}</div>
+      <div class="ob-inputs">
+        <div class="ob-input-group">
+          <input class="ob-input" type="text" placeholder="${APP.lang==='es'?'Tu ciudad / zona':'Your city / area'}" value="${ed.city||p.city||''}" oninput="seSetInput('city',this.value)">
+        </div>
+      </div>`:''}
 
       ${!p.isCharly ? `<div class="sec">${tl.ob_exercise_title||'Exercise'}</div>
       <div class="ob-cards">
@@ -2439,7 +2521,7 @@ function resetProfile(){if(confirm('Reset profile? This will start the setup aga
 function addNewProfile(){
   APP.screen='onboard';
   APP.ob_step=0;
-  APP.ob_data={lang:APP.lang,sex:null,age:'',height:'',weight:'',waist:'',goal:null,activity:null,eating:null,mealstyle:null,diet:[],name:'',exercise_type:null,exercise_days:[],exercise_duration:'60',target_weight:'',target_fat:''};
+  APP.ob_data={lang:APP.lang,sex:null,age:'',height:'',weight:'',waist:'',goal:null,activity:null,eating:null,mealstyle:null,diet:[],name:'',exercise_type:null,exercise_days:[],exercise_duration:'60',target_weight:'',target_fat:'',city:''};
   save();render();
 }
 function deleteProfile(profileId){
@@ -2495,6 +2577,7 @@ function saveEdit(){
   if(ed.activity)p.activity=ed.activity;
   if(ed.eating)p.eating=ed.eating;
   if(ed.mealstyle)p.mealstyle=ed.mealstyle;
+  if(ed.city!==undefined)p.city=ed.city;
   if(ed.exercise_type)p.exercise_type=ed.exercise_type;
   if(ed.exercise_days){p.exercise_days=[...ed.exercise_days];p.cf_days=[...ed.exercise_days];}
   if(ed.target_weight!==undefined&&ed.target_weight!=='')p.target_weight=parseFloat(ed.target_weight);
@@ -2544,6 +2627,7 @@ function obToggleDay(i){
   if(idx>=0)d.splice(idx,1);else d.push(i);
   save();render();
 }
+function obSetCity(c){APP.ob_data.city=c;save();render();}
 function obToggleDiet(id){
   const d=APP.ob_data.diet;
   if(id==='none'){APP.ob_data.diet=['none'];render();return;}
@@ -2570,6 +2654,7 @@ function obFinish(){
     exercise_burn:burnPerSession,
     target_weight:od.target_weight?parseFloat(od.target_weight):null,
     target_fat:od.target_fat?parseFloat(od.target_fat):null,
+    city: od.city||'',
     weight_updated_at:Date.now(),
     // Store all macro fields using same structure as CHARLY_PROFILE
     bmr:m.bmr, neat:m.neat, tdee:m.tdee,
