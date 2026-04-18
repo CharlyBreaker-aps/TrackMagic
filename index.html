@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v3.9b (By Charly)</title>
+<title>MagicTracker v3.9c (By Charly)</title>
 <link rel="manifest" href="manifest.json">
 <style>
 :root{
@@ -225,7 +225,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v3.9b (By Charly)",
+    appName: "MagicTracker v3.9c (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -368,7 +368,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v3.9b (By Charly)",
+    appName: "MagicTracker v3.9c (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -2875,30 +2875,35 @@ function addBreakfastItem(d,i){
 function tRest(d,rid){if(!APP.rest[d])APP.rest[d]={};APP.rest[d][rid]=!APP.rest[d][rid];save();render();}
 function selM(d,rid,mi){
   if(!APP.meal[d])APP.meal[d]={};
-  // Toggle: if same meal already selected, deselect it
+  if(!APP.chk[d])APP.chk[d]={};
+
+  // Helper: get item IDs for a restaurant's meal
+  function getMealItemIds(rid2, mi2){
+    const rests2=getRests(d);
+    const r2=rests2.find(r=>r.id===rid2);
+    if(!r2||!r2.meals[mi2])return[];
+    const m2=r2.meals[mi2];
+    const ids=m2.items.map((_,j)=>'m'+rid2+'_'+j);
+    if(m2.snack)getSnackItems(m2.snack).forEach(x=>ids.push(x.id));
+    if(getProfile()?.isCharly)for(let j=0;j<(m2.atun||0);j++)ids.push('at'+j);
+    return ids;
+  }
+
+  // Toggle: if same meal already selected, deselect and uncheck items
   if(APP.meal[d][rid]===mi){
+    getMealItemIds(rid,mi).forEach(id=>delete APP.chk[d][id]);
     delete APP.meal[d][rid];
-    // Clear item states prefixed with this restaurant's items
-    // Use prefix 'm'+rid to avoid clearing other meals
-    ['chk','qty','mult'].forEach(k=>{
-      if(APP[k][d]){
-        Object.keys(APP[k][d]).forEach(key=>{
-          if(key.startsWith('m'+rid))delete APP[k][d][key];
-        });
-      }
-    });
     save();render();return;
   }
-  // Select this meal — keep other restaurant selections intact
+
+  // If switching to a different meal of same restaurant, uncheck old meal items first
+  if(APP.meal[d][rid]!==undefined){
+    getMealItemIds(rid,APP.meal[d][rid]).forEach(id=>delete APP.chk[d][id]);
+  }
+
+  // Select new meal and auto-check all its items
   APP.meal[d][rid]=mi;
-  // Clear only this restaurant's item states
-  ['chk','qty','mult'].forEach(k=>{
-    if(APP[k][d]){
-      Object.keys(APP[k][d]).forEach(key=>{
-        if(key.startsWith('m'+rid))delete APP[k][d][key];
-      });
-    }
-  });
+  getMealItemIds(rid,mi).forEach(id=>{APP.chk[d][id]=true;});
   if(!APP.rest[d])APP.rest[d]={};
   APP.rest[d][rid]=true;
   save();render();
