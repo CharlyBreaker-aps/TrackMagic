@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v3.1b (By Charly)</title>
+<title>MagicTracker v3.3 (By Charly)</title>
 <link rel="manifest" href="manifest.json">
 <style>
 :root{
@@ -225,7 +225,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v3.1b (By Charly)",
+    appName: "MagicTracker v3.3 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -368,7 +368,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v3.1b (By Charly)",
+    appName: "MagicTracker v3.3 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -871,24 +871,42 @@ function buildGenericMeals(profile, t) {
 
 // Generic meal renderer for non-Charly users
 function buildGenericRests(profile, lang) {
-  const t = T[lang];
-  const { proteinMains, breakfastOptions } = buildGenericMeals(profile, t);
-  const meals = proteinMains.map(m => ({
+  const tl = T[lang];
+  const { proteinMains, breakfastOptions } = buildGenericMeals(profile, tl);
+  const mealstyle = profile.mealstyle || 'home';
+  const isVeg = (profile.diet||[]).includes('veg');
+
+  // Home meal options
+  const homeMeals = proteinMains.map(m => ({
     name: m.name,
     items: [{name: m.name, kcal: m.kcal, prot: m.prot, carb: m.carb}],
-    snack: 'A',
-  }));
-  const breakfasts = breakfastOptions.map(m => ({
-    name: m.name,
-    items: [{name: m.name, kcal: m.kcal, prot: m.prot, carb: m.carb}],
-    snack: 'A',
   }));
 
+  // Generic delivery/restaurant options (healthy, no spicy by default)
+  const deliveryMeals = [
+    {name: lang==='es'?'Pollo a la plancha + arroz + ensalada':'Grilled chicken + rice + salad', items:[{name:lang==='es'?'Pollo a la plancha + arroz + ensalada':'Grilled chicken + rice + salad',kcal:550,prot:48,carb:45}]},
+    {name: lang==='es'?'Salmón a la plancha + verduras':'Grilled salmon + vegetables', items:[{name:lang==='es'?'Salmón a la plancha + verduras':'Grilled salmon + vegetables',kcal:480,prot:42,carb:12}]},
+    {name: lang==='es'?'Bowl de proteína (pollo + quinoa + veggies)':'Protein bowl (chicken + quinoa + veggies)', items:[{name:lang==='es'?'Bowl de proteína':'Protein bowl',kcal:580,prot:45,carb:50}]},
+    {name: lang==='es'?'Poke bowl de atún':'Tuna poke bowl', items:[{name:lang==='es'?'Poke bowl de atún':'Tuna poke bowl',kcal:520,prot:38,carb:52}]},
+    !isVeg && {name: lang==='es'?'Wrap de pollo con ensalada':'Chicken wrap with salad', items:[{name:lang==='es'?'Wrap de pollo':'Chicken wrap',kcal:490,prot:36,carb:42}]},
+    {name: lang==='es'?'Sushi (10 piezas mix proteína)':'Sushi (10 pieces protein mix)', items:[{name:lang==='es'?'Sushi mix':'Sushi mix',kcal:460,prot:28,carb:68}]},
+  ].filter(Boolean);
+
   const results = [];
-  if (profile.eating === '3meals') {
-    results.push({id:'breakfast',name: t.home_breakfast, icon:'🌅', src: t.home_cooking || 'Home', meals: breakfasts});
+
+  // NOTE: Breakfast is NOT added here — it's handled separately in renderTracker
+  // This prevents breakfast appearing multiple times in 3meals layout
+
+  if (mealstyle === 'home') {
+    results.push({id:'home_main', name: tl.home_lunch||'Home cooked', icon:'🏠', src: tl.home_cooking||'Home', meals: homeMeals});
+  } else if (mealstyle === 'delivery') {
+    results.push({id:'delivery_main', name: lang==='es'?'Delivery / Restaurante':'Takeaway / Restaurant', icon:'🛵', src:'Delivery', meals: deliveryMeals});
+  } else {
+    // both — show home AND delivery
+    results.push({id:'home_main', name: tl.home_lunch||'Home cooked', icon:'🏠', src: tl.home_cooking||'Home', meals: homeMeals});
+    results.push({id:'delivery_main', name: lang==='es'?'Delivery / Restaurante':'Takeaway / Restaurant', icon:'🛵', src:'Delivery', meals: deliveryMeals});
   }
-  results.push({id:'lunch',name: t.home_lunch, icon:'🍽️', src: t.home_cooking || 'Home', meals});
+
   return results;
 }
 
@@ -1289,24 +1307,45 @@ function row(d,it,tp){
   const ch=isE?(APP.echk[d]||{}):(isC?(APP.cchk[d]||{}):(APP.chk[d]||{}));
   const qs=isE?(APP.eqty[d]||{}):(isC?(APP.cqty[d]||{}):(APP.qty[d]||{}));
   const ms=isE?(APP.emult[d]||{}):(isC?(APP.cmult[d]||{}):(APP.mult[d]||{}));
-  const dn=!!ch[it.id],eq=qs[it.id]||0,mult=ms[it.id]||1,dq=(dn?1:0)+eq,mA=mult!==1;
+  const dn=!!ch[it.id],eq=qs[it.id]||0,mult=ms[it.id]||1,mA=mult!==1;
+  // dq: how many portions will count toward totals
+  // When checked: 1 (base) + eq (extra). When not checked: just eq (qty-only additions)
+  const dqChecked = (dn?1:0)+eq; // used for calc
+  // For display: show what's currently "active" = checked portions + qty additions
+  const dispUnits = dn ? (1+eq) : eq; // units that are "active" for display
   const tf=isE?'tE':isC?'tC':'tI',inf=isE?'iE':isC?'iC':'iQ',df2=isE?'dE':isC?'dC':'dQ';
   const mpf=isE?'mEP':isC?'mCP':'mMP',mmf=isE?'mEM':isC?'mCM':'mMM';
   const dc=dn?'done':'';
-  // Always show multiplied macros so user sees effect before checking (fix #1)
-  const dispK=Math.round(it.kcal*mult),dispP=Math.round(it.prot*mult),dispC=Math.round((it.carb||0)*mult);
-  const totK=Math.round(it.kcal*dq*mult),totP=Math.round(it.prot*dq*mult),totC=Math.round((it.carb||0)*dq*mult);
-  const mac=dq>0
-    ?`${totK}kcal · ${totP}g P · ${totC}g C`
-    :`${dispK}kcal · ${dispP}g P · ${dispC}g C${mA?' <span style="font-size:9px;color:var(--amber)">×'+mult+'</span>':''}`;
+
+  // Macros to display:
+  // - If active units > 0: show total for those units × mult
+  // - If nothing active: show per-unit base (× mult if modified)
+  const activeUnits = dispUnits > 0 ? dispUnits : 1;
+  const showTotal = dispUnits > 0;
+  const dispK=Math.round(it.kcal*activeUnits*mult);
+  const dispP=Math.round(it.prot*activeUnits*mult);
+  const dispC=Math.round((it.carb||0)*activeUnits*mult);
+  const baseK=Math.round(it.kcal*mult);
+  const baseP=Math.round(it.prot*mult);
+  const baseC=Math.round((it.carb||0)*mult);
+
+  const macNums = showTotal
+    ? `${dispK}kcal · ${dispP}g P · ${dispC}g C`
+    : `${baseK}kcal · ${baseP}g P · ${baseC}g C${mA?` <span style="font-size:9px;color:var(--amber)">×${mult}</span>`:''}`;
+
   const bdg=isC?`<span class="cbadge">${t('searched')}</span>`:'';
+  // Show unit count label: ×N when more than 1 unit active, or "+N" pending when not checked
+  const unitLabel = dn
+    ? (dispUnits > 1 ? ` <span style="font-size:10px;color:var(--green)">×${dispUnits}</span>` : '')
+    : (eq > 0 ? ` <span style="font-size:10px;color:var(--amber)">+${eq} ${APP.lang==='es'?'por agregar':'to add'}</span>` : '');
+
   return`<div class="irow">
     <div class="chk ${dc}" onclick="${tf}('${d}','${it.id}')"></div>
     <button class="qb p" onclick="${inf}('${d}','${it.id}',event)">+</button>
     ${eq>0?`<span class="qn">+${eq}</span><button class="qb" onclick="${df2}('${d}','${it.id}',event)">−</button>`:''}
     <div class="iinfo">
-      <span class="iname ${dc}">${it.name}${dq>1?' ×'+dq:''}${bdg}</span>
-      <span class="imac ${dc}">${mac}</span>
+      <span class="iname ${dc}">${it.name}${unitLabel}${bdg}</span>
+      <span class="imac ${dc}">${macNums}</span>
     </div>
     <div class="mwrap">
       <button class="mb" onclick="${mmf}('${d}','${it.id}',event)">−</button>
@@ -1687,6 +1726,15 @@ function renderSettings() {
         ${tl.ob_eatings.map(e=>`<div class="ob-card${(ed.eating||p.eating)===e.id?' selected':''}" onclick="seSet('eating','${e.id}')">
           <div class="ob-card-icon">${e.icon}</div>
           <div class="ob-card-body"><div class="ob-card-title">${e.title}</div><div class="ob-card-desc">${e.desc}</div></div>
+          <div class="ob-check"></div>
+        </div>`).join('')}
+      </div>
+
+      <div class="sec">${tl.ob_mealstyle_title||'Meal style'}</div>
+      <div class="ob-cards">
+        ${tl.ob_mealstyles.map(ms=>`<div class="ob-card${(ed.mealstyle||p.mealstyle)===ms.id?' selected':''}" onclick="seSet('mealstyle','${ms.id}')">
+          <div class="ob-card-icon">${ms.icon}</div>
+          <div class="ob-card-body"><div class="ob-card-title">${ms.title}</div><div class="ob-card-desc">${ms.desc}</div></div>
           <div class="ob-check"></div>
         </div>`).join('')}
       </div>
@@ -2243,23 +2291,27 @@ function renderTracker() {
   }
 
   // Build sections based on eating pattern
+  // rests = main meal options (home/delivery/both) — breakfast is NEVER in rests
+  const mainRests = rests; // already excludes breakfast
+  const dinnerRests = rests.map(r=>({...r, id:r.id+'_dinner'})); // unique IDs for dinner
+
   if (eating === '3meals') {
+    // Breakfast: separate simple section (home options from FDB)
     h += renderBreakfastSection();
-    h += renderMealSection(isEs2?'Almuerzo — Comida principal':'Lunch — Main meal', '🥩', 'lunch', rests);
-    h += renderMealSection(isEs2?'Cena — Comida principal':'Dinner — Main meal', '🌙', 'dinner', rests.map(r=>({...r,id:r.id+'_d'})));
+    h += renderMealSection(isEs2?'Almuerzo — Comida principal':'Lunch — Main meal', '🥩', 'lunch', mainRests);
+    h += renderMealSection(isEs2?'Cena — Comida principal':'Dinner — Main meal', '🌙', 'dinner', dinnerRests);
     h += renderSnacksSection();
   } else if (eating === '2meals') {
-    h += renderMealSection(isEs2?'Primera comida — Almuerzo':'First meal — Lunch', '☀️', 'lunch', rests);
-    h += renderMealSection(isEs2?'Segunda comida — Cena':'Second meal — Dinner', '🌙', 'dinner', rests.map(r=>({...r,id:r.id+'_d'})));
+    h += renderMealSection(isEs2?'Primera comida — Almuerzo':'First meal — Lunch', '☀️', 'lunch', mainRests);
+    h += renderMealSection(isEs2?'Segunda comida — Cena':'Second meal — Dinner', '🌙', 'dinner', dinnerRests);
     h += renderSnacksSection();
   } else if (eating === 'omad' || eating === 'ext_omad') {
-    // OMAD: one main meal + optional snacks + optional breakfast items
-    h += renderMealSection(isEs2?'Comida principal':'Main meal', '🍽️', 'main', rests);
-    // For OMAD allow some breakfast options as light additions
+    h += renderMealSection(isEs2?'Comida principal':'Main meal', '🍽️', 'main', mainRests);
+    // Optional light breakfast for OMAD
     const bfOpen = APP.rest[d]&&APP.rest[d]['breakfast_open_'+d];
-    h += `<div class="sec">🌅 ${isEs2?'Opcional — Desayuno ligero / snacks':'Optional — Light breakfast / snacks'}</div>`;
+    h += `<div class="sec">🌅 ${isEs2?'Opcional — Desayuno ligero':'Optional — Light breakfast'}</div>`;
     h += `<div class="rest-card"><div class="rest-hdr" onclick="tRest('${d}','breakfast_open_${d}')">
-      <span class="ricon">🌅</span><span class="rname">${isEs2?'Opciones rápidas de desayuno':'Quick breakfast options'}</span>
+      <span class="ricon">🌅</span><span class="rname">${isEs2?'Opciones de desayuno':'Breakfast options'}</span>
       <span class="rsrc">${isEs2?'Casero':'Home'}</span>
       <span class="rarr${bfOpen?' open':''}">▼</span>
     </div><div class="rbody${bfOpen?' open':''}">`;
@@ -2274,8 +2326,7 @@ function renderTracker() {
     h+=`</div></div>`;
     h += renderSnacksSection();
   } else {
-    // Fallback
-    h += renderMealSection(t('main_meal'), '🍽️', 'main', rests);
+    h += renderMealSection(t('main_meal'), '🍽️', 'main', mainRests);
     h += renderSnacksSection();
   }
 
@@ -2443,6 +2494,7 @@ function saveEdit(){
   if(ed.goal)p.goal=ed.goal;
   if(ed.activity)p.activity=ed.activity;
   if(ed.eating)p.eating=ed.eating;
+  if(ed.mealstyle)p.mealstyle=ed.mealstyle;
   if(ed.exercise_type)p.exercise_type=ed.exercise_type;
   if(ed.exercise_days){p.exercise_days=[...ed.exercise_days];p.cf_days=[...ed.exercise_days];}
   if(ed.target_weight!==undefined&&ed.target_weight!=='')p.target_weight=parseFloat(ed.target_weight);
