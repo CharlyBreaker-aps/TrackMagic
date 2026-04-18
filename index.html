@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v3.0 (By Charly)</title>
+<title>MagicTracker v3.1 (By Charly)</title>
 <link rel="manifest" href="manifest.json">
 <style>
 :root{
@@ -78,6 +78,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .def-box{margin:6px 12px;border-radius:var(--radius);padding:12px 14px;border:0.5px solid var(--border2)}
 .def-box.ok{background:#0a2218;border-color:var(--green)}.def-box.low{background:#2e1c00;border-color:var(--amber)}
 .def-box.excess{background:#2a0a0a;border-color:var(--red)}.def-box.over{background:#2a0a0a;border-color:var(--red)}
+.def-box.pending{background:var(--bg2);border-color:var(--border2)}
 .dr{display:flex;justify-content:space-between;font-size:11px;padding:2px 0;color:var(--text2)}
 .dv{font-weight:600;color:var(--text)}
 .dhr{border:none;border-top:0.5px solid var(--border);margin:6px 0}
@@ -86,6 +87,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .dmv{font-size:19px;font-weight:700}
 .dbadge{margin-top:7px;padding:7px 12px;border-radius:var(--radius-sm);text-align:center;font-size:12px;font-weight:700;color:#fff}
 .dbadge.ok{background:var(--green)}.dbadge.low{background:var(--amber)}.dbadge.excess,.dbadge.over{background:var(--red)}
+.dbadge.pending{background:var(--bg3);color:var(--text2)}
 .prog{height:4px;background:var(--border);border-radius:2px;margin-top:8px;overflow:hidden}
 .pf{height:4px;border-radius:2px;transition:width .3s}
 .pf.ok{background:var(--green)}.pf.low{background:var(--amber)}.pf.excess,.pf.over{background:var(--red)}
@@ -223,7 +225,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v3.0 (By Charly)",
+    appName: "MagicTracker v3.1 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -366,7 +368,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v3.0 (By Charly)",
+    appName: "MagicTracker v3.1 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -1880,7 +1882,16 @@ function renderTracker() {
   const pC=p2>=tP?'g':p2>=tP*.85?'a':'r';
   const kC=k>=tK*.9&&k<=tK*1.1?'g':k<tK*.9?'a':'r';
   const cC=cb<=tC?'b':cb<=tC*1.2?'a':'r';
-  const STC={ok:{lbl:t('def_ok'),cls:'ok',bc:'ok',col:'var(--green)'},low:{lbl:t('def_low'),cls:'low',bc:'low',col:'var(--amber)'},excess:{lbl:t('def_excess'),cls:'excess',bc:'excess',col:'var(--red)'},over:{lbl:t('def_over'),cls:'over',bc:'over',col:'var(--red)'}};
+  // When nothing logged yet, use a neutral "day in progress" state
+  const dayNotStarted = k === 0;
+  const STC={
+    ok:   {lbl:t('def_ok'),    cls:'ok',    bc:'ok',    col:'var(--green)'},
+    low:  {lbl:dayNotStarted ? (APP.lang==='es'?'Empezá a registrar tus comidas del día 📝':'Start logging today\'s meals 📝') : t('def_low'),
+           cls:dayNotStarted?'pending':'low', bc:dayNotStarted?'pending':'low', col:dayNotStarted?'var(--text3)':'var(--amber)'},
+    excess:{lbl:t('def_excess'),cls:'excess',bc:'excess',col:'var(--red)'},
+    over:  {lbl:t('def_over'),  cls:'over',  bc:'over',  col:'var(--red)'}
+  };
+  const cfg=STC[st];
   const cfg=STC[st];
   const sc=APP.sup[d]||{};
   const supps=getSupps();
@@ -1906,9 +1917,9 @@ function renderTracker() {
 
   // Deficit box
   h+=`<div class="def-box ${cfg.cls}">
-    <div class="dr"><span>${t('bmr_neat')}</span><span class="dv">${p.bmr||calcMacros(p).bmr} kcal</span></div>
-    <div class="dr"><span>${t('activity_label')}</span><span class="dv">${b} kcal</span></div>
-    <div class="dr"><span>${t('total_tdee')}</span><span class="dv">${tdee} kcal</span></div>
+    <div class="dr"><span>${t('bmr_neat')} <span style="font-size:9px;color:var(--text3)">(${APP.lang==='es'?'metabolismo base':'base metabolism'})</span></span><span class="dv">${p.bmr||_macros(p).bmr} kcal</span></div>
+    <div class="dr"><span>${t('activity_label')} <span style="font-size:9px;color:var(--text3)">(${b===0?(APP.lang==='es'?'nada marcado aún':'nothing marked yet'):(APP.lang==='es'?'marcado hoy':'marked today')})</span></span><span class="dv" style="color:${b>0?'var(--green)':'var(--text3)'}">${b} kcal</span></div>
+    <div class="dr" style="font-weight:600"><span>${t('total_tdee')}</span><span class="dv">${tdee} kcal</span></div>
     <div class="dhr"></div>
     <div class="dr"><span>${t('kcal_ingested')}</span><span class="dv">${k} kcal</span></div>
     <div class="dhr"></div>
@@ -2065,18 +2076,19 @@ function renderTracker() {
   let actDef;
   if(p.isCharly){
     actDef=cf
-      ?[{id:'walk',name:APP.lang==='es'?'Caminata diaria (~75 min)':'Daily walk (~75 min)',burn:300},{id:'cf',name:APP.lang==='es'?'Sesión de crossfit (~60 min)':'Crossfit session (~60 min)',burn:450}]
-      :[{id:'walk',name:APP.lang==='es'?'Caminata diaria (~75 min)':'Daily walk (~75 min)',burn:300}];
+      ?[{id:'walk',name:APP.lang==='es'?'Caminata diaria (~75 min)':'Daily walk (~75 min)',burn:300,hint:APP.lang==='es'?'opcional · recomendado diario':'optional · recommended daily'},{id:'cf',name:APP.lang==='es'?'Sesión de crossfit (~60 min)':'Crossfit session (~60 min)',burn:450}]
+      :[{id:'walk',name:APP.lang==='es'?'Caminata diaria (~75 min)':'Daily walk (~75 min)',burn:300,hint:APP.lang==='es'?'opcional · recomendado diario':'optional · recommended daily'}];
   } else {
     const exTypes=T[APP.lang].ob_exercise_types||[];
     const exType=exTypes.find(e=>e.id===p.exercise_type)||{title:'Workout',kcal:400};
     const dur=p.exercise_duration||60;
     const burn=p.exercise_burn||Math.round(exType.kcal*dur/60);
     const walkName=APP.lang==='es'?'Caminata (~30 min)':'Walk (~30 min)';
+    const walkHint=APP.lang==='es'?'opcional · recomendado diario':'optional · recommended daily';
     const trainName=`${exType.title} (~${dur} min)`;
     actDef=cf
-      ?[{id:'walk',name:walkName,burn:150},{id:'cf',name:trainName,burn}]
-      :[{id:'walk',name:walkName,burn:150}];
+      ?[{id:'walk',name:walkName,burn:150,hint:walkHint},{id:'cf',name:trainName,burn}]
+      :[{id:'walk',name:walkName,burn:150,hint:walkHint}];
   }
 
   h+=`<div class="sec">${t('physical_activity')}</div>`;
@@ -2097,7 +2109,10 @@ function renderTracker() {
       h+=`<div class="arow ${dn}" style="flex-wrap:wrap;gap:6px">
         <div style="display:flex;align-items:center;gap:10px;flex:1;cursor:pointer;min-width:120px" onclick="tA('${d}','walk')">
           <div class="chkr ${dn}"></div>
-          <span class="aname">${APP.lang==='es'?'Caminata':'Walk'}</span>
+          <div>
+            <span class="aname">${APP.lang==='es'?'Caminata':'Walk'}</span>
+            ${a.hint?`<div style="font-size:9px;color:var(--text3);margin-top:1px">${a.hint}</div>`:''}
+          </div>
         </div>
         <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
           <span style="font-size:10px;color:var(--text3)">${APP.lang==='es'?'min:':'min:'}</span>
