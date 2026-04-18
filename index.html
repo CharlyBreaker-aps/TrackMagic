@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v3.9c (By Charly)</title>
+<title>MagicTracker v4.0 (By Charly)</title>
 <link rel="manifest" href="manifest.json">
 <style>
 :root{
@@ -225,7 +225,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v3.9c (By Charly)",
+    appName: "MagicTracker v4.0 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -368,7 +368,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v3.9c (By Charly)",
+    appName: "MagicTracker v4.0 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -894,11 +894,10 @@ function buildGenericRests(profile, lang) {
   let deliveryRests = [];
 
   if (isWembley) {
-    // Wembley Park — use same restaurants as Charly (already defined in code)
-    deliveryRests = [N, IT, TB, WA, KC, MC, NB, FG, PE, FP, ZI, YS].filter(Boolean);
+    // Wembley Park — all Charly's restaurants (using correct variable names)
+    deliveryRests = [N, I, TB, WA, KF, MC, NA, FG, PE, FW, ZI, YM].filter(Boolean);
   } else if (isLondon) {
-    // Greater London — major chains with healthy options
-    deliveryRests = [N, IT, WA, KC, FG, ZI, YS].filter(Boolean);
+    deliveryRests = [N, I, WA, KF, FG, ZI, YM].filter(Boolean);
     // Add generic London chains
     deliveryRests.push(
       {id:'pret',name:"Pret A Manger",icon:'🥪',src:'Walk-in / Deliveroo',meals:[
@@ -1108,7 +1107,7 @@ function ensureCharlyProfile() {
   if (!APP.profiles) APP.profiles = [];
   const idx = APP.profiles.findIndex(p => p.id==='charly');
   // Fields that the user can change and should be preserved across const resets
-  const PRESERVE = ['weight','waist','neck','age','target_weight','target_fat','start_weight','start_waist','weight_updated_at','current_fat'];
+  const PRESERVE = ['weight','waist','neck','age','target_weight','target_fat','start_weight','start_waist','weight_updated_at','current_fat','goal','eating','activity','mealstyle','city','cf_days','exercise_days'];
   if (idx < 0) {
     APP.profiles.unshift({...CHARLY_PROFILE});
   } else {
@@ -1273,37 +1272,50 @@ function getRests(d) {
   if (p.isCharly) return buildCharlyRests(d);
   return buildGenericRests(p, APP.lang);
 }
-function getMeal(d, rid) {
-  const s = APP.meal[d];
-  if (!s) return null;
-  // If rid specified, return that specific meal selection
-  if (rid !== undefined) {
-    const i = s[rid];
-    if (i === undefined) return null;
-    for (const r of getRests(d)) {
-      if (r.id === rid && r.meals[i] !== undefined) {
-        return { ...r.meals[i], _rid: r.id, _midx: i };
-      }
-    }
-    return null;
-  }
-  // Legacy: return first found meal (for Charly/OMAD compatibility)
-  for (const r of getRests(d)) {
-    const i = s[r.id];
-    if (i !== undefined) return { ...r.meals[i], _rid: r.id, _midx: i };
+function _findRest(rid, d) {
+  // Find a restaurant by ID — checks getRests() AND dinner variants (rid ending in _dinner)
+  const allRests = getRests(d);
+  // Direct match
+  let r = allRests.find(x => x.id === rid);
+  if (r) return r;
+  // Dinner variant: strip _dinner suffix and find base restaurant, return with modified id
+  if (rid.endsWith('_dinner')) {
+    const baseId = rid.replace('_dinner','');
+    const base = allRests.find(x => x.id === baseId);
+    if (base) return {...base, id: rid};
   }
   return null;
 }
+
+function getMeal(d, rid) {
+  const s = APP.meal[d];
+  if (!s) return null;
+  if (rid !== undefined) {
+    const i = s[rid];
+    if (i === undefined) return null;
+    const r = _findRest(rid, d);
+    if (r && r.meals[i]) return { ...r.meals[i], _rid: rid, _midx: i };
+    return null;
+  }
+  // Legacy: return first found (OMAD/Charly)
+  for (const key of Object.keys(s)) {
+    const r = _findRest(key, d);
+    if (r && r.meals[s[key]]) return { ...r.meals[s[key]], _rid: key, _midx: s[key] };
+  }
+  return null;
+}
+
 function allItems(d) {
   const s = APP.meal[d];
   if (!s) return [];
   let items = [];
-  for (const r of getRests(d)) {
-    const i = s[r.id];
-    if (i === undefined) continue;
-    const m = r.meals[i];
-    if (!m) continue;
-    const main = m.items.map((x,j) => ({...x, id:'m'+r.id+'_'+j}));
+  // Iterate ALL selected meals (lunch, dinner, etc.) by reading meal keys directly
+  for (const rid of Object.keys(s)) {
+    const mi = s[rid];
+    const r = _findRest(rid, d);
+    if (!r || !r.meals[mi]) continue;
+    const m = r.meals[mi];
+    const main = m.items.map((x,j) => ({...x, id:'m'+rid+'_'+j}));
     const snk = m.snack ? getSnackItems(m.snack) : [];
     const at = getProfile()?.isCharly ? Array.from({length:m.atun||0}, (_,j) => ({...getATUN(APP.lang), id:'at'+j})) : [];
     items = [...items, ...main, ...snk, ...at];
@@ -1317,31 +1329,37 @@ function exItems(d) { return getExtras(d); }
 // ══════════════════════════════════════════════
 function calc(d) {
   let k=0,p=0,cb=0;
-  // Counting logic: qty button adds EXTRA portions on top of the 1 base unit.
-  // So total units = 1 (base) + qty — but only when item has any interaction (checked OR qty>0).
-  // If neither checked nor qty: item is not counted.
   const ch=APP.chk[d]||{},q=APP.qty[d]||{},mu=APP.mult[d]||{};
+
+  // Main meal items (from selected restaurants — all eating patterns)
   allItems(d).forEach(x=>{
     const m=mu[x.id]||1;
-    const hasQty=(q[x.id]||0)>0;
-    const isChecked=!!ch[x.id];
-    const tt = (isChecked||hasQty) ? (1+(q[x.id]||0))*m : 0;
+    const tt=(!!ch[x.id]||(q[x.id]||0)>0)?(1+(q[x.id]||0))*m:0;
     k+=x.kcal*tt;p+=x.prot*tt;cb+=(x.carb||0)*tt;
   });
+
+  // Breakfast items (bf0, bf1... stored in APP.chk via tp='m')
+  const BFDB = FDB.filter(f=>f.cat==='Breakfast');
+  BFDB.forEach((f,i)=>{
+    const id='bf'+i;
+    const m=mu[id]||1;
+    const tt=(!!ch[id]||(q[id]||0)>0)?(1+(q[id]||0))*m:0;
+    if(tt>0){k+=f.k*tt;p+=f.p*tt;cb+=(f.c||0)*tt;}
+  });
+
+  // Extra/snack items (echk)
   const ec=APP.echk[d]||{},eq2=APP.eqty[d]||{},em=APP.emult[d]||{};
   [...exItems(d),...getExtraSnacks()].forEach(x=>{
     const m=em[x.id]||1;
-    const hasQty=(eq2[x.id]||0)>0;
-    const isChecked=!!ec[x.id];
-    const tt=(isChecked||hasQty)?(1+(eq2[x.id]||0))*m:0;
+    const tt=(!!ec[x.id]||(eq2[x.id]||0)>0)?(1+(eq2[x.id]||0))*m:0;
     k+=x.kcal*tt;p+=x.prot*tt;cb+=(x.carb||0)*tt;
   });
+
+  // Custom/searched foods
   const cc=APP.cchk[d]||{},cq=APP.cqty[d]||{},cm=APP.cmult[d]||{};
   (APP.cust[d]||[]).forEach(x=>{
     const m=cm[x.id]||1;
-    const hasQty=(cq[x.id]||0)>0;
-    const isChecked=!!cc[x.id];
-    const tt=(isChecked||hasQty)?(1+(cq[x.id]||0))*m:0;
+    const tt=(!!cc[x.id]||(cq[x.id]||0)>0)?(1+(cq[x.id]||0))*m:0;
     k+=x.kcal*tt;p+=x.prot*tt;cb+=(x.carb||0)*tt;
   });
   const cf=isCFDay(d);
@@ -1855,7 +1873,9 @@ function renderSettings() {
       <div class="sec">${APP.lang==='es'?'Zona de delivery':'Delivery area'}</div>
       <div class="ob-inputs">
         <div class="ob-input-group">
-          <input class="ob-input" type="text" placeholder="${APP.lang==='es'?'Tu ciudad / zona':'Your city / area'}" value="${ed.city||p.city||''}" oninput="seSetInput('city',this.value)">
+          <input class="ob-input" type="text" placeholder="${APP.lang==='es'?'Tu ciudad / zona':'Your city / area'}" value="${ed.city||p.city||''}" oninput="seSetCityInput(this.value)">
+          ${APP._seCityStatus==='valid'?`<div style="font-size:10px;color:var(--green);margin-top:3px">✓ ${APP._seCityResolved||''}</div>`:''}
+          ${APP._seCityStatus==='invalid'?`<div style="font-size:10px;color:var(--red,#e55);margin-top:3px">✗ ${APP.lang==='es'?'Ciudad no encontrada':'Location not found'}</div>`:''}
         </div>
       </div>`:''}
 
@@ -2376,7 +2396,7 @@ function renderTracker() {
     </div>`;
     BREAKFASTS_DB.forEach((f,i)=>{
       // Stable ID: bf0, bf1... so checkbox state persists across renders
-      s += row(d, {id:'bf'+i, name:f.n, kcal:f.k, prot:f.p, carb:f.c||0}, 'e');
+      s += row(d, {id:'bf'+i, name:f.n, kcal:f.k, prot:f.p, carb:f.c||0}, 'm');
     });
     s+=`</div></div>`;
     return s;
@@ -2431,7 +2451,7 @@ function renderTracker() {
       <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;text-align:right;white-space:nowrap;margin-right:4px">${isEs2?'Cant · Gramaje':'Qty · Serving'}</div>
     </div>`;
     BREAKFASTS_DB.forEach((f,i)=>{
-      h += row(d, {id:'bf'+i, name:f.n, kcal:f.k, prot:f.p, carb:f.c||0}, 'e');
+      h += row(d, {id:'bf'+i, name:f.n, kcal:f.k, prot:f.p, carb:f.c||0}, 'm');
     });
     h+=`</div></div>`;
     h += renderSnacksSection();
@@ -2759,6 +2779,22 @@ function obToggleDay(i){
   if(idx>=0)d.splice(idx,1);else d.push(i);
   save();render();
 }
+function seSetCityInput(val){
+  seSetInput('city',val);
+  APP._seCityStatus='idle';
+  clearTimeout(window._seCityTimer);
+  if(!val||val.trim().length<2){render();return;}
+  window._seCityTimer=setTimeout(async()=>{
+    APP._seCityStatus='checking';render();
+    try{
+      const resp=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(val)}&format=json&limit=1`,{headers:{'Accept-Language':'en','User-Agent':'MagicTracker/3.9'}});
+      const data=await resp.json();
+      if(data&&data.length>0){APP._seCityStatus='valid';APP._seCityResolved=data[0].display_name.split(',').slice(0,2).join(',').trim();}
+      else{APP._seCityStatus='invalid';APP._seCityResolved='';}
+    }catch(e){APP._seCityStatus='valid';APP._seCityResolved=val;}
+    render();
+  },800);
+}
 function obSetCityQuick(c){
   APP.ob_data.city=c;
   APP._cityStatus='valid';
@@ -2873,37 +2909,35 @@ function addBreakfastItem(d,i){
   save();render();
 }
 function tRest(d,rid){if(!APP.rest[d])APP.rest[d]={};APP.rest[d][rid]=!APP.rest[d][rid];save();render();}
+function _getMealItemIds(d, rid, mi) {
+  const r = _findRest(rid, d);
+  if (!r || !r.meals[mi]) return [];
+  const m = r.meals[mi];
+  const ids = m.items.map((_,j) => 'm'+rid+'_'+j);
+  if (m.snack) getSnackItems(m.snack).forEach(x => ids.push(x.id));
+  if (getProfile()?.isCharly) for (let j=0;j<(m.atun||0);j++) ids.push('at'+j);
+  return ids;
+}
+
 function selM(d,rid,mi){
   if(!APP.meal[d])APP.meal[d]={};
   if(!APP.chk[d])APP.chk[d]={};
 
-  // Helper: get item IDs for a restaurant's meal
-  function getMealItemIds(rid2, mi2){
-    const rests2=getRests(d);
-    const r2=rests2.find(r=>r.id===rid2);
-    if(!r2||!r2.meals[mi2])return[];
-    const m2=r2.meals[mi2];
-    const ids=m2.items.map((_,j)=>'m'+rid2+'_'+j);
-    if(m2.snack)getSnackItems(m2.snack).forEach(x=>ids.push(x.id));
-    if(getProfile()?.isCharly)for(let j=0;j<(m2.atun||0);j++)ids.push('at'+j);
-    return ids;
-  }
-
   // Toggle: if same meal already selected, deselect and uncheck items
   if(APP.meal[d][rid]===mi){
-    getMealItemIds(rid,mi).forEach(id=>delete APP.chk[d][id]);
+    _getMealItemIds(d,rid,mi).forEach(id=>delete APP.chk[d][id]);
     delete APP.meal[d][rid];
     save();render();return;
   }
 
-  // If switching to a different meal of same restaurant, uncheck old meal items first
+  // If switching meal of same restaurant, uncheck old items first
   if(APP.meal[d][rid]!==undefined){
-    getMealItemIds(rid,APP.meal[d][rid]).forEach(id=>delete APP.chk[d][id]);
+    _getMealItemIds(d,rid,APP.meal[d][rid]).forEach(id=>delete APP.chk[d][id]);
   }
 
-  // Select new meal and auto-check all its items
+  // Select and auto-check all items
   APP.meal[d][rid]=mi;
-  getMealItemIds(rid,mi).forEach(id=>{APP.chk[d][id]=true;});
+  _getMealItemIds(d,rid,mi).forEach(id=>{APP.chk[d][id]=true;});
   if(!APP.rest[d])APP.rest[d]={};
   APP.rest[d][rid]=true;
   save();render();
