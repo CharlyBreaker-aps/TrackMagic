@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v3.8 (By Charly)</title>
+<title>MagicTracker v3.9b (By Charly)</title>
 <link rel="manifest" href="manifest.json">
 <style>
 :root{
@@ -225,7 +225,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v3.8 (By Charly)",
+    appName: "MagicTracker v3.9b (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -368,7 +368,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v3.8 (By Charly)",
+    appName: "MagicTracker v3.9b (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -1273,9 +1273,21 @@ function getRests(d) {
   if (p.isCharly) return buildCharlyRests(d);
   return buildGenericRests(p, APP.lang);
 }
-function getMeal(d) {
+function getMeal(d, rid) {
   const s = APP.meal[d];
   if (!s) return null;
+  // If rid specified, return that specific meal selection
+  if (rid !== undefined) {
+    const i = s[rid];
+    if (i === undefined) return null;
+    for (const r of getRests(d)) {
+      if (r.id === rid && r.meals[i] !== undefined) {
+        return { ...r.meals[i], _rid: r.id, _midx: i };
+      }
+    }
+    return null;
+  }
+  // Legacy: return first found meal (for Charly/OMAD compatibility)
   for (const r of getRests(d)) {
     const i = s[r.id];
     if (i !== undefined) return { ...r.meals[i], _rid: r.id, _midx: i };
@@ -1283,12 +1295,20 @@ function getMeal(d) {
   return null;
 }
 function allItems(d) {
-  const m = getMeal(d);
-  if (!m) return [];
-  const main = m.items.map((x,j) => ({...x, id:'m'+j}));
-  const snk = m.snack ? getSnackItems(m.snack) : [];
-  const at = getProfile()?.isCharly ? Array.from({length:m.atun||0}, (_,j) => ({...getATUN(APP.lang), id:'at'+j})) : [];
-  return [...main, ...snk, ...at];
+  const s = APP.meal[d];
+  if (!s) return [];
+  let items = [];
+  for (const r of getRests(d)) {
+    const i = s[r.id];
+    if (i === undefined) continue;
+    const m = r.meals[i];
+    if (!m) continue;
+    const main = m.items.map((x,j) => ({...x, id:'m'+r.id+'_'+j}));
+    const snk = m.snack ? getSnackItems(m.snack) : [];
+    const at = getProfile()?.isCharly ? Array.from({length:m.atun||0}, (_,j) => ({...getATUN(APP.lang), id:'at'+j})) : [];
+    items = [...items, ...main, ...snk, ...at];
+  }
+  return items;
 }
 function exItems(d) { return getExtras(d); }
 
@@ -2293,7 +2313,7 @@ function renderTracker() {
   // Helper to render a full restaurant/home-meal section
   function renderMealSection(sectionTitle, sectionIcon, sectionId, mealsData) {
     const selSt2 = APP.meal[d]||{};
-    const curM2 = getMeal(d);
+    // curM2 is per-restaurant now — checked inside the loop
     let s = `<div class="sec">${sectionIcon} ${sectionTitle}</div>`;
     if (p.isCharly && sectionId !== 'breakfast') {
       s+=`<div class="skey">${t('snack_a_key')}${t('snack_key_suffix')}</div>`;
@@ -2318,7 +2338,8 @@ function renderTracker() {
             <div class="mmacs">${tK2}kcal · ${tP2}g P · ${tC2}g C${m2.atun?` · ${m2.atun}🥫`:''}</div>
           </div>
         </div>`;
-        if(isSel2&&curM2&&curM2._rid===r.id&&curM2._midx===mi){
+        if(isSel2&&selM2===mi){
+          const curM2=getMeal(d,r.id);
           s+=`<div class="iwrap open">`;
           s+=`<div style="display:flex;align-items:center;gap:4px;padding:4px 0 2px;border-bottom:0.5px solid var(--border)">
             <div style="width:18px;flex-shrink:0"></div><div style="width:20px;flex-shrink:0"></div>
@@ -2326,7 +2347,7 @@ function renderTracker() {
             <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;text-align:right;white-space:nowrap;margin-right:4px">${isEs2?'Cant · Gramaje':'Qty · Serving'}</div>
           </div>`;
           s+=`<div class="glbl">${r.name}${r.src?' — '+r.src:''}</div>`;
-          m2.items.forEach((x,j)=>{s+=row(d,{...x,id:'m'+j},'m');});
+          m2.items.forEach((x,j)=>{s+=row(d,{...x,id:'m'+r.id+'_'+j},'m');});
           if(m2.snack){s+=`<div class="glbl">Snack ${m2.snack}</div>`;getSnackItems(m2.snack).forEach(x=>{s+=row(d,x,'m');});}
           if(p.isCharly&&(m2.atun||0)>0){s+=`<div class="glbl">${isEs2?'Atún':'Tuna'}</div>`;for(let j=0;j<m2.atun;j++)s+=row(d,{...getATUN(APP.lang),id:'at'+j},'m');}
           s+=`</div>`;
@@ -2338,9 +2359,8 @@ function renderTracker() {
     return s;
   }
 
-  // Breakfast options as a simple searchable card
+  // Breakfast options as items with stable IDs — uses row() for full checkbox/qty/mult support
   function renderBreakfastSection() {
-    const bfItems = BREAKFASTS_DB;
     const bfKey = 'breakfast_open_'+d;
     const isOpen3 = APP.rest[d]&&APP.rest[d][bfKey];
     let s = `<div class="sec">🌅 ${isEs2?'Desayuno':'Breakfast'}</div>`;
@@ -2349,17 +2369,14 @@ function renderTracker() {
       <span class="rsrc">${isEs2?'Casero':'Home'}</span>
       <span class="rarr${isOpen3?' open':''}">▼</span>
     </div><div class="rbody${isOpen3?' open':''}">`;
-    bfItems.forEach((f,i)=>{
-      const fid = 'bf'+i;
-      const inCust = (APP.cust[d]||[]).find(x=>x.name===f.n);
-      s+=`<div class="mopt"><div class="mhdr" onclick="addBreakfastItem('${d}',${i})" style="cursor:pointer">
-        <div style="width:16px;height:16px;border-radius:50%;border:2px solid var(--border2);flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;font-size:10px">${inCust?'✓':''}</div>
-        <div class="minfo">
-          <div class="mname">${f.n}</div>
-          <div class="mmacs">${f.k}kcal · ${f.p}g P · ${f.c}g C</div>
-        </div>
-        <div style="font-size:20px;color:var(--green);padding-right:4px">+</div>
-      </div></div>`;
+    s += `<div style="display:flex;align-items:center;gap:4px;padding:4px 0 2px;border-bottom:0.5px solid var(--border)">
+      <div style="width:18px;flex-shrink:0"></div><div style="width:20px;flex-shrink:0"></div>
+      <div style="flex:1;font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">${isEs2?'Alimento':'Food item'}</div>
+      <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;text-align:right;white-space:nowrap;margin-right:4px">${isEs2?'Cant · Gramaje':'Qty · Serving'}</div>
+    </div>`;
+    BREAKFASTS_DB.forEach((f,i)=>{
+      // Stable ID: bf0, bf1... so checkbox state persists across renders
+      s += row(d, {id:'bf'+i, name:f.n, kcal:f.k, prot:f.p, carb:f.c||0}, 'e');
     });
     s+=`</div></div>`;
     return s;
@@ -2400,7 +2417,7 @@ function renderTracker() {
     h += renderSnacksSection();
   } else if (eating === 'omad' || eating === 'ext_omad') {
     h += renderMealSection(isEs2?'Comida principal':'Main meal', '🍽️', 'main', mainRests);
-    // Optional light breakfast for OMAD
+    // Optional light breakfast for OMAD — uses row() with stable IDs
     const bfOpen = APP.rest[d]&&APP.rest[d]['breakfast_open_'+d];
     h += `<div class="sec">🌅 ${isEs2?'Opcional — Desayuno ligero':'Optional — Light breakfast'}</div>`;
     h += `<div class="rest-card"><div class="rest-hdr" onclick="tRest('${d}','breakfast_open_${d}')">
@@ -2408,13 +2425,13 @@ function renderTracker() {
       <span class="rsrc">${isEs2?'Casero':'Home'}</span>
       <span class="rarr${bfOpen?' open':''}">▼</span>
     </div><div class="rbody${bfOpen?' open':''}">`;
+    h+=`<div style="display:flex;align-items:center;gap:4px;padding:4px 0 2px;border-bottom:0.5px solid var(--border)">
+      <div style="width:18px;flex-shrink:0"></div><div style="width:20px;flex-shrink:0"></div>
+      <div style="flex:1;font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">${isEs2?'Alimento':'Food item'}</div>
+      <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;text-align:right;white-space:nowrap;margin-right:4px">${isEs2?'Cant · Gramaje':'Qty · Serving'}</div>
+    </div>`;
     BREAKFASTS_DB.forEach((f,i)=>{
-      const inCust2=(APP.cust[d]||[]).find(x=>x.name===f.n);
-      h+=`<div class="mopt"><div class="mhdr" onclick="addBreakfastItem('${d}',${i})" style="cursor:pointer">
-        <div style="width:16px;height:16px;border-radius:50%;border:2px solid var(--border2);flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;font-size:10px">${inCust2?'✓':''}</div>
-        <div class="minfo"><div class="mname">${f.n}</div><div class="mmacs">${f.k}kcal · ${f.p}g P · ${f.c}g C</div></div>
-        <div style="font-size:20px;color:var(--green);padding-right:4px">+</div>
-      </div></div>`;
+      h += row(d, {id:'bf'+i, name:f.n, kcal:f.k, prot:f.p, carb:f.c||0}, 'e');
     });
     h+=`</div></div>`;
     h += renderSnacksSection();
@@ -2858,9 +2875,33 @@ function addBreakfastItem(d,i){
 function tRest(d,rid){if(!APP.rest[d])APP.rest[d]={};APP.rest[d][rid]=!APP.rest[d][rid];save();render();}
 function selM(d,rid,mi){
   if(!APP.meal[d])APP.meal[d]={};
-  if(APP.meal[d][rid]===mi){delete APP.meal[d][rid];['chk','qty','mult','echk','eqty','emult'].forEach(k=>{APP[k][d]={};});save();render();return;}
-  APP.meal[d]={[rid]:mi};['chk','qty','mult','echk','eqty','emult'].forEach(k=>{APP[k][d]={};});
-  if(!APP.rest[d])APP.rest[d]={};APP.rest[d][rid]=true;save();render();
+  // Toggle: if same meal already selected, deselect it
+  if(APP.meal[d][rid]===mi){
+    delete APP.meal[d][rid];
+    // Clear item states prefixed with this restaurant's items
+    // Use prefix 'm'+rid to avoid clearing other meals
+    ['chk','qty','mult'].forEach(k=>{
+      if(APP[k][d]){
+        Object.keys(APP[k][d]).forEach(key=>{
+          if(key.startsWith('m'+rid))delete APP[k][d][key];
+        });
+      }
+    });
+    save();render();return;
+  }
+  // Select this meal — keep other restaurant selections intact
+  APP.meal[d][rid]=mi;
+  // Clear only this restaurant's item states
+  ['chk','qty','mult'].forEach(k=>{
+    if(APP[k][d]){
+      Object.keys(APP[k][d]).forEach(key=>{
+        if(key.startsWith('m'+rid))delete APP[k][d][key];
+      });
+    }
+  });
+  if(!APP.rest[d])APP.rest[d]={};
+  APP.rest[d][rid]=true;
+  save();render();
 }
 function tI(d,id){if(!APP.chk[d])APP.chk[d]={};const w=!!APP.chk[d][id];APP.chk[d][id]=!w;if(id.startsWith('at'))APP.atun=Math.max(0,APP.atun+(w?-1:1));save();render();}
 function iQ(d,id,e){e.stopPropagation();if(!APP.qty[d])APP.qty[d]={};APP.qty[d][id]=(APP.qty[d][id]||0)+1;if(id.startsWith('at'))APP.atun=Math.min(5,APP.atun+1);save();render();}
