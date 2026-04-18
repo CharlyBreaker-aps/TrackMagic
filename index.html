@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v3.3 (By Charly)</title>
+<title>MagicTracker v3.7 (By Charly)</title>
 <link rel="manifest" href="manifest.json">
 <style>
 :root{
@@ -225,7 +225,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v3.3 (By Charly)",
+    appName: "MagicTracker v3.7 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -368,7 +368,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v3.3 (By Charly)",
+    appName: "MagicTracker v3.7 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -872,9 +872,17 @@ function buildGenericMeals(profile, t) {
 // Generic meal renderer for non-Charly users
 function buildGenericRests(profile, lang) {
   const tl = T[lang];
-  const { proteinMains, breakfastOptions } = buildGenericMeals(profile, tl);
+  const { proteinMains } = buildGenericMeals(profile, tl);
   const mealstyle = profile.mealstyle || 'home';
-  const isVeg = (profile.diet||[]).includes('veg');
+  const city = (profile.city||'').toLowerCase();
+
+  // Detect city zone
+  const isWembley = city.includes('wembley') || city.includes('wembley park');
+  const isLondon  = city.includes('london') || city.includes('londres') || isWembley;
+  const isMadrid  = city.includes('madrid');
+  const isBA      = city.includes('buenos aires') || city.includes('bsas');
+  const isNY      = city.includes('new york') || city.includes('nyc');
+  const isSydney  = city.includes('sydney');
 
   // Home meal options
   const homeMeals = proteinMains.map(m => ({
@@ -882,31 +890,79 @@ function buildGenericRests(profile, lang) {
     items: [{name: m.name, kcal: m.kcal, prot: m.prot, carb: m.carb}],
   }));
 
-  // Generic delivery/restaurant options (healthy, no spicy by default)
-  const deliveryMeals = [
-    {name: lang==='es'?'Pollo a la plancha + arroz + ensalada':'Grilled chicken + rice + salad', items:[{name:lang==='es'?'Pollo a la plancha + arroz + ensalada':'Grilled chicken + rice + salad',kcal:550,prot:48,carb:45}]},
-    {name: lang==='es'?'Salmón a la plancha + verduras':'Grilled salmon + vegetables', items:[{name:lang==='es'?'Salmón a la plancha + verduras':'Grilled salmon + vegetables',kcal:480,prot:42,carb:12}]},
-    {name: lang==='es'?'Bowl de proteína (pollo + quinoa + veggies)':'Protein bowl (chicken + quinoa + veggies)', items:[{name:lang==='es'?'Bowl de proteína':'Protein bowl',kcal:580,prot:45,carb:50}]},
-    {name: lang==='es'?'Poke bowl de atún':'Tuna poke bowl', items:[{name:lang==='es'?'Poke bowl de atún':'Tuna poke bowl',kcal:520,prot:38,carb:52}]},
-    !isVeg && {name: lang==='es'?'Wrap de pollo con ensalada':'Chicken wrap with salad', items:[{name:lang==='es'?'Wrap de pollo':'Chicken wrap',kcal:490,prot:36,carb:42}]},
-    {name: lang==='es'?'Sushi (10 piezas mix proteína)':'Sushi (10 pieces protein mix)', items:[{name:lang==='es'?'Sushi mix':'Sushi mix',kcal:460,prot:28,carb:68}]},
-  ].filter(Boolean);
+  // Build delivery restaurant list based on city
+  let deliveryRests = [];
+
+  if (isWembley) {
+    // Wembley Park — use same restaurants as Charly (already defined in code)
+    deliveryRests = [N, IT, TB, WA, KC, MC, NB, FG, PE, FP, ZI, YS].filter(Boolean);
+  } else if (isLondon) {
+    // Greater London — major chains with healthy options
+    deliveryRests = [N, IT, WA, KC, FG, ZI, YS].filter(Boolean);
+    // Add generic London chains
+    deliveryRests.push(
+      {id:'pret',name:"Pret A Manger",icon:'🥪',src:'Walk-in / Deliveroo',meals:[
+        {name:'Chicken & Avocado wrap',items:[{name:'Chicken & Avocado wrap',kcal:380,prot:28,carb:32}]},
+        {name:'Classic Super Club',items:[{name:'Classic Super Club',kcal:420,prot:34,carb:36}]},
+        {name:'Hummus & Red Pepper flatbread',items:[{name:'Hummus & Red Pepper flatbread',kcal:310,prot:12,carb:42}]},
+      ]},
+      {id:'leon',name:"LEON",icon:'🌿',src:'Walk-in / Uber Eats',meals:[
+        {name:'Chicken burger box',items:[{name:'Chicken burger box',kcal:490,prot:38,carb:44}]},
+        {name:'Super green falafel box',items:[{name:'Super green falafel box',kcal:440,prot:18,carb:52}]},
+      ]}
+    );
+  } else if (isBA) {
+    deliveryRests.push(
+      {id:'mcba',name:"McDonald's",icon:'🍟',src:'PedidosYa / Rappi',meals:[
+        {name:'McPollo + ensalada',items:[{name:'McPollo + ensalada',kcal:490,prot:32,carb:45}]},
+        {name:'Wrap de pollo grillado',items:[{name:'Wrap de pollo grillado',kcal:410,prot:28,carb:38}]},
+      ]},
+      {id:'subway_ba',name:"Subway",icon:'🥪',src:'PedidosYa / Rappi',meals:[
+        {name:'Sub de pechuga de pollo 30cm',items:[{name:'Sub de pechuga de pollo 30cm',kcal:480,prot:38,carb:52}]},
+        {name:'Sub de atún 30cm',items:[{name:'Sub de atún 30cm',kcal:510,prot:32,carb:50}]},
+      ]},
+      {id:'burger_ba',name:"Burger King",icon:'🍔',src:'PedidosYa / Rappi',meals:[
+        {name:'Whopper de pollo grillado',items:[{name:'Whopper de pollo grillado',kcal:520,prot:36,carb:48}]},
+      ]},
+      {id:'sushi_ba',name:"SushiClub",icon:'🍣',src:'PedidosYa',meals:[
+        {name:'Combo proteína (8 piezas nigiri)',items:[{name:'Combo proteína nigiri x8',kcal:440,prot:32,carb:56}]},
+      ]}
+    );
+  } else {
+    // International chains — works anywhere
+    deliveryRests.push(
+      {id:'kfc_int',name:"KFC",icon:'🍗',src:'Delivery',meals:[
+        {name:lang==='es'?'2 piezas de pollo + ensalada':'2 pc chicken + side salad',items:[{name:lang==='es'?'2 piezas de pollo + ensalada':'2 pc chicken + side salad',kcal:480,prot:38,carb:18}]},
+        {name:lang==='es'?'Wrap de pollo grillado':'Grilled chicken wrap',items:[{name:lang==='es'?'Wrap de pollo grillado':'Grilled chicken wrap',kcal:380,prot:28,carb:34}]},
+      ]},
+      {id:'mcint',name:"McDonald's",icon:'🍟',src:'Delivery / UberEats',meals:[
+        {name:lang==='es'?'McPollo grillado + ensalada':'McChicken grilled + salad',items:[{name:lang==='es'?'McPollo grillado':'McChicken grilled',kcal:490,prot:32,carb:45}]},
+        {name:lang==='es'?'Wrap de pollo grillado':'Grilled chicken wrap',items:[{name:lang==='es'?'Wrap grillado':'Grilled wrap',kcal:410,prot:28,carb:38}]},
+      ]},
+      {id:'subway_int',name:"Subway",icon:'🥪',src:'Delivery / Uber Eats',meals:[
+        {name:lang==='es'?'Sub de pechuga de pollo 30cm':'Chicken breast 12" sub',items:[{name:lang==='es'?'Sub pollo 30cm':'Chicken sub 12"',kcal:480,prot:38,carb:52}]},
+        {name:lang==='es'?'Sub de atún 30cm':'Tuna 12" sub',items:[{name:lang==='es'?'Sub atún 30cm':'Tuna sub 12"',kcal:510,prot:32,carb:50}]},
+      ]},
+      {id:'sushi_int',name:lang==='es'?'Sushi (local)':'Sushi restaurant',icon:'🍣',src:'Delivery',meals:[
+        {name:lang==='es'?'Mix de nigiri x10 (salmón/atún)':'Nigiri mix x10 (salmon/tuna)',items:[{name:lang==='es'?'Nigiri mix x10':'Nigiri mix x10',kcal:460,prot:30,carb:58}]},
+      ]},
+      {id:'grill_int',name:lang==='es'?'Parrilla / Grill local':'Local grill / steakhouse',icon:'🥩',src:'Delivery',meals:[
+        {name:lang==='es'?'Pollo a la plancha + vegetales':'Grilled chicken + vegetables',items:[{name:lang==='es'?'Pollo a la plancha':'Grilled chicken',kcal:520,prot:48,carb:14}]},
+        {name:lang==='es'?'Lomo/filete + ensalada':'Sirloin + salad',items:[{name:lang==='es'?'Lomo + ensalada':'Sirloin + salad',kcal:580,prot:52,carb:10}]},
+      ]}
+    );
+  }
 
   const results = [];
-
-  // NOTE: Breakfast is NOT added here — it's handled separately in renderTracker
-  // This prevents breakfast appearing multiple times in 3meals layout
-
   if (mealstyle === 'home') {
     results.push({id:'home_main', name: tl.home_lunch||'Home cooked', icon:'🏠', src: tl.home_cooking||'Home', meals: homeMeals});
   } else if (mealstyle === 'delivery') {
-    results.push({id:'delivery_main', name: lang==='es'?'Delivery / Restaurante':'Takeaway / Restaurant', icon:'🛵', src:'Delivery', meals: deliveryMeals});
+    deliveryRests.forEach(r => results.push(r));
   } else {
-    // both — show home AND delivery
+    // both
     results.push({id:'home_main', name: tl.home_lunch||'Home cooked', icon:'🏠', src: tl.home_cooking||'Home', meals: homeMeals});
-    results.push({id:'delivery_main', name: lang==='es'?'Delivery / Restaurante':'Takeaway / Restaurant', icon:'🛵', src:'Delivery', meals: deliveryMeals});
+    deliveryRests.forEach(r => results.push(r));
   }
-
   return results;
 }
 
@@ -1010,6 +1066,7 @@ let APP = {
   profiles: [],        // array of all profile objects
   activeProfileId: null, // id of active profile
   allTrackingData: {}, // keyed by profileId → {day,rest,meal,chk,qty,mult,act,sup,echk,eqty,emult,cust,cchk,cqty,cmult,atun}
+  customFoods: [],     // user-created foods, persisted globally across all profiles
   // ── TRACKER STATE (active profile's data, synced from allTrackingData) ──
   day: null,
   rest: {}, meal: {}, chk: {}, qty: {}, mult: {}, act: {}, sup: {},
@@ -1240,12 +1297,33 @@ function exItems(d) { return getExtras(d); }
 // ══════════════════════════════════════════════
 function calc(d) {
   let k=0,p=0,cb=0;
+  // Counting logic: qty button adds EXTRA portions on top of the 1 base unit.
+  // So total units = 1 (base) + qty — but only when item has any interaction (checked OR qty>0).
+  // If neither checked nor qty: item is not counted.
   const ch=APP.chk[d]||{},q=APP.qty[d]||{},mu=APP.mult[d]||{};
-  allItems(d).forEach(x=>{const m=mu[x.id]||1,tt=((ch[x.id]?1:0)+(q[x.id]||0))*m;k+=x.kcal*tt;p+=x.prot*tt;cb+=(x.carb||0)*tt;});
-  const ec=APP.echk[d]||{},eq=APP.eqty[d]||{},em=APP.emult[d]||{};
-  [...exItems(d),...getExtraSnacks()].forEach(x=>{const m=em[x.id]||1,tt=((ec[x.id]?1:0)+(eq[x.id]||0))*m;k+=x.kcal*tt;p+=x.prot*tt;cb+=(x.carb||0)*tt;});
+  allItems(d).forEach(x=>{
+    const m=mu[x.id]||1;
+    const hasQty=(q[x.id]||0)>0;
+    const isChecked=!!ch[x.id];
+    const tt = (isChecked||hasQty) ? (1+(q[x.id]||0))*m : 0;
+    k+=x.kcal*tt;p+=x.prot*tt;cb+=(x.carb||0)*tt;
+  });
+  const ec=APP.echk[d]||{},eq2=APP.eqty[d]||{},em=APP.emult[d]||{};
+  [...exItems(d),...getExtraSnacks()].forEach(x=>{
+    const m=em[x.id]||1;
+    const hasQty=(eq2[x.id]||0)>0;
+    const isChecked=!!ec[x.id];
+    const tt=(isChecked||hasQty)?(1+(eq2[x.id]||0))*m:0;
+    k+=x.kcal*tt;p+=x.prot*tt;cb+=(x.carb||0)*tt;
+  });
   const cc=APP.cchk[d]||{},cq=APP.cqty[d]||{},cm=APP.cmult[d]||{};
-  (APP.cust[d]||[]).forEach(x=>{const m=cm[x.id]||1,tt=((cc[x.id]?1:0)+(cq[x.id]||0))*m;k+=x.kcal*tt;p+=x.prot*tt;cb+=(x.carb||0)*tt;});
+  (APP.cust[d]||[]).forEach(x=>{
+    const m=cm[x.id]||1;
+    const hasQty=(cq[x.id]||0)>0;
+    const isChecked=!!cc[x.id];
+    const tt=(isChecked||hasQty)?(1+(cq[x.id]||0))*m:0;
+    k+=x.kcal*tt;p+=x.prot*tt;cb+=(x.carb||0)*tt;
+  });
   const cf=isCFDay(d);
   const ac=APP.act[d]||{};let b=0;
   const pr=getProfile();
@@ -1308,44 +1386,28 @@ function row(d,it,tp){
   const qs=isE?(APP.eqty[d]||{}):(isC?(APP.cqty[d]||{}):(APP.qty[d]||{}));
   const ms=isE?(APP.emult[d]||{}):(isC?(APP.cmult[d]||{}):(APP.mult[d]||{}));
   const dn=!!ch[it.id],eq=qs[it.id]||0,mult=ms[it.id]||1,mA=mult!==1;
-  // dq: how many portions will count toward totals
-  // When checked: 1 (base) + eq (extra). When not checked: just eq (qty-only additions)
-  const dqChecked = (dn?1:0)+eq; // used for calc
-  // For display: show what's currently "active" = checked portions + qty additions
-  const dispUnits = dn ? (1+eq) : eq; // units that are "active" for display
   const tf=isE?'tE':isC?'tC':'tI',inf=isE?'iE':isC?'iC':'iQ',df2=isE?'dE':isC?'dC':'dQ';
   const mpf=isE?'mEP':isC?'mCP':'mMP',mmf=isE?'mEM':isC?'mCM':'mMM';
   const dc=dn?'done':'';
-
-  // Macros to display:
-  // - If active units > 0: show total for those units × mult
-  // - If nothing active: show per-unit base (× mult if modified)
-  const activeUnits = dispUnits > 0 ? dispUnits : 1;
-  const showTotal = dispUnits > 0;
-  const dispK=Math.round(it.kcal*activeUnits*mult);
-  const dispP=Math.round(it.prot*activeUnits*mult);
-  const dispC=Math.round((it.carb||0)*activeUnits*mult);
-  const baseK=Math.round(it.kcal*mult);
-  const baseP=Math.round(it.prot*mult);
-  const baseC=Math.round((it.carb||0)*mult);
-
-  const macNums = showTotal
-    ? `${dispK}kcal · ${dispP}g P · ${dispC}g C`
-    : `${baseK}kcal · ${baseP}g P · ${baseC}g C${mA?` <span style="font-size:9px;color:var(--amber)">×${mult}</span>`:''}`;
-
-  const bdg=isC?`<span class="cbadge">${t('searched')}</span>`:'';
-  // Show unit count label: ×N when more than 1 unit active, or "+N" pending when not checked
-  const unitLabel = dn
-    ? (dispUnits > 1 ? ` <span style="font-size:10px;color:var(--green)">×${dispUnits}</span>` : '')
-    : (eq > 0 ? ` <span style="font-size:10px;color:var(--amber)">+${eq} ${APP.lang==='es'?'por agregar':'to add'}</span>` : '');
-
+  // displayUnits = 1 base + extras. Pressing + immediately updates the shown macros.
+  const units = 1 + eq;
+  const shownK = Math.round(it.kcal * units * mult);
+  const shownP = Math.round(it.prot * units * mult);
+  const shownC = Math.round((it.carb||0) * units * mult);
+  // Colour: green when checked, amber when qty added but not yet checked, normal otherwise
+  const macCol = dn ? 'var(--green)' : eq > 0 ? 'var(--amber)' : '';
+  const unitsLabel = units > 1 ? ` <span style="font-size:9px;opacity:.85">×${units}</span>` : '';
+  const multLabel = mA ? ` <span style="font-size:9px;opacity:.7">${MLBLS[mult]||mult+'×'}</span>` : '';
+  const macStr = `${shownK}kcal · ${shownP}g P · ${shownC}g C${unitsLabel}${multLabel}`;
+  const mac = macCol ? `<span style="color:${macCol}">${macStr}</span>` : macStr;
+  const bdg = isC ? `<span class="cbadge">${t('searched')}</span>` : '';
   return`<div class="irow">
     <div class="chk ${dc}" onclick="${tf}('${d}','${it.id}')"></div>
     <button class="qb p" onclick="${inf}('${d}','${it.id}',event)">+</button>
-    ${eq>0?`<span class="qn">+${eq}</span><button class="qb" onclick="${df2}('${d}','${it.id}',event)">−</button>`:''}
+    ${eq>0?`<span class="qn">+${eq}</span><button class="qb" style="width:18px;height:18px;font-size:11px" onclick="${df2}('${d}','${it.id}',event)">−</button>`:''}
     <div class="iinfo">
-      <span class="iname ${dc}">${it.name}${unitLabel}${bdg}</span>
-      <span class="imac ${dc}">${macNums}</span>
+      <span class="iname ${dc}">${it.name}${bdg}</span>
+      <span class="imac ${dc}">${mac}</span>
     </div>
     <div class="mwrap">
       <button class="mb" onclick="${mmf}('${d}','${it.id}',event)">−</button>
@@ -1573,6 +1635,30 @@ function renderOnboard() {
       </div>`;
     });
     html += `</div>`;
+    // Show city input if delivery or both selected
+    if (od.mealstyle === 'delivery' || od.mealstyle === 'both') {
+      const cityQuickPicks = ['Wembley Park, London','Central London','Manchester','Birmingham','Glasgow','Dublin','Buenos Aires','Madrid','Barcelona','New York','Sydney','Toronto'];
+      const cityStatus = APP._cityStatus || 'idle'; // idle | checking | valid | invalid
+      const cityStatusHtml = {
+        idle: '',
+        checking: `<div style="font-size:11px;color:var(--text3);margin-top:4px">🔍 ${lang==='es'?'Verificando ciudad...':'Checking city...'}</div>`,
+        valid: `<div style="font-size:11px;color:var(--green);margin-top:4px">✓ ${APP._cityResolved||od.city} ${lang==='es'?'— Ciudad válida':'— Valid location'}</div>`,
+        invalid: `<div style="font-size:11px;color:var(--red,#e55);margin-top:4px">✗ ${lang==='es'?'Ciudad no encontrada. Probá otro nombre o usá las sugerencias.':'Location not found. Try another name or use the suggestions.'}</div>`,
+      }[cityStatus]||'';
+      html += `<div class="ob-title" style="font-size:16px;margin-bottom:6px;margin-top:8px">
+        ${lang==='es'?'¿En qué zona pedís delivery?':'Where do you order delivery?'}
+      </div>
+      <div class="ob-sub" style="margin-bottom:10px">${lang==='es'?'Esto nos permite mostrarte restaurantes relevantes a tu zona.':'This lets us show you relevant restaurants for your area.'}</div>
+      <div class="ob-inputs">
+        <div class="ob-input-group">
+          <input class="ob-input" type="text" id="city-input" placeholder="${lang==='es'?'Ej: Wembley Park, Londres':'E.g. Wembley Park, London'}" value="${od.city||''}" oninput="obSetCityInput(this.value)" onchange="obSetCityInput(this.value)" style="font-size:15px;padding:12px">
+        </div>
+      </div>
+      ${cityStatusHtml}
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0">
+        ${cityQuickPicks.map(c=>`<button onclick="obSetCityQuick('${c}')" style="padding:5px 10px;border-radius:16px;border:1.5px solid ${od.city===c?'var(--green)':'var(--border2)'};background:${od.city===c?'var(--green)':'transparent'};color:${od.city===c?'#fff':'var(--text3)'};font-size:11px;cursor:pointer">${c}</button>`).join('')}
+      </div>`;
+    }
   } else if (step === 8) {
     // Goal targets (weight + body fat %)
     const goal = od.goal || 'cut';
@@ -1650,8 +1736,15 @@ function obCanNext(step, od, tl) {
   if (step === 4) return !!od.activity;
   if (step === 5) return !!od.exercise_type && (od.exercise_days||[]).length > 0;
   if (step === 6) return !!od.eating;
-  if (step === 7) return !!od.mealstyle;
-  if (step === 8) return true; // goal targets optional for maintain, others can skip
+  if (step === 7) {
+    if (!od.mealstyle) return false;
+    if (od.mealstyle === 'delivery' || od.mealstyle === 'both') {
+      // Require a validated city
+      return APP._cityStatus === 'valid' && !!(od.city);
+    }
+    return true;
+  }
+  if (step === 8) return true;
   if (step === 9) return od.name && od.name.trim().length > 0;
   return true;
 }
@@ -1738,6 +1831,13 @@ function renderSettings() {
           <div class="ob-check"></div>
         </div>`).join('')}
       </div>
+      ${((ed.mealstyle||p.mealstyle)==='delivery'||(ed.mealstyle||p.mealstyle)==='both')?`
+      <div class="sec">${APP.lang==='es'?'Zona de delivery':'Delivery area'}</div>
+      <div class="ob-inputs">
+        <div class="ob-input-group">
+          <input class="ob-input" type="text" placeholder="${APP.lang==='es'?'Tu ciudad / zona':'Your city / area'}" value="${ed.city||p.city||''}" oninput="seSetInput('city',this.value)">
+        </div>
+      </div>`:''}
 
       ${!p.isCharly ? `<div class="sec">${tl.ob_exercise_title||'Exercise'}</div>
       <div class="ob-cards">
@@ -2393,14 +2493,66 @@ function updateSR(){
   const q=document.getElementById('si')?.value||'';
   if(q.length<2){el.innerHTML='';return;}
   const {list,type}=srch(q);
-  if(!list.length){el.innerHTML=`<div class="nores">${t('no_results')}</div>`;return;}
+  const isEs=APP.lang==='es';
+
+  // Also search custom foods
+  const ql=q.toLowerCase().trim();
+  const customMatches=(APP.customFoods||[]).filter(f=>f.n.toLowerCase().includes(ql));
+
+  if(!list.length && !customMatches.length){
+    const formId='manual-food-form';
+    el.innerHTML=`<div class="nores">${t('no_results')}</div>
+    <div style="margin-top:10px;padding:12px;background:var(--bg2);border:.5px solid var(--border2);border-radius:var(--radius)">
+      <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:10px">+ ${isEs?'Agregar alimento manualmente':'Add food manually'}</div>
+      <div style="display:flex;flex-direction:column;gap:7px">
+        <input id="cf-name" class="sinp" type="text" placeholder="${isEs?'Nombre del alimento':'Food name'}" value="${q}" style="margin:0">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+          <div>
+            <div style="font-size:9px;color:var(--text3);margin-bottom:2px">kcal</div>
+            <input id="cf-kcal" class="sinp" type="number" inputmode="numeric" placeholder="0" style="margin:0;padding:8px">
+          </div>
+          <div>
+            <div style="font-size:9px;color:var(--text3);margin-bottom:2px">${isEs?'Prot g':'Prot g'}</div>
+            <input id="cf-prot" class="sinp" type="number" inputmode="numeric" placeholder="0" style="margin:0;padding:8px">
+          </div>
+          <div>
+            <div style="font-size:9px;color:var(--text3);margin-bottom:2px">${isEs?'Carbos g':'Carbs g'}</div>
+            <input id="cf-carb" class="sinp" type="number" inputmode="numeric" placeholder="0" style="margin:0;padding:8px">
+          </div>
+        </div>
+        <button onclick="saveCustomFood()" style="padding:9px;border-radius:var(--radius);border:none;background:var(--green);color:#fff;font-size:13px;font-weight:600;cursor:pointer">
+          ${isEs?'Guardar y agregar hoy ✓':'Save & add today ✓'}
+        </button>
+      </div>
+      <div style="font-size:10px;color:var(--text3);margin-top:7px">${isEs?'Se guardará para búsquedas futuras con badge custom.':'Will be saved for future searches with a custom badge.'}</div>
+    </div>`;
+    return;
+  }
+
   const hmLabel=t('home_meals_tag')||'Home cooked meals';
   const hdr=type==='p'?`<div style="font-size:10px;color:var(--green);margin-bottom:5px;font-weight:700">🟢 ${t('high_protein')}</div>`
     :type==='l'?`<div style="font-size:10px;color:var(--blue);margin-bottom:5px;font-weight:700">🔵 ${t('low_cal')}</div>`
     :type==='h'?`<div style="font-size:10px;color:#9B5000;margin-bottom:5px;font-weight:700">🟠 ${t('high_carb')}</div>`
     :type==='hm'?`<div style="font-size:10px;color:#8B5CF6;margin-bottom:5px;font-weight:700">🏠 ${hmLabel} — ${list.length} meals</div>`
     :`<div style="font-size:10px;color:var(--text3);margin-bottom:5px">${list.length} ${list.length>1?t('results_pl'):t('results')} — ${t('add')}</div>`;
-  el.innerHTML=hdr+list.map((f,i)=>{
+
+  // Render custom food results first (if any)
+  let customHtml='';
+  if(customMatches.length){
+    customHtml=`<div style="font-size:10px;color:var(--green);margin-bottom:4px;font-weight:700">🏷 ${isEs?'Mis alimentos':'My foods'}</div>`;
+    customMatches.forEach((f,i)=>{
+      customHtml+=`<div class="sri" style="position:relative" onclick="addCustomFoodToDay(${APP.customFoods.indexOf(f)})">
+        <div style="flex:1">
+          <div class="sriname">${f.n} <span style="font-size:9px;padding:1px 5px;border-radius:4px;background:var(--bg3);color:var(--green);border:.5px solid var(--green)">custom</span></div>
+        </div>
+        <div class="srimac">${f.k}kcal<br>${f.p}g P · ${f.c}g C</div>
+        <div class="sriadd">+</div>
+        <button onclick="deleteCustomFood(event,${APP.customFoods.indexOf(f)})" style="position:absolute;top:4px;right:30px;font-size:10px;background:transparent;border:none;color:var(--text3);cursor:pointer">✕</button>
+      </div>`;
+    });
+  }
+
+  el.innerHTML=customHtml+hdr+list.map((f,i)=>{
     const tags=[
       f.hi?`<span class="tp2">${t('high_protein')}</span>`:'',
       f.lc?`<span class="tl2">${t('low_cal')}</span>`:'',
@@ -2413,6 +2565,46 @@ function updateSR(){
       <div class="sriadd">+</div>
     </div>`;
   }).join('');
+}
+
+function saveCustomFood(){
+  const name=(document.getElementById('cf-name')?.value||'').trim();
+  const kcal=parseInt(document.getElementById('cf-kcal')?.value||0);
+  const prot=parseInt(document.getElementById('cf-prot')?.value||0);
+  const carb=parseInt(document.getElementById('cf-carb')?.value||0);
+  if(!name||!kcal){
+    alert(APP.lang==='es'?'Ingresá nombre y kcal como mínimo.':'Please enter at least a name and kcal.');
+    return;
+  }
+  if(!APP.customFoods)APP.customFoods=[];
+  const newFood={id:'cf_'+Date.now(),n:name,k:kcal,p:prot,c:carb,custom:true,cat:'Custom'};
+  APP.customFoods.push(newFood);
+  // Also add to today's custom items
+  const d=APP.day||currentDayId();
+  if(!APP.cust[d])APP.cust[d]=[];
+  APP.cust[d].push({id:'cx_'+Date.now(),name,kcal,prot,carb});
+  save();
+  // Clear search and re-render
+  const si=document.getElementById('si');
+  if(si)si.value='';
+  const sr=document.getElementById('sr');
+  if(sr)sr.innerHTML=`<div style="padding:8px;font-size:12px;color:var(--green)">✓ "${name}" ${APP.lang==='es'?'guardado y agregado a hoy':'saved and added to today'}</div>`;
+  setTimeout(()=>render(),1200);
+}
+
+function addCustomFoodToDay(idx){
+  const f=APP.customFoods[idx];if(!f)return;
+  const d=APP.day||currentDayId();
+  if(!APP.cust[d])APP.cust[d]=[];
+  APP.cust[d].push({id:'cx_'+Date.now(),name:f.n,kcal:f.k,prot:f.p,carb:f.c});
+  save();render();
+}
+
+function deleteCustomFood(e,idx){
+  e.stopPropagation();
+  if(!confirm(APP.lang==='es'?'¿Eliminar este alimento personalizado?':'Delete this custom food?'))return;
+  APP.customFoods.splice(idx,1);
+  save();updateSR();
 }
 
 function addFood(i,q){
@@ -2439,7 +2631,7 @@ function resetProfile(){if(confirm('Reset profile? This will start the setup aga
 function addNewProfile(){
   APP.screen='onboard';
   APP.ob_step=0;
-  APP.ob_data={lang:APP.lang,sex:null,age:'',height:'',weight:'',waist:'',goal:null,activity:null,eating:null,mealstyle:null,diet:[],name:'',exercise_type:null,exercise_days:[],exercise_duration:'60',target_weight:'',target_fat:''};
+  APP.ob_data={lang:APP.lang,sex:null,age:'',height:'',weight:'',waist:'',goal:null,activity:null,eating:null,mealstyle:null,diet:[],name:'',exercise_type:null,exercise_days:[],exercise_duration:'60',target_weight:'',target_fat:'',city:''};
   save();render();
 }
 function deleteProfile(profileId){
@@ -2495,6 +2687,7 @@ function saveEdit(){
   if(ed.activity)p.activity=ed.activity;
   if(ed.eating)p.eating=ed.eating;
   if(ed.mealstyle)p.mealstyle=ed.mealstyle;
+  if(ed.city!==undefined)p.city=ed.city;
   if(ed.exercise_type)p.exercise_type=ed.exercise_type;
   if(ed.exercise_days){p.exercise_days=[...ed.exercise_days];p.cf_days=[...ed.exercise_days];}
   if(ed.target_weight!==undefined&&ed.target_weight!=='')p.target_weight=parseFloat(ed.target_weight);
@@ -2544,6 +2737,46 @@ function obToggleDay(i){
   if(idx>=0)d.splice(idx,1);else d.push(i);
   save();render();
 }
+function obSetCityQuick(c){
+  APP.ob_data.city=c;
+  APP._cityStatus='valid';
+  APP._cityResolved=c;
+  save();render();
+}
+function obSetCityInput(val){
+  APP.ob_data.city=val;
+  APP._cityStatus='idle';
+  APP._cityResolved='';
+  save();
+  // Re-render button state immediately
+  const btn=document.querySelector('.ob-btn:not(.ob-btn-secondary)');
+  if(btn)btn.disabled=true;
+  clearTimeout(window._cityTimer);
+  if(!val||val.trim().length<2){render();return;}
+  window._cityTimer=setTimeout(()=>validateCity(val),800);
+}
+async function validateCity(q){
+  APP._cityStatus='checking';
+  render();
+  try {
+    const url=`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=1&addressdetails=0`;
+    const resp=await fetch(url,{headers:{'Accept-Language':'en','User-Agent':'MagicTracker/3.5'}});
+    const data=await resp.json();
+    if(data&&data.length>0){
+      APP._cityStatus='valid';
+      APP._cityResolved=data[0].display_name.split(',').slice(0,2).join(',').trim();
+    } else {
+      APP._cityStatus='invalid';
+      APP._cityResolved='';
+    }
+  } catch(e){
+    // Network error — allow anyway (don't block offline users)
+    APP._cityStatus='valid';
+    APP._cityResolved=q;
+  }
+  render();
+}
+function obSetCity(c){obSetCityQuick(c);}
 function obToggleDiet(id){
   const d=APP.ob_data.diet;
   if(id==='none'){APP.ob_data.diet=['none'];render();return;}
@@ -2554,31 +2787,37 @@ function obToggleDiet(id){
 function obNext(){APP.ob_step++;save();render();}
 function obBack(){if(APP.ob_step>0){APP.ob_step--;save();render();}}
 function obFinish(){
+  try {
   const od=APP.ob_data;
-  const m=calcMacros({sex:od.sex,age:parseInt(od.age),height:parseInt(od.height),weight:parseFloat(od.weight),goal:od.goal,activity:od.activity});
-  // Calculate exercise burn per session
+  const m=calcMacros({
+    sex:od.sex, age:parseInt(od.age)||30, height:parseInt(od.height)||170,
+    weight:parseFloat(od.weight)||70, goal:od.goal||'cut', activity:od.activity||'moderate',
+    exercise_days:od.exercise_days||[], exercise_burn:0, exercise_duration:parseInt(od.exercise_duration||60)
+  });
   const tl=T[od.lang||'en'];
-  const exType=tl.ob_exercise_types.find(e=>e.id===od.exercise_type)||{kcal:400};
+  const exType=(tl.ob_exercise_types||[]).find(e=>e.id===od.exercise_type)||{kcal:400};
   const dur=parseInt(od.exercise_duration||'60');
   const burnPerSession=Math.round(exType.kcal * dur/60);
   const newProfile={
     id:'user_'+Date.now(),
-    name:od.name,
-    sex:od.sex,age:parseInt(od.age),height:parseInt(od.height),weight:parseFloat(od.weight),waist:parseInt(od.waist)||0,
-    goal:od.goal,activity:od.activity,eating:od.eating,mealstyle:od.mealstyle,diet:od.diet,
-    exercise_type:od.exercise_type,exercise_days:od.exercise_days||[],exercise_duration:dur,
-    exercise_burn:burnPerSession,
+    name:od.name||'User',
+    sex:od.sex, age:parseInt(od.age)||30, height:parseInt(od.height)||170,
+    weight:parseFloat(od.weight)||70, waist:parseInt(od.waist)||0, neck:parseInt(od.neck)||0,
+    goal:od.goal||'cut', activity:od.activity||'moderate', eating:od.eating||'omad',
+    mealstyle:od.mealstyle||'home', diet:od.diet||[], city:od.city||'',
+    exercise_type:od.exercise_type, exercise_days:od.exercise_days||[],
+    exercise_duration:dur, exercise_burn:burnPerSession,
     target_weight:od.target_weight?parseFloat(od.target_weight):null,
     target_fat:od.target_fat?parseFloat(od.target_fat):null,
     weight_updated_at:Date.now(),
-    // Store all macro fields using same structure as CHARLY_PROFILE
-    bmr:m.bmr, neat:m.neat, tdee:m.tdee,
-    tdee_cf:m.tdee_active, tdee_rest:m.tdee_rest,
-    target_cf:m.target_active, target_rest:m.target_rest, target_kcal:m.target_kcal,
+    bmr:m.bmr, neat:m.neat||250, tdee:m.tdee,
+    tdee_cf:m.tdee_active||m.tdee, tdee_rest:m.tdee_rest||m.tdee,
+    target_cf:m.target_active||m.target_kcal, target_rest:m.target_rest||m.target_kcal,
+    target_kcal:m.target_kcal,
     prot_min:m.prot_min,
-    carb_cf:m.carb_cf, carb_rest:m.carb_rest, carb_max:m.carb_max,
-    deficit_min_cf:m.deficit_min_cf, deficit_max_cf:m.deficit_max_cf,
-    deficit_min_rest:m.deficit_min_rest, deficit_max_rest:m.deficit_max_rest,
+    carb_cf:m.carb_cf||m.carb_max, carb_rest:m.carb_rest||m.carb_max, carb_max:m.carb_max,
+    deficit_min_cf:m.deficit_min_cf||m.deficit_min, deficit_max_cf:m.deficit_max_cf||m.deficit_max,
+    deficit_min_rest:m.deficit_min_rest||m.deficit_min, deficit_max_rest:m.deficit_max_rest||m.deficit_max,
     deficit_min:m.deficit_min, deficit_max:m.deficit_max,
     cf_days:od.exercise_days||[0,2,4],
     isCharly:false,
@@ -2589,9 +2828,14 @@ function obFinish(){
   APP.langSetByUser=true;
   APP.profile=newProfile;
   APP.activeProfileId=newProfile.id;
+  if (!APP.allTrackingData) APP.allTrackingData = {};
   loadProfileTracking(newProfile.id);
   APP.screen='tracker';
   save();render();
+  } catch(err) {
+    console.error('obFinish error:', err);
+    alert('Error creating profile: ' + err.message);
+  }
 }
 
 // Tracker actions
