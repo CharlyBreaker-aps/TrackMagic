@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v2.8 (By Charly)</title>
+<title>MagicTracker v3.0 (By Charly)</title>
 <link rel="manifest" href="manifest.json">
 <style>
 :root{
@@ -223,7 +223,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v2.8 (By Charly)",
+    appName: "MagicTracker v3.0 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -366,7 +366,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v2.8 (By Charly)",
+    appName: "MagicTracker v3.0 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -689,14 +689,21 @@ const MLBLS={0.5:'½×',0.75:'¾×',1:'1×',1.25:'1¼×',1.5:'1½×',2:'2×'};
 const CHARLY_PROFILE = {
   id: 'charly',
   name: 'Charly',
-  sex: 'male', age: 42, height: 173, weight: 72.2, waist: 86,
+  sex: 'male', age: 42, height: 173, weight: 72.2, waist: 86, neck: 39,
   goal: 'cut', activity: 'very', eating: 'omad', mealstyle: 'delivery',
   diet: ['nospicy'],
-  bmr: 1699, neat: 250, tdee_cf: 2699, tdee_rest: 2249,
-  target_cf: 1900, target_rest: 1700, prot_min: 150, carb_cf: 200, carb_rest: 150,
-  deficit_min_cf: 500, deficit_max_cf: 900, deficit_min_rest: 350, deficit_max_rest: 700,
-  cf_days: [0,2,4],
-  // Default targets — Charly's goal: reach 10-12% body fat at ~69-70kg
+  // Recalculated with Mifflin-St Jeor (unified formula, same as all other profiles)
+  bmr: 1598, neat: 250,
+  tdee_cf: 2598,   // BMR + NEAT + walk(300) + crossfit(450)
+  tdee_rest: 2148, // BMR + NEAT + walk(300)
+  target_cf: 2098,   // tdee_cf - 500 (cut deficit)
+  target_rest: 1748, // tdee_rest - 400
+  prot_min: 159,  // 2.2g × 72.2kg
+  carb_cf: 184,   // ≤35% of target_cf calories
+  carb_rest: 153, // ≤35% of target_rest calories
+  deficit_min_cf: 400, deficit_max_cf: 800,
+  deficit_min_rest: 300, deficit_max_rest: 600,
+  cf_days: [0,2,4], // Mon=0, Wed=2, Fri=4
   target_weight: 69.5,
   target_fat: 11,
   start_weight: 72.2,
@@ -946,10 +953,26 @@ function calcMacros(profile) {
     carb_max = Math.round(target_kcal * 0.50 / 4);
   }
 
+  const neat = (profile.neat) || (() => {
+    const neatMap = { sedentary:150, light:200, moderate:250, very:300 };
+    return neatMap[activity] || 250;
+  })();
+
   return {
-    bmr, tdee, tdee_active, tdee_rest,
-    target_kcal, target_active, target_rest,
-    prot_min, deficit_min, deficit_max, carb_max
+    bmr, neat, tdee, tdee_active, tdee_rest,
+    target_kcal,
+    target_cf: target_active,   // same field name as Charly
+    target_rest,
+    target_active,
+    prot_min,
+    deficit_min_cf: deficit_min,   // CF day deficit range
+    deficit_max_cf: deficit_max,
+    deficit_min_rest: deficit_min, // rest day same for now
+    deficit_max_rest: deficit_max,
+    deficit_min, deficit_max,
+    carb_cf: carb_max,   // same field name as Charly
+    carb_rest: Math.round(carb_max * 0.85), // rest days slightly lower carbs
+    carb_max
   };
 }
 
@@ -1008,7 +1031,7 @@ function ensureCharlyProfile() {
   if (!APP.profiles) APP.profiles = [];
   const idx = APP.profiles.findIndex(p => p.id==='charly');
   // Fields that the user can change and should be preserved across const resets
-  const PRESERVE = ['weight','waist','age','target_weight','target_fat','start_weight','start_waist','weight_updated_at','current_fat'];
+  const PRESERVE = ['weight','waist','neck','age','target_weight','target_fat','start_weight','start_waist','weight_updated_at','current_fat'];
   if (idx < 0) {
     APP.profiles.unshift({...CHARLY_PROFILE});
   } else {
@@ -1082,8 +1105,22 @@ function getDayList() {
   }));
 }
 
+function getNEAT(p) {
+  // NEAT from profile if set (Charly has 250), otherwise estimate from activity level
+  if (p.neat) return p.neat;
+  const neatMap = { sedentary:150, light:200, moderate:250, very:300 };
+  return neatMap[p.activity] || 250;
+}
+
+function getTDEE(d) {
+  // Returns BMR + NEAT base only. Activity burns added dynamically in calc().
+  const p = getProfile();
+  if (!p) return 2000;
+  const bmr = p.bmr || _macros(p).bmr;
+  return bmr + getNEAT(p);
+}
+
 function _macros(p) {
-  // Cache calcMacros per profile to avoid recalculating on every getter call
   if (!p._macroCache || p._macroCacheWeight !== p.weight) {
     p._macroCache = calcMacros(p);
     p._macroCacheWeight = p.weight;
@@ -1091,38 +1128,36 @@ function _macros(p) {
   return p._macroCache;
 }
 
-function getTDEE(d) {
-  const p = getProfile();
-  if (!p) return 2000;
-  if (p.isCharly) return charlyDayIsCF(d) ? CHARLY_PROFILE.tdee_cf : CHARLY_PROFILE.tdee_rest;
-  const m = _macros(p);
-  return isCFDay(d) ? (m.tdee_active || m.tdee) : (m.tdee_rest || m.tdee);
-}
 function getTargetKcal(d) {
   const p = getProfile();
   if (!p) return 1700;
-  if (p.isCharly) return charlyDayIsCF(d) ? CHARLY_PROFILE.target_cf : CHARLY_PROFILE.target_rest;
-  const m = _macros(p);
-  return isCFDay(d) ? (m.target_active || m.target_kcal) : (m.target_rest || m.target_kcal);
+  // Use profile's stored targets (works for both Charly and generic)
+  if (isCFDay(d)) {
+    return p.target_cf || p.target_active || _macros(p).target_active || _macros(p).target_kcal;
+  }
+  return p.target_rest || _macros(p).target_rest || _macros(p).target_kcal;
 }
+
 function getProtMin() {
   const p = getProfile();
   if (!p) return 150;
-  if (p.isCharly) return CHARLY_PROFILE.prot_min;
-  return _macros(p).prot_min;
+  return p.prot_min || _macros(p).prot_min;
 }
+
 function getCarbMax(d) {
   const p = getProfile();
-  if (!p) return 200;
-  if (p.isCharly) return charlyDayIsCF(d) ? 200 : 150;
-  return _macros(p).carb_max;
+  if (!p) return 180;
+  if (isCFDay(d)) return p.carb_cf || _macros(p).carb_max;
+  return p.carb_rest || _macros(p).carb_max;
 }
+
 function getDeficitRange(d) {
   const p = getProfile();
   if (!p) return [350,700];
-  if (p.isCharly) return charlyDayIsCF(d) ? [500,900] : [350,700];
-  const m = _macros(p);
-  return [m.deficit_min, m.deficit_max];
+  if (isCFDay(d)) {
+    return [p.deficit_min_cf || _macros(p).deficit_min, p.deficit_max_cf || _macros(p).deficit_max];
+  }
+  return [p.deficit_min_rest || _macros(p).deficit_min, p.deficit_max_rest || _macros(p).deficit_max];
 }
 
 // ══════════════════════════════════════════════
@@ -1208,7 +1243,10 @@ function calc(d) {
   const cBurn=customBurns.cf||cfBurn;
   const acts=cf?[{id:'walk',burn:wBurn},{id:'cf',burn:cBurn}]:[{id:'walk',burn:wBurn}];
   acts.forEach(a=>{if(ac[a.id])b+=a.burn;});
-  const tdee=getTDEE(d),def=tdee-Math.round(k);
+  // TDEE is fully dynamic: BMR+NEAT base + whatever activity was actually marked today
+  const tdeeBase = getTDEE(d); // BMR + NEAT only
+  const tdee = tdeeBase + b;   // + actual activity burned
+  const def=tdee-Math.round(k);
   const [dm,dx]=getDeficitRange(d);
   let st;
   if(def<0)st='over';
@@ -1381,6 +1419,16 @@ function renderOnboard() {
           <label class="ob-label">${tl.ob_waist}</label>
           <input class="ob-input" type="number" inputmode="numeric" placeholder="85" value="${od.waist||''}" onchange="obSetInput('waist',this.value)" oninput="obSetInput('waist',this.value)">
           <span class="ob-unit">cm</span>
+        </div>
+      </div>
+      <div class="ob-input-row">
+        <div class="ob-input-group">
+          <label class="ob-label">${APP.lang==='es'?'Cuello':'Neck'}</label>
+          <input class="ob-input" type="number" inputmode="numeric" placeholder="${od.sex==='male'?'38':'34'}" value="${od.neck||''}" onchange="obSetInput('neck',this.value)" oninput="obSetInput('neck',this.value)">
+          <span class="ob-unit">cm</span>
+        </div>
+        <div class="ob-input-group" style="justify-content:flex-end">
+          <div style="font-size:10px;color:var(--text3);line-height:1.4;margin-top:18px">${APP.lang==='es'?'Medí la circunferencia del cuello justo debajo de la nuez de Adán.':'Measure neck circumference just below the Adam\'s apple.'}</div>
         </div>
       </div>
     </div>`;
@@ -1587,11 +1635,18 @@ function renderSettings() {
             <input class="ob-input" type="number" inputmode="decimal" placeholder="kg" value="${ed.weight||p.weight||''}" oninput="seSetInput('weight',this.value)">
             <span class="ob-unit">kg</span>
           </div>
+        <div class="ob-input-row">
           <div class="ob-input-group">
             <label class="ob-label">${tl.ob_waist}</label>
             <input class="ob-input" type="number" inputmode="numeric" placeholder="cm" value="${ed.waist||p.waist||''}" oninput="seSetInput('waist',this.value)">
             <span class="ob-unit">cm</span>
           </div>
+          <div class="ob-input-group">
+            <label class="ob-label">${APP.lang==='es'?'Cuello':'Neck'}</label>
+            <input class="ob-input" type="number" inputmode="numeric" placeholder="cm" value="${ed.neck||p.neck||''}" oninput="seSetInput('neck',this.value)">
+            <span class="ob-unit">cm</span>
+          </div>
+        </div>
         </div>
         <div class="ob-input-row">
           <div class="ob-input-group">
@@ -1681,10 +1736,10 @@ function renderSettings() {
 
   // ── NORMAL SETTINGS VIEW ──
   const m = p && !p.isCharly ? _macros(p) : null;
-  const bmrVal = p?.isCharly ? CHARLY_PROFILE.bmr : (m?.bmr || 0);
-  const tdeeVal = p?.isCharly ? CHARLY_PROFILE.tdee_cf : (m?.tdee || 0);
-  const targetActiveVal = p?.isCharly ? CHARLY_PROFILE.target_cf : (m?.target_active || m?.target_kcal || 0);
-  const targetRestVal = p?.isCharly ? CHARLY_PROFILE.target_rest : (m?.target_rest || m?.target_kcal || 0);
+  const bmrVal = p?.bmr || (m?.bmr || 0);
+  const tdeeVal = p?.tdee || (m?.tdee || 0);
+  const targetActiveVal = p?.target_cf || (m?.target_active || m?.target_kcal || 0);
+  const targetRestVal = p?.target_rest || (m?.target_rest || m?.target_kcal || 0);
 
   const goalLabel = (tl.ob_goals||[]).find(g=>g.id===p?.goal)?.title || p?.goal || '';
   const actLabel = (tl.ob_activities||[]).find(a=>a.id===p?.activity)?.title || p?.activity || '';
@@ -1868,20 +1923,19 @@ function renderTracker() {
   if(hasTarget) {
     const isEs = APP.lang==='es';
 
-    // US Navy Body Fat Formula (most accurate without DEXA/calipers)
+    // US Navy Body Fat Formula — uses actual neck if provided, otherwise estimates it
     // Male: BF% = 495/(1.0324 - 0.19077·log10(waist-neck) + 0.15456·log10(height)) - 450
-    // Neck estimated as height × 0.212 (male) or × 0.195 (female)
-    // Validated: 86cm waist / 173cm height male → ~18.8% BF
-    function estimateBF(waist, height, sex) {
+    // Validated: waist=78.5cm, neck=39cm, height=173cm → 11.0% (matches calculator.net)
+    function estimateBF(waist, height, sex, neckIn) {
       if (!waist || !height) return null;
       try {
         if (sex === 'male') {
-          const neck = Math.round(height * 0.212);
+          const neck = neckIn || Math.round(height * 0.212);
           if (waist <= neck) return null;
           const bf = 495 / (1.0324 - 0.19077 * Math.log10(waist - neck) + 0.15456 * Math.log10(height)) - 450;
           return Math.round(Math.max(4, Math.min(45, bf)) * 10) / 10;
         } else {
-          const neck = Math.round(height * 0.195);
+          const neck = neckIn || Math.round(height * 0.195);
           const hip = Math.round(waist * 1.12);
           if (waist + hip <= neck) return null;
           const bf = 495 / (1.29579 - 0.35004 * Math.log10(waist + hip - neck) + 0.22100 * Math.log10(height)) - 450;
@@ -1896,8 +1950,8 @@ function renderTracker() {
     const startW = p.start_weight || p.weight;
     const tgtW = p.target_weight;
     const tgtF = p.target_fat;
-    const estBF = estimateBF(curWaist, p.height, p.sex);
-    const startBF = estimateBF(startWaist, p.height, p.sex);
+    const estBF = estimateBF(curWaist, p.height, p.sex, p.neck);
+    const startBF = estimateBF(startWaist, p.height, p.sex, p.neck);
 
     const lastUpd = p.weight_updated_at || 0;
     const daysSinceUpd = Math.floor((Date.now()-lastUpd)/(1000*60*60*24));
@@ -2069,60 +2123,147 @@ function renderTracker() {
     }
   });
 
-  // Main meal
-  h+=`<div class="sec">${t('main_meal')}</div>`;
-  if (p.isCharly) {
-    h+=`<div class="skey">${t('snack_a_key')}${t('snack_key_suffix')}</div>`;
-  }
-  rests.forEach(r=>{
-    const selM=selSt[r.id],isOpen=APP.rest[d]&&APP.rest[d][r.id],hasSel=selM!==undefined;
-    h+=`<div class="rest-card"><div class="rest-hdr" onclick="tRest('${d}','${r.id}')">
-      <span class="ricon">${r.icon||'🍽️'}</span><span class="rname">${r.name}</span>
-      <span class="rsrc">${r.src}</span>${hasSel?`<span class="rok">✓</span>`:''}
-      <span class="rarr${isOpen?' open':''}">▼</span>
-    </div><div class="rbody${isOpen?' open':''}">`;
-    r.meals.forEach((m,mi)=>{
-      const isSel=selM===mi;
-      const tK2=m.items.reduce((s,x)=>s+x.kcal,0)+(m.snack?getSnackItems(m.snack).reduce((s,x)=>s+x.kcal,0):0);
-      const tP2=m.items.reduce((s,x)=>s+x.prot,0)+(m.snack?getSnackItems(m.snack).reduce((s,x)=>s+x.prot,0):0);
-      const tC2=m.items.reduce((s,x)=>s+(x.carb||0),0)+(m.snack?getSnackItems(m.snack).reduce((s,x)=>s+(x.carb||0),0):0);
-      h+=`<div class="mopt"><div class="mhdr" onclick="selM('${d}','${r.id}',${mi})">
-        <div class="mradio${isSel?' checked':''}"></div>
-        <div class="minfo">
-          <div class="mname">${m.name}</div>
-          ${m.note?`<div class="mnote">ℹ ${m.note}</div>`:''}
-          <div class="mmacs">${tK2}kcal · ${tP2}g P · ${tC2}g C${m.atun?` · ${m.atun}🥫`:''}</div>
-        </div>
-      </div>`;
-      if(isSel&&curM&&curM._rid===r.id&&curM._midx===mi){
-        h+=`<div class="iwrap open">`;
-        // Column header
-        h+=`<div style="display:flex;align-items:center;gap:4px;padding:4px 0 2px;border-bottom:0.5px solid var(--border)">
-          <div style="width:18px;flex-shrink:0"></div>
-          <div style="width:20px;flex-shrink:0"></div>
-          <div style="flex:1;font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">${APP.lang==='es'?'Alimento':'Food item'}</div>
-          <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;text-align:right;white-space:nowrap;margin-right:4px">${APP.lang==='es'?'Cant · Gramaje':'Qty · Serving'}</div>
+  // ── MEAL SECTIONS — structured by eating pattern ──
+  const eating = p.eating || 'omad';
+  const isEs2 = APP.lang==='es';
+  const BREAKFASTS_DB = FDB.filter(f=>f.cat==='Breakfast');
+
+  // Helper to render a full restaurant/home-meal section
+  function renderMealSection(sectionTitle, sectionIcon, sectionId, mealsData) {
+    const selSt2 = APP.meal[d]||{};
+    const curM2 = getMeal(d);
+    let s = `<div class="sec">${sectionIcon} ${sectionTitle}</div>`;
+    if (p.isCharly && sectionId !== 'breakfast') {
+      s+=`<div class="skey">${t('snack_a_key')}${t('snack_key_suffix')}</div>`;
+    }
+    mealsData.forEach(r=>{
+      const selM2=selSt2[r.id],isOpen2=APP.rest[d]&&APP.rest[d][r.id],hasSel2=selM2!==undefined;
+      s+=`<div class="rest-card"><div class="rest-hdr" onclick="tRest('${d}','${r.id}')">
+        <span class="ricon">${r.icon||'🍽️'}</span><span class="rname">${r.name}</span>
+        <span class="rsrc">${r.src||''}</span>${hasSel2?`<span class="rok">✓</span>`:''}
+        <span class="rarr${isOpen2?' open':''}">▼</span>
+      </div><div class="rbody${isOpen2?' open':''}">`;
+      r.meals.forEach((m2,mi)=>{
+        const isSel2=selM2===mi;
+        const tK2=m2.items.reduce((acc,x)=>acc+x.kcal,0)+(m2.snack?getSnackItems(m2.snack).reduce((acc,x)=>acc+x.kcal,0):0);
+        const tP2=m2.items.reduce((acc,x)=>acc+x.prot,0)+(m2.snack?getSnackItems(m2.snack).reduce((acc,x)=>acc+x.prot,0):0);
+        const tC2=m2.items.reduce((acc,x)=>acc+(x.carb||0),0)+(m2.snack?getSnackItems(m2.snack).reduce((acc,x)=>acc+(x.carb||0),0):0);
+        s+=`<div class="mopt"><div class="mhdr" onclick="selM('${d}','${r.id}',${mi})">
+          <div class="mradio${isSel2?' checked':''}"></div>
+          <div class="minfo">
+            <div class="mname">${m2.name}</div>
+            ${m2.note?`<div class="mnote">ℹ ${m2.note}</div>`:''}
+            <div class="mmacs">${tK2}kcal · ${tP2}g P · ${tC2}g C${m2.atun?` · ${m2.atun}🥫`:''}</div>
+          </div>
         </div>`;
-        h+=`<div class="glbl">${r.name} — ${r.src}</div>`;
-        m.items.forEach((x,j)=>{h+=row(d,{...x,id:'m'+j},'m');});
-        if (m.snack) {
-          h+=`<div class="glbl">Snack ${m.snack}</div>`;
-          getSnackItems(m.snack).forEach(x=>{h+=row(d,x,'m');});
+        if(isSel2&&curM2&&curM2._rid===r.id&&curM2._midx===mi){
+          s+=`<div class="iwrap open">`;
+          s+=`<div style="display:flex;align-items:center;gap:4px;padding:4px 0 2px;border-bottom:0.5px solid var(--border)">
+            <div style="width:18px;flex-shrink:0"></div><div style="width:20px;flex-shrink:0"></div>
+            <div style="flex:1;font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">${isEs2?'Alimento':'Food item'}</div>
+            <div style="font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em;text-align:right;white-space:nowrap;margin-right:4px">${isEs2?'Cant · Gramaje':'Qty · Serving'}</div>
+          </div>`;
+          s+=`<div class="glbl">${r.name}${r.src?' — '+r.src:''}</div>`;
+          m2.items.forEach((x,j)=>{s+=row(d,{...x,id:'m'+j},'m');});
+          if(m2.snack){s+=`<div class="glbl">Snack ${m2.snack}</div>`;getSnackItems(m2.snack).forEach(x=>{s+=row(d,x,'m');});}
+          if(p.isCharly&&(m2.atun||0)>0){s+=`<div class="glbl">${isEs2?'Atún':'Tuna'}</div>`;for(let j=0;j<m2.atun;j++)s+=row(d,{...getATUN(APP.lang),id:'at'+j},'m');}
+          s+=`<div class="exbox"><div class="exhdr">${t('extra_protein_snacks')}</div>`;
+          getExtraSnacks().forEach(x=>{s+=row(d,x,'e');});
+          s+=`</div><div class="exbox" style="margin-top:6px"><div class="exhdr">${t('optional_extras')}</div>`;
+          exItems(d).forEach(x=>{s+=row(d,x,'e');});
+          s+=`</div>`;
+          const cl2=APP.cust[d]||[];
+          if(cl2.length){s+=`<div class="glbl">${t('searched_foods')}</div>`;cl2.forEach(x=>{s+=row(d,x,'c');});}
+          s+=`</div>`;
         }
-        if(p.isCharly&&(m.atun||0)>0){h+=`<div class="glbl">${APP.lang==='es'?'Atún':'Tuna'}</div>`;for(let j=0;j<m.atun;j++)h+=row(d,{...getATUN(APP.lang),id:'at'+j},'m');}
-        h+=`<div class="exbox"><div class="exhdr">${t('extra_protein_snacks')}</div>`;
-        getExtraSnacks().forEach(x=>{h+=row(d,x,'e');});
-        h+=`</div><div class="exbox" style="margin-top:6px"><div class="exhdr">${t('optional_extras')}</div>`;
-        exItems(d).forEach(x=>{h+=row(d,x,'e');});
-        h+=`</div>`;
-        const cl=APP.cust[d]||[];
-        if(cl.length){h+=`<div class="glbl">${t('searched_foods')}</div>`;cl.forEach(x=>{h+=row(d,x,'c');});}
-        h+=`</div>`;
-      }
-      h+=`</div>`;
+        s+=`</div>`;
+      });
+      s+=`</div></div>`;
+    });
+    return s;
+  }
+
+  // Breakfast options as a simple searchable card
+  function renderBreakfastSection() {
+    const bfItems = BREAKFASTS_DB;
+    const bfKey = 'breakfast_open_'+d;
+    const isOpen3 = APP.rest[d]&&APP.rest[d][bfKey];
+    let s = `<div class="sec">🌅 ${isEs2?'Desayuno':'Breakfast'}</div>`;
+    s += `<div class="rest-card"><div class="rest-hdr" onclick="tRest('${d}','${bfKey}')">
+      <span class="ricon">🌅</span><span class="rname">${isEs2?'Opciones de desayuno':'Breakfast options'}</span>
+      <span class="rsrc">${isEs2?'Casero':'Home'}</span>
+      <span class="rarr${isOpen3?' open':''}">▼</span>
+    </div><div class="rbody${isOpen3?' open':''}">`;
+    bfItems.forEach((f,i)=>{
+      const fid = 'bf'+i;
+      const inCust = (APP.cust[d]||[]).find(x=>x.name===f.n);
+      s+=`<div class="mopt"><div class="mhdr" onclick="addBreakfastItem('${d}',${i})" style="cursor:pointer">
+        <div style="width:16px;height:16px;border-radius:50%;border:2px solid var(--border2);flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;font-size:10px">${inCust?'✓':''}</div>
+        <div class="minfo">
+          <div class="mname">${f.n}</div>
+          <div class="mmacs">${f.k}kcal · ${f.p}g P · ${f.c}g C</div>
+        </div>
+        <div style="font-size:20px;color:var(--green);padding-right:4px">+</div>
+      </div></div>`;
+    });
+    s+=`</div></div>`;
+    return s;
+  }
+
+  // Render snacks & extras section (always shown)
+  function renderSnacksSection() {
+    let s = `<div class="sec">🥗 ${isEs2?'Snacks y extras':'Snacks & extras'}</div>`;
+    s += `<div class="exbox" style="margin:0 12px 7px"><div class="exhdr">${t('extra_protein_snacks')}</div>`;
+    getExtraSnacks().forEach(x=>{s+=row(d,x,'e');});
+    s += `</div><div class="exbox" style="margin:0 12px 7px"><div class="exhdr">${t('optional_extras')}</div>`;
+    exItems(d).forEach(x=>{s+=row(d,x,'e');});
+    s += `</div>`;
+    const cl3=APP.cust[d]||[];
+    const customNoBreakfast = cl3.filter(x=>!BREAKFASTS_DB.find(f=>f.n===x.name));
+    if(customNoBreakfast.length){
+      s+=`<div style="margin:0 12px 7px"><div class="glbl">${t('searched_foods')}</div>`;
+      customNoBreakfast.forEach(x=>{s+=row(d,x,'c');});
+      s+=`</div>`;
+    }
+    return s;
+  }
+
+  // Build sections based on eating pattern
+  if (eating === '3meals') {
+    h += renderBreakfastSection();
+    h += renderMealSection(isEs2?'Almuerzo — Comida principal':'Lunch — Main meal', '🥩', 'lunch', rests);
+    h += renderMealSection(isEs2?'Cena — Comida principal':'Dinner — Main meal', '🌙', 'dinner', rests.map(r=>({...r,id:r.id+'_d'})));
+    h += renderSnacksSection();
+  } else if (eating === '2meals') {
+    h += renderMealSection(isEs2?'Primera comida — Almuerzo':'First meal — Lunch', '☀️', 'lunch', rests);
+    h += renderMealSection(isEs2?'Segunda comida — Cena':'Second meal — Dinner', '🌙', 'dinner', rests.map(r=>({...r,id:r.id+'_d'})));
+    h += renderSnacksSection();
+  } else if (eating === 'omad' || eating === 'ext_omad') {
+    // OMAD: one main meal + optional snacks + optional breakfast items
+    h += renderMealSection(isEs2?'Comida principal':'Main meal', '🍽️', 'main', rests);
+    // For OMAD allow some breakfast options as light additions
+    const bfOpen = APP.rest[d]&&APP.rest[d]['breakfast_open_'+d];
+    h += `<div class="sec">🌅 ${isEs2?'Opcional — Desayuno ligero / snacks':'Optional — Light breakfast / snacks'}</div>`;
+    h += `<div class="rest-card"><div class="rest-hdr" onclick="tRest('${d}','breakfast_open_${d}')">
+      <span class="ricon">🌅</span><span class="rname">${isEs2?'Opciones rápidas de desayuno':'Quick breakfast options'}</span>
+      <span class="rsrc">${isEs2?'Casero':'Home'}</span>
+      <span class="rarr${bfOpen?' open':''}">▼</span>
+    </div><div class="rbody${bfOpen?' open':''}">`;
+    BREAKFASTS_DB.forEach((f,i)=>{
+      const inCust2=(APP.cust[d]||[]).find(x=>x.name===f.n);
+      h+=`<div class="mopt"><div class="mhdr" onclick="addBreakfastItem('${d}',${i})" style="cursor:pointer">
+        <div style="width:16px;height:16px;border-radius:50%;border:2px solid var(--border2);flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center;font-size:10px">${inCust2?'✓':''}</div>
+        <div class="minfo"><div class="mname">${f.n}</div><div class="mmacs">${f.k}kcal · ${f.p}g P · ${f.c}g C</div></div>
+        <div style="font-size:20px;color:var(--green);padding-right:4px">+</div>
+      </div></div>`;
     });
     h+=`</div></div>`;
-  });
+    h += renderSnacksSection();
+  } else {
+    // Fallback
+    h += renderMealSection(t('main_meal'), '🍽️', 'main', rests);
+    h += renderSnacksSection();
+  }
 
   // Tuna tracker (Charly only)
   if (p.isCharly) {
@@ -2284,6 +2425,7 @@ function saveEdit(){
   }
   if(ed.age!==undefined&&ed.age!=='')p.age=parseInt(ed.age);
   if(ed.height!==undefined&&ed.height!=='')p.height=parseInt(ed.height);
+  if(ed.neck!==undefined&&ed.neck!=='')p.neck=parseFloat(ed.neck);
   if(ed.goal)p.goal=ed.goal;
   if(ed.activity)p.activity=ed.activity;
   if(ed.eating)p.eating=ed.eating;
@@ -2293,19 +2435,27 @@ function saveEdit(){
   if(ed.target_fat!==undefined&&ed.target_fat!=='')p.target_fat=parseFloat(ed.target_fat);
   // Store start weight if not already set
   if(!p.start_weight)p.start_weight=p.weight;
-  if(!p.isCharly){
-    const m=calcMacros(p);
-    p.bmr=m.bmr;p.tdee=m.tdee;p.target_kcal=m.target_kcal;
-    p.prot_min=m.prot_min;p.deficit_min=m.deficit_min;p.deficit_max=m.deficit_max;p.carb_max=m.carb_max;
-    if(ed.exercise_type||ed.exercise_duration){
-      const tl2=T[APP.lang];
-      const exType=tl2.ob_exercise_types.find(e=>e.id===p.exercise_type)||{kcal:400};
-      const dur=p.exercise_duration||60;
-      p.exercise_burn=Math.round(exType.kcal*dur/60);
-    }
-    const idx=APP.profiles.findIndex(x=>x.id===p.id);
-    if(idx>=0)APP.profiles[idx]={...p};
+  // Recalculate macros for everyone (unified Mifflin formula)
+  const m=calcMacros(p);
+  p.bmr=m.bmr; p.neat=m.neat; p.tdee=m.tdee;
+  p.tdee_cf=m.tdee_active; p.tdee_rest=m.tdee_rest;
+  p.target_cf=m.target_active; p.target_rest=m.target_rest; p.target_kcal=m.target_kcal;
+  p.prot_min=m.prot_min;
+  p.carb_cf=m.carb_cf; p.carb_rest=m.carb_rest; p.carb_max=m.carb_max;
+  p.deficit_min_cf=m.deficit_min_cf; p.deficit_max_cf=m.deficit_max_cf;
+  p.deficit_min_rest=m.deficit_min_rest; p.deficit_max_rest=m.deficit_max_rest;
+  p.deficit_min=m.deficit_min; p.deficit_max=m.deficit_max;
+  if(ed.exercise_type||ed.exercise_duration){
+    const tl2=T[APP.lang];
+    const exType=tl2.ob_exercise_types.find(e=>e.id===p.exercise_type)||{kcal:400};
+    const dur2=p.exercise_duration||60;
+    p.exercise_burn=Math.round(exType.kcal*dur2/60);
   }
+  // Update in profiles list
+  const idx=APP.profiles.findIndex(x=>x.id===p.id);
+  if(idx>=0)APP.profiles[idx]={...p};
+  // Clear macro cache so next render recalculates
+  delete p._macroCache;
   APP.settings_edit_mode=false;APP.settings_edit_data={};
   save();render();
 }
@@ -2355,8 +2505,15 @@ function obFinish(){
     target_weight:od.target_weight?parseFloat(od.target_weight):null,
     target_fat:od.target_fat?parseFloat(od.target_fat):null,
     weight_updated_at:Date.now(),
-    bmr:m.bmr,tdee:m.tdee,target_kcal:m.target_kcal,prot_min:m.prot_min,
-    deficit_min:m.deficit_min,deficit_max:m.deficit_max,carb_max:m.carb_max,
+    // Store all macro fields using same structure as CHARLY_PROFILE
+    bmr:m.bmr, neat:m.neat, tdee:m.tdee,
+    tdee_cf:m.tdee_active, tdee_rest:m.tdee_rest,
+    target_cf:m.target_active, target_rest:m.target_rest, target_kcal:m.target_kcal,
+    prot_min:m.prot_min,
+    carb_cf:m.carb_cf, carb_rest:m.carb_rest, carb_max:m.carb_max,
+    deficit_min_cf:m.deficit_min_cf, deficit_max_cf:m.deficit_max_cf,
+    deficit_min_rest:m.deficit_min_rest, deficit_max_rest:m.deficit_max_rest,
+    deficit_min:m.deficit_min, deficit_max:m.deficit_max,
     cf_days:od.exercise_days||[0,2,4],
     isCharly:false,
   };
@@ -2373,6 +2530,16 @@ function obFinish(){
 
 // Tracker actions
 function setDay(d){APP.day=d;save();render();}
+function addBreakfastItem(d,i){
+  const bfItems=FDB.filter(f=>f.cat==='Breakfast');
+  const f=bfItems[i];if(!f)return;
+  if(!APP.cust[d])APP.cust[d]=[];
+  // Toggle: if already added, remove it
+  const existing=APP.cust[d].findIndex(x=>x.name===f.n);
+  if(existing>=0){APP.cust[d].splice(existing,1);}
+  else{APP.cust[d].push({id:'bx'+Date.now(),name:f.n,kcal:f.k,prot:f.p,carb:f.c||0});}
+  save();render();
+}
 function tRest(d,rid){if(!APP.rest[d])APP.rest[d]={};APP.rest[d][rid]=!APP.rest[d][rid];save();render();}
 function selM(d,rid,mi){
   if(!APP.meal[d])APP.meal[d]={};
