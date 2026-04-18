@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v3.7 (By Charly)</title>
+<title>MagicTracker v3.8 (By Charly)</title>
 <link rel="manifest" href="manifest.json">
 <style>
 :root{
@@ -225,7 +225,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v3.7 (By Charly)",
+    appName: "MagicTracker v3.8 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -368,7 +368,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v3.7 (By Charly)",
+    appName: "MagicTracker v3.8 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -2329,13 +2329,6 @@ function renderTracker() {
           m2.items.forEach((x,j)=>{s+=row(d,{...x,id:'m'+j},'m');});
           if(m2.snack){s+=`<div class="glbl">Snack ${m2.snack}</div>`;getSnackItems(m2.snack).forEach(x=>{s+=row(d,x,'m');});}
           if(p.isCharly&&(m2.atun||0)>0){s+=`<div class="glbl">${isEs2?'Atún':'Tuna'}</div>`;for(let j=0;j<m2.atun;j++)s+=row(d,{...getATUN(APP.lang),id:'at'+j},'m');}
-          s+=`<div class="exbox"><div class="exhdr">${t('extra_protein_snacks')}</div>`;
-          getExtraSnacks().forEach(x=>{s+=row(d,x,'e');});
-          s+=`</div><div class="exbox" style="margin-top:6px"><div class="exhdr">${t('optional_extras')}</div>`;
-          exItems(d).forEach(x=>{s+=row(d,x,'e');});
-          s+=`</div>`;
-          const cl2=APP.cust[d]||[];
-          if(cl2.length){s+=`<div class="glbl">${t('searched_foods')}</div>`;cl2.forEach(x=>{s+=row(d,x,'c');});}
           s+=`</div>`;
         }
         s+=`</div>`;
@@ -2485,6 +2478,30 @@ function render() {
   }
 }
 
+function manualFormHtml(prefill,isEs){
+  return`<div style="display:flex;flex-direction:column;gap:7px">
+    <input id="cf-name" class="sinp" type="text" placeholder="${isEs?'Nombre del alimento':'Food name'}" value="${(prefill||'').replace(/"/g,'&quot;')}" style="margin:0">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
+      <div><div style="font-size:9px;color:var(--text3);margin-bottom:2px">kcal</div>
+        <input id="cf-kcal" class="sinp" type="number" inputmode="numeric" placeholder="0" style="margin:0;padding:8px"></div>
+      <div><div style="font-size:9px;color:var(--text3);margin-bottom:2px">${isEs?'Prot g':'Prot g'}</div>
+        <input id="cf-prot" class="sinp" type="number" inputmode="numeric" placeholder="0" style="margin:0;padding:8px"></div>
+      <div><div style="font-size:9px;color:var(--text3);margin-bottom:2px">${isEs?'Carbos g':'Carbs g'}</div>
+        <input id="cf-carb" class="sinp" type="number" inputmode="numeric" placeholder="0" style="margin:0;padding:8px"></div>
+    </div>
+    <button onclick="saveCustomFood()" style="padding:9px;border-radius:var(--radius);border:none;background:var(--green);color:#fff;font-size:13px;font-weight:600;cursor:pointer">
+      ${isEs?'Guardar y agregar hoy ✓':'Save & add today ✓'}
+    </button>
+    <div style="font-size:10px;color:var(--text3)">${isEs?'Se guardará para búsquedas futuras con badge custom.':'Will be saved for future searches with a custom badge.'}</div>
+  </div>`;
+}
+
+function toggleManualForm(){
+  const w=document.getElementById('manual-form-wrapper');
+  if(!w)return;
+  w.style.display=w.style.display==='none'?'block':'none';
+}
+
 // ══════════════════════════════════════════════
 // SEARCH UPDATE
 // ══════════════════════════════════════════════
@@ -2500,31 +2517,10 @@ function updateSR(){
   const customMatches=(APP.customFoods||[]).filter(f=>f.n.toLowerCase().includes(ql));
 
   if(!list.length && !customMatches.length){
-    const formId='manual-food-form';
     el.innerHTML=`<div class="nores">${t('no_results')}</div>
     <div style="margin-top:10px;padding:12px;background:var(--bg2);border:.5px solid var(--border2);border-radius:var(--radius)">
       <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:10px">+ ${isEs?'Agregar alimento manualmente':'Add food manually'}</div>
-      <div style="display:flex;flex-direction:column;gap:7px">
-        <input id="cf-name" class="sinp" type="text" placeholder="${isEs?'Nombre del alimento':'Food name'}" value="${q}" style="margin:0">
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">
-          <div>
-            <div style="font-size:9px;color:var(--text3);margin-bottom:2px">kcal</div>
-            <input id="cf-kcal" class="sinp" type="number" inputmode="numeric" placeholder="0" style="margin:0;padding:8px">
-          </div>
-          <div>
-            <div style="font-size:9px;color:var(--text3);margin-bottom:2px">${isEs?'Prot g':'Prot g'}</div>
-            <input id="cf-prot" class="sinp" type="number" inputmode="numeric" placeholder="0" style="margin:0;padding:8px">
-          </div>
-          <div>
-            <div style="font-size:9px;color:var(--text3);margin-bottom:2px">${isEs?'Carbos g':'Carbs g'}</div>
-            <input id="cf-carb" class="sinp" type="number" inputmode="numeric" placeholder="0" style="margin:0;padding:8px">
-          </div>
-        </div>
-        <button onclick="saveCustomFood()" style="padding:9px;border-radius:var(--radius);border:none;background:var(--green);color:#fff;font-size:13px;font-weight:600;cursor:pointer">
-          ${isEs?'Guardar y agregar hoy ✓':'Save & add today ✓'}
-        </button>
-      </div>
-      <div style="font-size:10px;color:var(--text3);margin-top:7px">${isEs?'Se guardará para búsquedas futuras con badge custom.':'Will be saved for future searches with a custom badge.'}</div>
+      ${manualFormHtml(q,isEs)}
     </div>`;
     return;
   }
@@ -2564,7 +2560,16 @@ function updateSR(){
       <div class="srimac">${f.k}kcal<br>${f.p}g P · ${f.c}g C</div>
       <div class="sriadd">+</div>
     </div>`;
-  }).join('');
+  }).join('')
+  // Always show "add manually" toggle at bottom
+  + `<div style="margin-top:8px;border-top:.5px solid var(--border);padding-top:8px">
+    <button onclick="toggleManualForm()" style="font-size:11px;color:var(--text3);background:transparent;border:none;cursor:pointer;padding:2px 0">
+      + ${isEs?'No encontrás lo que buscás? Agregar versión propia':'Not finding exactly what you need? Add your own version'}
+    </button>
+    <div id="manual-form-wrapper" style="display:none;margin-top:8px">
+      ${manualFormHtml(q,isEs)}
+    </div>
+  </div>`;
 }
 
 function saveCustomFood(){
