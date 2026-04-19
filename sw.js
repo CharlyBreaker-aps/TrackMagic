@@ -1,4 +1,4 @@
-const CACHE = 'charly-tracker-v34';
+const CACHE = 'charly-tracker-v37';
 const FILES = ['./index.html', './manifest.json'];
 
 self.addEventListener('install', e => {
