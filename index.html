@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v4.9b (By Charly)</title>
+<title>MagicTracker v4.9c (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
 <link rel="manifest" href="manifest.json">
@@ -227,7 +227,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v4.9b (By Charly)",
+    appName: "MagicTracker v4.9c (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -370,7 +370,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v4.9b (By Charly)",
+    appName: "MagicTracker v4.9c (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -3066,6 +3066,14 @@ function init() {
   // Start Firebase and schedule any saved reminders
   try { initFirebase(); } catch(e) {}
   scheduleLocalReminders();
+
+  // On Android/iOS PWA, reschedule when app comes back to foreground
+  // (timers are cleared when app goes to background on some devices)
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      scheduleLocalReminders();
+    }
+  });
 }
 
 
@@ -3184,7 +3192,9 @@ function scheduleLocalReminders() {
   window._notifTimers = [];
   const ns = getNS();
   if (!ns || Notification.permission !== 'granted') return;
-  if (!ns.enabled && !Object.keys(ns).some(k => k !== 'fcmToken' && ns[k] === true)) return;
+  // Check if any reminder is active OR notifications are enabled
+  const hasActive = ns.enabled || Object.keys(ns).some(k => k !== 'fcmToken' && k !== 'enabled' && ns[k] === true);
+  if (!hasActive) return;
 
   const isEs = APP.lang === 'es';
   const p = APP.profile;
@@ -3370,7 +3380,7 @@ function saveCustomNotif() {
 function setCustomNotifTime(i, val) {
   if (!getNS()?.custom?.[i]) return;
   getNS().custom[i].time = val;
-  scheduleLocalReminders(); save();
+  _saveNS(); scheduleLocalReminders(); save();
 }
 
 function toggleCustomNotif(i) {
@@ -3431,8 +3441,7 @@ function toggleNotif(key) {
 function setNotifTime(key, val) {
   // notifSettings auto-initialized by getNS()
   getNS()[key+'Time'] = val;
-  _saveNS(); scheduleLocalReminders();
-  save();
+  _saveNS(); scheduleLocalReminders(); save();
 }
 
 init();
