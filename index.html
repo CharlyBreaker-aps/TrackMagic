@@ -6,9 +6,10 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v4.9c (By Charly)</title>
+<title>MagicTracker v5.0 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
 <link rel="manifest" href="manifest.json">
 <style>
 :root{
@@ -227,7 +228,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v4.9c (By Charly)",
+    appName: "MagicTracker v5.0 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -370,7 +371,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v4.9c (By Charly)",
+    appName: "MagicTracker v5.0 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -3123,23 +3124,25 @@ function initFirebase() {
 
 async function requestNotifPermission() {
   try {
-    // Step 1: Request browser permission — this is all we need for local notifications
     const perm = await Notification.requestPermission();
     if (perm !== 'granted') return false;
 
-    // notifSettings auto-initialized by getNS()
     getNS().enabled = true;
 
-    // Step 2: Try Firebase for background push (optional — fails gracefully)
+    // Get FCM token and register device in Firestore for server-side push
     try {
       if (!fbMsg) initFirebase();
       if (fbMsg && 'serviceWorker' in navigator) {
         const reg = await navigator.serviceWorker.ready;
         const token = await fbMsg.getToken({vapidKey: VAPID_KEY, serviceWorkerRegistration: reg});
-        if (token) getNS().fcmToken = token;
+        if (token) {
+          getNS().fcmToken = token;
+          _saveNS();
+          // Register device in Firestore so Cloud Function can send notifications
+          await registerDeviceInFirestore(token);
+        }
       }
     } catch(fbErr) {
-      // Firebase failed — local notifications still work fine
       console.log('Firebase optional step failed (local notifs still work):', fbErr.message);
     }
 
@@ -3149,6 +3152,41 @@ async function requestNotifPermission() {
   } catch(e) {
     console.log('Notification permission error:', e);
     return false;
+  }
+}
+
+async function registerDeviceInFirestore(token) {
+  try {
+    // Also re-register whenever notification settings change
+    const fbFunctions = firebase.app().functions('us-central1');
+    const registerDevice = fbFunctions.httpsCallable('registerDevice');
+    await registerDevice({
+      profileId: APP.activeProfileId,
+      fcmToken: token,
+      profiles: APP.profiles,
+      lang: APP.lang || 'en'
+    });
+    console.log('Device registered in Firestore');
+  } catch(e) {
+    console.log('Firestore registration failed (local notifs still work):', e.message);
+  }
+}
+
+// Re-register in Firestore whenever notification settings change
+async function syncNotifSettingsToFirestore() {
+  const ns = getNS();
+  if (!ns?.fcmToken) return;
+  try {
+    const fbFunctions = firebase.app().functions('us-central1');
+    const registerDevice = fbFunctions.httpsCallable('registerDevice');
+    await registerDevice({
+      profileId: APP.activeProfileId,
+      fcmToken: ns.fcmToken,
+      profiles: APP.profiles,
+      lang: APP.lang || 'en'
+    });
+  } catch(e) {
+    console.log('Sync to Firestore failed:', e.message);
   }
 }
 
@@ -3375,6 +3413,7 @@ function saveCustomNotif() {
   APP._showNotifForm = false;
   _saveNS(); scheduleLocalReminders();
   save(); render();
+  syncNotifSettingsToFirestore();
 }
 
 function setCustomNotifTime(i, val) {
@@ -3427,6 +3466,7 @@ function disableNotifs() {
   // notifSettings auto-initialized by getNS()
   getNS().enabled = false;
   _saveNS();
+  syncNotifSettingsToFirestore();
   if (window._notifTimers) window._notifTimers.forEach(t => clearTimeout(t));
   save(); render();
 }
@@ -3436,12 +3476,14 @@ function toggleNotif(key) {
   getNS()[key] = !getNS()[key];
   _saveNS(); scheduleLocalReminders();
   save(); render();
+  syncNotifSettingsToFirestore();
 }
 
 function setNotifTime(key, val) {
   // notifSettings auto-initialized by getNS()
   getNS()[key+'Time'] = val;
   _saveNS(); scheduleLocalReminders(); save();
+  syncNotifSettingsToFirestore();
 }
 
 init();
