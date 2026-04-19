@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v4.9 (By Charly)</title>
+<title>MagicTracker v4.9b (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
 <link rel="manifest" href="manifest.json">
@@ -227,7 +227,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v4.9 (By Charly)",
+    appName: "MagicTracker v4.9b (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -370,7 +370,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v4.9 (By Charly)",
+    appName: "MagicTracker v4.9b (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -1129,13 +1129,18 @@ function loadProfileTracking(profileId) {
   APP.emult = td.emult||{}; APP.cust = td.cust||{}; APP.cchk = td.cchk||{};
   APP.cqty = td.cqty||{}; APP.cmult = td.cmult||{}; APP.atun = td.atun||0;
   APP.actBurn = td.actBurn||{}; APP.actEditMode = {}; APP.walkMins = td.walkMins||{};
+  // Restore notifSettings from profiles array into APP.profile
+  if (APP.profile && APP.profiles) {
+    const stored = APP.profiles.find(x => x.id === profileId);
+    if (stored?.notifSettings) APP.profile.notifSettings = stored.notifSettings;
+  }
 }
 
 function ensureCharlyProfile() {
   if (!APP.profiles) APP.profiles = [];
   const idx = APP.profiles.findIndex(p => p.id==='charly');
   // Fields that the user can change and should be preserved across const resets
-  const PRESERVE = ['weight','waist','neck','age','target_weight','target_fat','start_weight','start_waist','weight_updated_at','current_fat','goal','eating','activity','mealstyle','city','cf_days','exercise_days'];
+  const PRESERVE = ['weight','waist','neck','age','target_weight','target_fat','start_weight','start_waist','weight_updated_at','current_fat','goal','eating','activity','mealstyle','city','cf_days','exercise_days','notifSettings'];
   if (idx < 0) {
     APP.profiles.unshift({...CHARLY_PROFILE});
   } else {
