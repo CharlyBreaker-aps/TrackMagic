@@ -6,7 +6,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v4.1 (By Charly)</title>
+<title>MagicTracker v4.2 (By Charly)</title>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
 <link rel="manifest" href="manifest.json">
 <style>
 :root{
@@ -225,7 +227,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v4.1 (By Charly)",
+    appName: "MagicTracker v4.2 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -368,7 +370,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v4.1 (By Charly)",
+    appName: "MagicTracker v4.2 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -1070,6 +1072,7 @@ let APP = {
   activeProfileId: null, // id of active profile
   allTrackingData: {}, // keyed by profileId → {day,rest,meal,chk,qty,mult,act,sup,echk,eqty,emult,cust,cchk,cqty,cmult,atun}
   customFoods: [],     // user-created foods, persisted globally across all profiles
+  notifSettings: {},   // notification preferences and FCM token
   // ── TRACKER STATE (active profile's data, synced from allTrackingData) ──
   day: null,
   rest: {}, meal: {}, chk: {}, qty: {}, mult: {}, act: {}, sup: {},
@@ -1999,6 +2002,7 @@ function renderSettings() {
   </div>
   </div>`;
 
+  html += renderNotifSettings();
   html += `</div>`;
   return html;
 }
@@ -3032,6 +3036,167 @@ function init() {
       navigator.serviceWorker.register('./sw.js').catch(()=>{});
     });
   }
+  // Start Firebase and schedule any saved reminders
+  try { initFirebase(); } catch(e) {}
+  scheduleLocalReminders();
+}
+
+// ══════════════════════════════════════════════
+// FIREBASE + PUSH NOTIFICATIONS
+// ══════════════════════════════════════════════
+const FB_CONFIG = {
+  apiKey: "AIzaSyCx0n_27nCPQmEkOkf69HEyu8fCZo5soH4",
+  authDomain: "trackmagic-27a67.firebaseapp.com",
+  projectId: "trackmagic-27a67",
+  storageBucket: "trackmagic-27a67.firebasestorage.app",
+  messagingSenderId: "1043841248434",
+  appId: "1:1043841248434:web:8d6d2338e62c507341edab"
+};
+const VAPID_KEY = "BE_HmMjONo_sEJWHOgEVFgUn-DYXPAMRWiuYkD_8544tbpXkvO6SvLB_SP_pOy68qY7QoITinHIW5B0AU7b4e6o";
+
+let fbApp = null, fbMsg = null;
+
+function initFirebase() {
+  try {
+    if (!firebase.apps.length) fbApp = firebase.initializeApp(FB_CONFIG);
+    else fbApp = firebase.app();
+    fbMsg = firebase.messaging();
+    // Handle foreground messages
+    fbMsg.onMessage(payload => {
+      const {title, body} = payload.notification || {};
+      if(Notification.permission === 'granted') {
+        new Notification(title||'MagicTracker', {body: body||'', icon:'./icons/icon-192.png'});
+      }
+    });
+  } catch(e) { console.log('Firebase init error:', e); }
+}
+
+async function requestNotifPermission() {
+  try {
+    initFirebase();
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') return false;
+    const token = await fbMsg.getToken({vapidKey: VAPID_KEY});
+    if (!APP.notifSettings) APP.notifSettings = {};
+    APP.notifSettings.fcmToken = token;
+    APP.notifSettings.enabled = true;
+    save(); return true;
+  } catch(e) { console.log('Notif error:', e); return false; }
+}
+
+function scheduleLocalReminders() {
+  // Cancel existing timers
+  if (window._notifTimers) window._notifTimers.forEach(t => clearTimeout(t));
+  window._notifTimers = [];
+  const ns = APP.notifSettings;
+  if (!ns || !ns.enabled || Notification.permission !== 'granted') return;
+  const now = new Date();
+  function scheduleAt(hhmm, title, body, tag) {
+    const [h, m] = hhmm.split(':').map(Number);
+    const target = new Date(); target.setHours(h, m, 0, 0);
+    if (target <= now) target.setDate(target.getDate() + 1);
+    const delay = target - now;
+    const tid = setTimeout(() => {
+      new Notification(title, {body, icon:'./icons/icon-192.png', tag, renotify:true});
+      scheduleAt(hhmm, title, body, tag); // reschedule for next day
+    }, delay);
+    window._notifTimers.push(tid);
+  }
+  const isEs = APP.lang === 'es';
+  if (ns.snack && ns.snackTime) {
+    scheduleAt(ns.snackTime,
+      isEs ? '🥗 Hora del snack' : '🥗 Snack time',
+      isEs ? 'Recordá registrar tu snack en MagicTracker' : "Don't forget to log your snack",
+      'snack');
+  }
+  if (ns.meal && ns.mealTime) {
+    scheduleAt(ns.mealTime,
+      isEs ? '🍽️ Hora de comer' : '🍽️ Meal time',
+      isEs ? 'Hora de tu comida principal — registrala en MagicTracker' : 'Time for your main meal — log it in MagicTracker',
+      'meal');
+  }
+  if (ns.supps && ns.suppsTime) {
+    scheduleAt(ns.suppsTime,
+      isEs ? '💊 Suplementos' : '💊 Supplements',
+      isEs ? 'Recordatorio: creatina + electrolitos' : 'Reminder: creatine + electrolytes',
+      'supps');
+  }
+  if (ns.weigh && ns.weighTime) {
+    // Weekly on Monday
+    scheduleAt(ns.weighTime,
+      isEs ? '⚖️ Pesaje semanal' : '⚖️ Weekly weigh-in',
+      isEs ? 'Actualizá tu peso y cintura en Settings para ver tu progreso real' : 'Update your weight & waist in Settings to track real progress',
+      'weigh');
+  }
+}
+
+function renderNotifSettings() {
+  const ns = APP.notifSettings || {};
+  const isEs = APP.lang === 'es';
+  const enabled = ns.enabled && Notification.permission === 'granted';
+  return `
+  <div class="sec" style="margin-top:16px">🔔 ${isEs?'Notificaciones':'Notifications'}</div>
+  <div class="settings-card">
+    ${!enabled ? `
+    <div style="padding:12px">
+      <div style="font-size:13px;color:var(--text2);margin-bottom:10px">${isEs?'Recibí recordatorios de comidas, suplementos y pesaje semanal.':'Get reminders for meals, supplements and weekly weigh-in.'}</div>
+      <button onclick="enableNotifs()" style="width:100%;padding:10px;border-radius:var(--radius);border:none;background:var(--green);color:#fff;font-size:14px;font-weight:600;cursor:pointer">
+        ${isEs?'Activar notificaciones':'Enable notifications'}
+      </button>
+    </div>` : `
+    <div style="padding:4px 0">
+      <div style="padding:6px 12px;font-size:11px;color:var(--green)">✓ ${isEs?'Notificaciones activadas':'Notifications enabled'}</div>
+      ${notifRow('snack', isEs?'🥗 Snack':'🥗 Snack', ns.snackTime||'15:30', ns.snack, isEs)}
+      ${notifRow('meal', isEs?'🍽️ Comida principal':'🍽️ Main meal', ns.mealTime||'12:00', ns.meal, isEs)}
+      ${notifRow('supps', isEs?'💊 Suplementos':'💊 Supplements', ns.suppsTime||'08:00', ns.supps, isEs)}
+      ${notifRow('weigh', isEs?'⚖️ Pesaje semanal':'⚖️ Weekly weigh-in', ns.weighTime||'08:00', ns.weigh, isEs)}
+      <div style="padding:8px 12px">
+        <button onclick="disableNotifs()" style="font-size:11px;color:var(--text3);background:transparent;border:none;cursor:pointer">
+          ${isEs?'Desactivar notificaciones':'Disable notifications'}
+        </button>
+      </div>
+    </div>`}
+  </div>`;
+}
+
+function notifRow(key, label, defaultTime, active, isEs) {
+  const ns = APP.notifSettings || {};
+  const time = ns[key+'Time'] || defaultTime;
+  return `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-bottom:.5px solid var(--border)">
+    <span style="flex:1;font-size:13px">${label}</span>
+    <input type="time" value="${time}" onchange="setNotifTime('${key}',this.value)"
+      style="font-size:12px;background:var(--bg2);border:.5px solid var(--border2);border-radius:6px;padding:4px 6px;color:var(--text)">
+    <div onclick="toggleNotif('${key}')" style="width:36px;height:20px;border-radius:10px;background:${active?'var(--green)':'var(--border2)'};cursor:pointer;position:relative;transition:background .2s">
+      <div style="position:absolute;top:2px;${active?'right:2px':'left:2px'};width:16px;height:16px;border-radius:50%;background:#fff;transition:all .2s"></div>
+    </div>
+  </div>`;
+}
+
+async function enableNotifs() {
+  const ok = await requestNotifPermission();
+  if (ok) { scheduleLocalReminders(); render(); }
+  else { alert(APP.lang==='es'?'No se pudo activar. Revisá los permisos del browser.':'Could not enable. Check browser permissions.'); }
+}
+
+function disableNotifs() {
+  if (!APP.notifSettings) APP.notifSettings = {};
+  APP.notifSettings.enabled = false;
+  if (window._notifTimers) window._notifTimers.forEach(t => clearTimeout(t));
+  save(); render();
+}
+
+function toggleNotif(key) {
+  if (!APP.notifSettings) APP.notifSettings = {};
+  APP.notifSettings[key] = !APP.notifSettings[key];
+  scheduleLocalReminders();
+  save(); render();
+}
+
+function setNotifTime(key, val) {
+  if (!APP.notifSettings) APP.notifSettings = {};
+  APP.notifSettings[key+'Time'] = val;
+  scheduleLocalReminders();
+  save();
 }
 
 init();
