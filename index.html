@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v4.8 (By Charly)</title>
+<title>MagicTracker v4.9 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
 <link rel="manifest" href="manifest.json">
@@ -227,7 +227,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v4.8 (By Charly)",
+    appName: "MagicTracker v4.9 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -370,7 +370,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v4.8 (By Charly)",
+    appName: "MagicTracker v4.9 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -1100,6 +1100,15 @@ function save() {
         emult:APP.emult, cust:APP.cust, cchk:APP.cchk, cqty:APP.cqty, cmult:APP.cmult,
         atun:APP.atun, actBurn:APP.actBurn||{}, walkMins:APP.walkMins||{}
       };
+    }
+    // Always sync APP.profile back to APP.profiles[] before serializing
+    // This ensures notifSettings and any other profile-level changes persist
+    if (APP.profile && APP.profiles) {
+      const idx = APP.profiles.findIndex(x => x.id === APP.profile.id);
+      if (idx >= 0) {
+        // Merge — don't overwrite computed fields, just sync mutable ones
+        if (APP.profile.notifSettings) APP.profiles[idx].notifSettings = APP.profile.notifSettings;
+      }
     }
     localStorage.setItem('cvr_app', JSON.stringify(APP));
   } catch(e){}
@@ -3170,66 +3179,70 @@ function scheduleLocalReminders() {
   window._notifTimers = [];
   const ns = getNS();
   if (!ns || Notification.permission !== 'granted') return;
-  if (!ns.enabled && !Object.keys(ns).some(k=>ns[k]===true)) return;
+  if (!ns.enabled && !Object.keys(ns).some(k => k !== 'fcmToken' && ns[k] === true)) return;
+
+  const isEs = APP.lang === 'es';
+  const p = APP.profile;
+  const cfDays = p?.cf_days || [0,2,4];
 
   async function showNotif(title, body, tag) {
     try {
-      const reg = await navigator.serviceWorker.ready;
+      const reg = await Promise.race([
+        navigator.serviceWorker.ready,
+        new Promise((_,r) => setTimeout(() => r(new Error('to')), 2000))
+      ]);
       reg.showNotification(title, {body, tag, renotify:true, icon:'./icons/icon-192.png', badge:'./icons/icon-192.png'});
     } catch(e) {
       try { new Notification(title, {body, icon:'./icons/icon-192.png'}); } catch(e2){}
     }
   }
 
-  function scheduleAt(hhmm, title, body, tag) {
+  // dayFilter: null=every day, [0,2,4]=only those weekdays (0=Mon), 'weekly_mon'=once/week Monday
+  function scheduleAt(hhmm, title, body, tag, dayFilter) {
     if (!hhmm) return;
     const [h, m] = hhmm.split(':').map(Number);
-    const target = new Date(); target.setHours(h, m, 0, 0);
-    if (target <= new Date()) target.setDate(target.getDate() + 1);
-    const delay = target - new Date();
-    const tid = setTimeout(() => {
+    function nextFire() {
+      const now = new Date();
+      const d = new Date(); d.setHours(h, m, 0, 0);
+      if (d <= now) d.setDate(d.getDate() + 1);
+      if (dayFilter === 'weekly_mon') {
+        while (d.getDay() !== 1) d.setDate(d.getDate() + 1); // 1=Monday in JS
+      } else if (Array.isArray(dayFilter)) {
+        // JS getDay: 0=Sun,1=Mon...6=Sat → our system: 0=Mon...6=Sun
+        const toApp = day => day === 0 ? 6 : day - 1;
+        let tries = 0;
+        while (!dayFilter.includes(toApp(d.getDay())) && tries++ < 8) {
+          d.setDate(d.getDate() + 1);
+        }
+      }
+      return d;
+    }
+    function fire() {
       showNotif(title, body, tag);
-      scheduleAt(hhmm, title, body, tag);
-    }, delay);
+      const next = nextFire();
+      const tid = setTimeout(fire, Math.max(0, next - new Date()));
+      window._notifTimers.push(tid);
+    }
+    const first = nextFire();
+    const tid = setTimeout(fire, Math.max(0, first - new Date()));
     window._notifTimers.push(tid);
   }
-  const isEs = APP.lang === 'es';
-  if (ns.snack && ns.snackTime) {
-    scheduleAt(ns.snackTime,
-      isEs ? '🥗 Hora del snack' : '🥗 Snack time',
-      isEs ? 'Recordá registrar tu snack en MagicTracker' : "Don't forget to log your snack",
-      'snack');
-  }
-  if (ns.meal && ns.mealTime) {
-    scheduleAt(ns.mealTime,
-      isEs ? '🍽️ Hora de comer' : '🍽️ Meal time',
-      isEs ? 'Hora de tu comida principal — registrala en MagicTracker' : 'Time for your main meal — log it in MagicTracker',
-      'meal');
-  }
-  if (ns.supps && ns.suppsTime) {
-    scheduleAt(ns.suppsTime,
-      isEs ? '💊 Suplementos' : '💊 Supplements',
-      isEs ? 'Recordatorio: creatina + electrolitos' : 'Reminder: creatine + electrolytes',
-      'supps');
-  }
-  if (ns.weigh && ns.weighTime) {
-    scheduleAt(ns.weighTime,
-      isEs ? '⚖️ Pesaje semanal' : '⚖️ Weekly weigh-in',
-      isEs ? 'Actualizá tu peso y cintura en Settings para ver tu progreso real' : 'Update your weight & waist in Settings to track real progress',
-      'weigh');
-  }
-  // All other preset keys (workout, water, supps2, etc.)
-  const presetKeys = {
-    workout: {title: isEs?'🏋️ Hora de entrenar':'🏋️ Workout time', body: isEs?'Es hora de tu entrenamiento':'Time for your workout'},
-    water:   {title: isEs?'💧 Tomar agua':'💧 Drink water', body: isEs?'Recordatorio de hidratación':'Hydration reminder'},
-    supps2:  {title: isEs?'💊 Suplementos tarde':'💊 Afternoon supplements', body: isEs?'Creatina + electrolitos':'Creatine + electrolytes'},
+
+  const PRESETS = {
+    meal:    {title: isEs?'🍽️ Comida principal':'🍽️ Main meal',                   body: isEs?'Hora de tu comida principal':'Time for your main meal',       days: null},
+    snack:   {title: isEs?'🥗 Snack':'🥗 Snack time',                             body: isEs?'Recordá registrar tu snack':"Don't forget to log your snack", days: null},
+    supps:   {title: isEs?'💊 Creatina + electrolitos':'💊 Creatine + electrolytes', body: isEs?'Suplementos de la mañana':'Morning supplements',           days: null},
+    supps2:  {title: isEs?'💊 Suplementos tarde':'💊 Afternoon supplements',       body: isEs?'Suplementos de la tarde':'Afternoon supplements',             days: null},
+    workout: {title: isEs?'🏋️ Hora de entrenar':'🏋️ Workout time',                body: isEs?'Hoy es día de entrenamiento':'Today is a training day',        days: cfDays},
+    weigh:   {title: isEs?'⚖️ Pesaje semanal':'⚖️ Weekly weigh-in',                body: isEs?'Actualizá tu peso y cintura en Settings':'Update weight & waist in Settings', days: 'weekly_mon'},
+    water:   {title: isEs?'💧 Tomar agua':'💧 Drink water',                       body: isEs?'Recordatorio de hidratación':'Hydration reminder',              days: null},
   };
-  Object.entries(presetKeys).forEach(([k,v]) => {
-    if (ns[k] && ns[k+'Time']) scheduleAt(ns[k+'Time'], v.title, v.body, k);
+
+  Object.entries(PRESETS).forEach(([k, v]) => {
+    if (ns[k] && ns[k+'Time']) scheduleAt(ns[k+'Time'], v.title, v.body, k, v.days);
   });
-  // Custom user reminders
   (ns.custom||[]).forEach((r,i) => {
-    if (r.active && r.time) scheduleAt(r.time, '🔔 MagicTracker', r.label, 'custom_'+i);
+    if (r.active && r.time) scheduleAt(r.time, '🔔 MagicTracker', r.label, 'custom_'+i, null);
   });
 }
 
@@ -3245,8 +3258,8 @@ function renderNotifSettings() {
     {key:'snack',   icon:'🥗', label:isEs?'Snack / merienda':'Snack',              defaultTime:'15:30'},
     {key:'supps',   icon:'💊', label:isEs?'Creatina + electrolitos':'Creatine + electrolytes', defaultTime:'08:00'},
     {key:'supps2',  icon:'💊', label:isEs?'Suplementos tarde':'Afternoon supplements', defaultTime:'15:30'},
-    {key:'workout', icon:'🏋️', label:isEs?'Hora de entrenar':'Workout time',       defaultTime:'07:00'},
-    {key:'weigh',   icon:'⚖️', label:isEs?'Actualizar peso/cintura':'Update weight/waist', defaultTime:'08:00'},
+    {key:'workout', icon:'🏋️', label:isEs?'Hora de entrenar (solo días de entreno)':'Workout time (training days only)', defaultTime:'07:00'},
+    {key:'weigh',   icon:'⚖️', label:isEs?'Pesaje semanal (solo lunes)':'Weekly weigh-in (Mondays only)', defaultTime:'08:00'},
     {key:'water',   icon:'💧', label:isEs?'Tomar agua':'Drink water',              defaultTime:'10:00'},
   ];
 
