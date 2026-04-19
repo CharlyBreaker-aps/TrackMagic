@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v4.5 (By Charly)</title>
+<title>MagicTracker v4.6 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
 <link rel="manifest" href="manifest.json">
@@ -227,7 +227,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v4.5 (By Charly)",
+    appName: "MagicTracker v4.6 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -370,7 +370,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v4.5 (By Charly)",
+    appName: "MagicTracker v4.6 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -832,6 +832,19 @@ const mp={lun:[N,I,TB,KF,MC,NA,PE,FW],mar:[N,I,TB,WA,KF,MC,ZI,YM,KE,PE],mie:[N,I
 return mp[d]||[];
 };
 
+// Global accessor for Wembley Park restaurants — usable by buildGenericRests
+function getWembleyRests(subset) {
+  // Temporarily invoke buildCharlyRests with a dummy day to get restaurant objects
+  // We extract N, I, WA, etc. by calling the function and reading its closure
+  // Simpler: just re-define them inline here using same data
+  const all = buildCharlyRests('lun'); // returns array of restaurant objects for Monday
+  const allRests = ['lun','mar','mie','jue','vie','sab','dom']
+    .flatMap(d => buildCharlyRests(d))
+    .filter((r,i,arr) => arr.findIndex(x=>x.id===r.id)===i); // deduplicate
+  if (!subset) return allRests;
+  return allRests.filter(r => subset.includes(r.id));
+}
+
 // ══════════════════════════════════════════════
 // GENERIC MEAL PLAN BUILDER (for new users)
 // ══════════════════════════════════════════════
@@ -896,10 +909,9 @@ function buildGenericRests(profile, lang) {
   let deliveryRests = [];
 
   if (isWembley) {
-    // Wembley Park — all Charly's restaurants (using correct variable names)
-    deliveryRests = [N, I, TB, WA, KF, MC, NA, FG, PE, FW, ZI, YM].filter(Boolean);
+    deliveryRests = getWembleyRests(); // all Wembley Park restaurants
   } else if (isLondon) {
-    deliveryRests = [N, I, WA, KF, FG, ZI, YM].filter(Boolean);
+    deliveryRests = getWembleyRests(['nandos','itsu','wagamama','kfc','fiveguys','pizzaexpress','youme']);
     // Add generic London chains
     deliveryRests.push(
       {id:'pret',name:"Pret A Manger",icon:'🥪',src:'Walk-in / Deliveroo',meals:[
