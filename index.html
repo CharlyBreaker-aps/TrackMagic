@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v4.7 (By Charly)</title>
+<title>MagicTracker v4.8 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
 <link rel="manifest" href="manifest.json">
@@ -227,7 +227,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v4.7 (By Charly)",
+    appName: "MagicTracker v4.8 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -370,7 +370,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v4.7 (By Charly)",
+    appName: "MagicTracker v4.8 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -1153,6 +1153,7 @@ function switchProfile(profileId) {
   APP.activeProfileId = profileId;
   loadProfileTracking(profileId);
   APP.screen = 'tracker';
+  scheduleLocalReminders(); // reload this profile's notification schedule
   save(); render();
 }
 
@@ -3053,6 +3054,21 @@ function init() {
   scheduleLocalReminders();
 }
 
+
+// ── Per-profile notification settings ──
+function getNS() {
+  const p = APP.profile;
+  if (!p) { if(!APP._ns)APP._ns={}; return APP._ns; }
+  if (!p.notifSettings) p.notifSettings = {};
+  return p.notifSettings;
+}
+function _saveNS() {
+  const p = APP.profile;
+  if (!p || !APP.profiles) return;
+  const idx = APP.profiles.findIndex(x => x.id === p.id);
+  if (idx >= 0) APP.profiles[idx].notifSettings = p.notifSettings || {};
+}
+
 // ══════════════════════════════════════════════
 // FIREBASE + PUSH NOTIFICATIONS
 // ══════════════════════════════════════════════
@@ -3089,8 +3105,8 @@ async function requestNotifPermission() {
     const perm = await Notification.requestPermission();
     if (perm !== 'granted') return false;
 
-    if (!APP.notifSettings) APP.notifSettings = {};
-    APP.notifSettings.enabled = true;
+    // notifSettings auto-initialized by getNS()
+    getNS().enabled = true;
 
     // Step 2: Try Firebase for background push (optional — fails gracefully)
     try {
@@ -3098,13 +3114,14 @@ async function requestNotifPermission() {
       if (fbMsg && 'serviceWorker' in navigator) {
         const reg = await navigator.serviceWorker.ready;
         const token = await fbMsg.getToken({vapidKey: VAPID_KEY, serviceWorkerRegistration: reg});
-        if (token) APP.notifSettings.fcmToken = token;
+        if (token) getNS().fcmToken = token;
       }
     } catch(fbErr) {
       // Firebase failed — local notifications still work fine
       console.log('Firebase optional step failed (local notifs still work):', fbErr.message);
     }
 
+    _saveNS();
     save();
     return true;
   } catch(e) {
@@ -3123,9 +3140,9 @@ async function enableNotifs() {
   }
   // If already granted, just enable
   if (Notification.permission === 'granted') {
-    if (!APP.notifSettings) APP.notifSettings = {};
-    APP.notifSettings.enabled = true;
-    scheduleLocalReminders();
+    // notifSettings auto-initialized by getNS()
+    getNS().enabled = true;
+    _saveNS(); scheduleLocalReminders();
     save(); render();
     return;
   }
@@ -3151,7 +3168,7 @@ async function enableNotifs() {
 function scheduleLocalReminders() {
   if (window._notifTimers) window._notifTimers.forEach(t => clearTimeout(t));
   window._notifTimers = [];
-  const ns = APP.notifSettings;
+  const ns = getNS();
   if (!ns || Notification.permission !== 'granted') return;
   if (!ns.enabled && !Object.keys(ns).some(k=>ns[k]===true)) return;
 
@@ -3217,7 +3234,7 @@ function scheduleLocalReminders() {
 }
 
 function renderNotifSettings() {
-  const ns = APP.notifSettings || {};
+  const ns = getNS() || {};
   const isEs = APP.lang === 'es';
   // Check both saved flag AND actual permission
   const permOk = typeof Notification !== 'undefined' && Notification.permission === 'granted';
@@ -3324,29 +3341,29 @@ function saveCustomNotif() {
   const label = document.getElementById('notif-custom-label')?.value?.trim();
   const time = document.getElementById('notif-custom-time')?.value || '09:00';
   if (!label) return;
-  if (!APP.notifSettings) APP.notifSettings = {};
-  if (!APP.notifSettings.custom) APP.notifSettings.custom = [];
-  APP.notifSettings.custom.push({label, time, active: true});
+  // notifSettings auto-initialized by getNS()
+  if (!getNS().custom) getNS().custom = [];
+  getNS().custom.push({label, time, active: true});
   APP._showNotifForm = false;
-  scheduleLocalReminders();
+  _saveNS(); scheduleLocalReminders();
   save(); render();
 }
 
 function setCustomNotifTime(i, val) {
-  if (!APP.notifSettings?.custom?.[i]) return;
-  APP.notifSettings.custom[i].time = val;
+  if (!getNS()?.custom?.[i]) return;
+  getNS().custom[i].time = val;
   scheduleLocalReminders(); save();
 }
 
 function toggleCustomNotif(i) {
-  if (!APP.notifSettings?.custom?.[i]) return;
-  APP.notifSettings.custom[i].active = !APP.notifSettings.custom[i].active;
-  scheduleLocalReminders(); save(); render();
+  if (!getNS()?.custom?.[i]) return;
+  getNS().custom[i].active = !getNS().custom[i].active;
+  _saveNS(); scheduleLocalReminders(); save(); render();
 }
 
 function deleteCustomNotif(i) {
-  if (!APP.notifSettings?.custom) return;
-  APP.notifSettings.custom.splice(i, 1);
+  if (!getNS()?.custom) return;
+  getNS().custom.splice(i, 1);
   scheduleLocalReminders(); save(); render();
 }
 
@@ -3379,23 +3396,24 @@ async function testNotif() {
 }
 
 function disableNotifs() {
-  if (!APP.notifSettings) APP.notifSettings = {};
-  APP.notifSettings.enabled = false;
+  // notifSettings auto-initialized by getNS()
+  getNS().enabled = false;
+  _saveNS();
   if (window._notifTimers) window._notifTimers.forEach(t => clearTimeout(t));
   save(); render();
 }
 
 function toggleNotif(key) {
-  if (!APP.notifSettings) APP.notifSettings = {};
-  APP.notifSettings[key] = !APP.notifSettings[key];
-  scheduleLocalReminders();
+  // notifSettings auto-initialized by getNS()
+  getNS()[key] = !getNS()[key];
+  _saveNS(); scheduleLocalReminders();
   save(); render();
 }
 
 function setNotifTime(key, val) {
-  if (!APP.notifSettings) APP.notifSettings = {};
-  APP.notifSettings[key+'Time'] = val;
-  scheduleLocalReminders();
+  // notifSettings auto-initialized by getNS()
+  getNS()[key+'Time'] = val;
+  _saveNS(); scheduleLocalReminders();
   save();
 }
 
