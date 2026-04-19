@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v4.0 (By Charly)</title>
+<title>MagicTracker v4.1 (By Charly)</title>
 <link rel="manifest" href="manifest.json">
 <style>
 :root{
@@ -225,7 +225,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v4.0 (By Charly)",
+    appName: "MagicTracker v4.1 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -368,7 +368,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v4.0 (By Charly)",
+    appName: "MagicTracker v4.1 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -976,9 +976,18 @@ function calcMacros(profile) {
     ? Math.round(10*weight + 6.25*height - 5*age + 5)
     : Math.round(10*weight + 6.25*height - 5*age - 161);
 
-  // Activity multiplier — base (non-exercise movement only)
-  const baseMult = { sedentary:1.2, light:1.3, moderate:1.4, very:1.5 };
-  const base = bmr * (baseMult[activity] || 1.4);
+  // NEAT = non-exercise activity thermogenesis
+  // Calibrated so that 'very' active profile with same stats as Charly gives identical targets
+  const neatMap = { sedentary:150, light:180, moderate:220, very:250 };
+  const neat = (profile.neat) || neatMap[activity] || 220;
+
+  // Base = BMR + NEAT
+  const base = bmr + neat;
+
+  // Typical daily walk burn (used for target calculation, not the dynamic tracker)
+  // Users who walk daily: sedentary=0, light=120, moderate=200, very=300
+  const typicalWalkMap = { sedentary:0, light:120, moderate:200, very:300 };
+  const typicalWalk = typicalWalkMap[activity] || 200;
 
   // Weekly exercise calories
   const daysPerWeek = (exercise_days||[]).length || 3;
@@ -986,13 +995,13 @@ function calcMacros(profile) {
   const weeklyExBurn = daysPerWeek * burnPerSession;
   const dailyExBurn = Math.round(weeklyExBurn / 7);
 
-  // TDEE = base activity + average daily exercise burn
-  const tdee = Math.round(base + dailyExBurn);
+  // TDEE = base + typical walk + average exercise (for settings display)
+  const tdee = Math.round(base + typicalWalk + dailyExBurn);
 
-  // Training day TDEE (add full session burn)
-  const tdee_active = Math.round(base + burnPerSession);
-  // Rest day TDEE (no session)
-  const tdee_rest = Math.round(base);
+  // Rest day TDEE = base + typical walk
+  const tdee_rest = base + typicalWalk;
+  // Training day TDEE = base + typical walk + full session
+  const tdee_active = base + typicalWalk + burnPerSession;
 
   let target_kcal, target_active, target_rest, prot_min, deficit_min, deficit_max, carb_max;
   const w = weight;
@@ -1027,11 +1036,6 @@ function calcMacros(profile) {
     deficit_min = -600; deficit_max = -150;
     carb_max = Math.round(target_kcal * 0.50 / 4);
   }
-
-  const neat = (profile.neat) || (() => {
-    const neatMap = { sedentary:150, light:200, moderate:250, very:300 };
-    return neatMap[activity] || 250;
-  })();
 
   return {
     bmr, neat, tdee, tdee_active, tdee_rest,
@@ -1182,16 +1186,24 @@ function getDayList() {
 }
 
 function getNEAT(p) {
-  // NEAT from profile if set (Charly has 250), otherwise estimate from activity level
+  // Returns the non-exercise base expenditure above BMR
+  // For Charly: use stored neat field
+  // For generic profiles: use stored tdee_rest - bmr (which equals BMR×mult - BMR)
   if (p.neat) return p.neat;
-  const neatMap = { sedentary:150, light:200, moderate:250, very:300 };
-  return neatMap[p.activity] || 250;
+  if (p.tdee_rest && p.bmr) return p.tdee_rest - p.bmr;
+  // Fallback estimate
+  const baseMult = { sedentary:1.2, light:1.3, moderate:1.4, very:1.5 };
+  return Math.round(p.bmr * ((baseMult[p.activity]||1.4) - 1));
 }
 
 function getTDEE(d) {
-  // Returns BMR + NEAT base only. Activity burns added dynamically in calc().
+  // Base TDEE = BMR + all non-exercise activity (stored as tdee_rest for generic profiles)
+  // Activity burns (walk, exercise) added dynamically in calc()
   const p = getProfile();
   if (!p) return 2000;
+  // Use stored tdee_rest if available — this is the exact base calcMacros used
+  if (p.tdee_rest) return p.tdee_rest;
+  // Charly: bmr + neat
   const bmr = p.bmr || _macros(p).bmr;
   return bmr + getNEAT(p);
 }
@@ -2104,7 +2116,7 @@ function renderTracker() {
 
   // Deficit box
   h+=`<div class="def-box ${cfg.cls}">
-    <div class="dr"><span>${t('bmr_neat')} <span style="font-size:9px;color:var(--text3)">(${APP.lang==='es'?'metabolismo base':'base metabolism'})</span></span><span class="dv">${p.bmr||_macros(p).bmr} kcal</span></div>
+    <div class="dr"><span>${t('bmr_neat')} <span style="font-size:9px;color:var(--text3)">(${APP.lang==='es'?'base sin ejercicio marcado':'base without marked exercise'})</span></span><span class="dv">${getTDEE(d)} kcal</span></div>
     <div class="dr"><span>${t('activity_label')} <span style="font-size:9px;color:var(--text3)">(${b===0?(APP.lang==='es'?'nada marcado aún':'nothing marked yet'):(APP.lang==='es'?'marcado hoy':'marked today')})</span></span><span class="dv" style="color:${b>0?'var(--green)':'var(--text3)'}">${b} kcal</span></div>
     <div class="dr" style="font-weight:600"><span>${t('total_tdee')}</span><span class="dv">${tdee} kcal</span></div>
     <div class="dhr"></div>
