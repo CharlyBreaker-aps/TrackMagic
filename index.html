@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v4.6 (By Charly)</title>
+<title>MagicTracker v4.7 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
 <link rel="manifest" href="manifest.json">
@@ -227,7 +227,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v4.6 (By Charly)",
+    appName: "MagicTracker v4.7 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -370,7 +370,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v4.6 (By Charly)",
+    appName: "MagicTracker v4.7 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -3352,23 +3352,29 @@ function deleteCustomNotif(i) {
 
 async function testNotif() {
   const isEs = APP.lang === 'es';
-  try {
-    const reg = await navigator.serviceWorker.ready;
-    reg.showNotification('MagicTracker 🎯', {
-      body: isEs ? '✓ Las notificaciones funcionan correctamente' : '✓ Notifications are working correctly',
-      icon: './icons/icon-192.png',
-      badge: './icons/icon-192.png',
-      tag: 'test'
-    });
-  } catch(e) {
+  const title = 'MagicTracker 🎯';
+  const body = isEs ? '✓ Las notificaciones funcionan correctamente' : '✓ Notifications are working correctly';
+
+  // Try service worker first, then fall back to basic Notification
+  let shown = false;
+  if ('serviceWorker' in navigator) {
     try {
-      new Notification('MagicTracker 🎯', {
-        body: isEs ? '✓ Notificaciones funcionando' : '✓ Notifications working',
-        icon: './icons/icon-192.png'
-      });
-    } catch(e2) {
-      alert(isEs ? 'Error al mostrar notificación: ' + e2.message : 'Error showing notification: ' + e2.message);
-    }
+      const reg = await Promise.race([
+        navigator.serviceWorker.ready,
+        new Promise((_,r) => setTimeout(() => r(new Error('timeout')), 2000))
+      ]);
+      await reg.showNotification(title, {body, icon:'./icons/icon-192.png', badge:'./icons/icon-192.png', tag:'test'});
+      shown = true;
+    } catch(e) { /* fall through */ }
+  }
+  if (!shown) {
+    try {
+      new Notification(title, {body, icon:'./icons/icon-192.png'});
+      shown = true;
+    } catch(e) { /* fall through */ }
+  }
+  if (!shown) {
+    alert(isEs ? 'El browser bloqueó la notificación. Verificá los permisos del sitio.' : 'Browser blocked the notification. Check site permissions.');
   }
 }
 
