@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v5.3 (By Charly)</title>
+<title>MagicTracker v5.4 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
@@ -229,7 +229,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v5.3 (By Charly)",
+    appName: "MagicTracker v5.4 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -372,7 +372,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v5.3 (By Charly)",
+    appName: "MagicTracker v5.4 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -3162,27 +3162,29 @@ async function requestNotifPermission() {
   }
 }
 
+async function _writeToFirestore(token) {
+  const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/London';
+  const uid = token.substring(0, 28).replace(/[^a-zA-Z0-9]/g, '_');
+  const db = firebase.firestore();
+  await db.collection('users').doc(uid).set({
+    fcmToken: token,
+    activeProfileId: APP.activeProfileId || 'charly',
+    profiles: APP.profiles || [],
+    lang: APP.lang || 'en',
+    timezone,
+    updatedAt: new Date().toISOString(),
+  }, {merge: true});
+  return uid;
+}
+
 async function registerDeviceInFirestore(token) {
   try {
-    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/London';
-    const res = await fetch(
-      'https://us-central1-trackmagic-27a67.cloudfunctions.net/registerDevice',
-      {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({data: {
-          profileId: APP.activeProfileId,
-          fcmToken: token,
-          profiles: APP.profiles,
-          lang: APP.lang || 'en',
-          timezone
-        }})
-      }
-    );
-    const json = await res.json();
-    console.log('✓ Device registered in Firestore, tz:', timezone, 'response:', JSON.stringify(json));
+    const uid = await _writeToFirestore(token);
+    console.log('✓ Registered in Firestore uid:', uid);
+    return {ok: true, uid};
   } catch(e) {
-    console.log('Firestore registration failed:', e.message);
+    console.error('✗ Firestore write error:', e.code, e.message);
+    return {ok: false, error: e.message};
   }
 }
 
@@ -3190,24 +3192,10 @@ async function syncNotifSettingsToFirestore() {
   const ns = getNS();
   if (!ns?.fcmToken) return;
   try {
-    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/London';
-    await fetch(
-      'https://us-central1-trackmagic-27a67.cloudfunctions.net/registerDevice',
-      {
-        method: 'POST',
-        headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({data: {
-          profileId: APP.activeProfileId,
-          fcmToken: ns.fcmToken,
-          profiles: APP.profiles,
-          lang: APP.lang || 'en',
-          timezone
-        }})
-      }
-    );
-    console.log('✓ Synced notif settings to Firestore');
+    const uid = await _writeToFirestore(ns.fcmToken);
+    console.log('✓ Synced to Firestore uid:', uid);
   } catch(e) {
-    console.log('Sync to Firestore failed:', e.message);
+    console.error('✗ Firestore sync error:', e.code, e.message);
   }
 }
 
@@ -3501,18 +3489,23 @@ async function reRegisterDevice() {
     if (!fbMsg) initFirebase();
     const reg = await Promise.race([
       navigator.serviceWorker.ready,
-      new Promise((_,r) => setTimeout(() => r(new Error('timeout')), 3000))
+      new Promise((_,r) => setTimeout(() => r(new Error('SW timeout')), 3000))
     ]);
     const token = await fbMsg.getToken({vapidKey: VAPID_KEY, serviceWorkerRegistration: reg});
-    if (!token) { alert(isEs?'No se pudo obtener token FCM':'Could not get FCM token'); return; }
+    if (!token) { alert('No FCM token received'); return; }
     getNS().fcmToken = token;
     getNS().enabled = true;
-    _saveNS();
-    await registerDeviceInFirestore(token);
-    save();
-    alert(isEs?'✓ Dispositivo registrado correctamente. Las notificaciones llegarán aunque la app esté cerrada.':'✓ Device registered. Notifications will arrive even when the app is closed.');
+    _saveNS(); save();
+    const result = await registerDeviceInFirestore(token);
+    if (result?.ok) {
+      alert(isEs
+        ? '✓ Dispositivo registrado. Las notificaciones llegarán aunque la app esté cerrada.\n\nUID: ' + result.uid
+        : '✓ Device registered. Notifications will arrive even when the app is closed.\n\nUID: ' + result.uid);
+    } else {
+      alert('Registration failed: ' + (result?.error || 'unknown error'));
+    }
   } catch(e) {
-    alert((isEs?'Error: ':'Error: ') + e.message);
+    alert('Error: ' + e.message);
   }
 }
 
