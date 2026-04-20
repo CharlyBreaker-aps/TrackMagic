@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v5.0 (By Charly)</title>
+<title>MagicTracker v5.1 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
@@ -228,7 +228,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v5.0 (By Charly)",
+    appName: "MagicTracker v5.1 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -371,7 +371,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v5.0 (By Charly)",
+    appName: "MagicTracker v5.1 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -3157,33 +3157,36 @@ async function requestNotifPermission() {
 
 async function registerDeviceInFirestore(token) {
   try {
-    // Also re-register whenever notification settings change
     const fbFunctions = firebase.app().functions('us-central1');
     const registerDevice = fbFunctions.httpsCallable('registerDevice');
+    // Send user's local timezone so Cloud Function uses correct local time
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/London';
     await registerDevice({
       profileId: APP.activeProfileId,
       fcmToken: token,
       profiles: APP.profiles,
-      lang: APP.lang || 'en'
+      lang: APP.lang || 'en',
+      timezone
     });
-    console.log('Device registered in Firestore');
+    console.log('Device registered in Firestore, timezone:', timezone);
   } catch(e) {
     console.log('Firestore registration failed (local notifs still work):', e.message);
   }
 }
 
-// Re-register in Firestore whenever notification settings change
 async function syncNotifSettingsToFirestore() {
   const ns = getNS();
   if (!ns?.fcmToken) return;
   try {
     const fbFunctions = firebase.app().functions('us-central1');
     const registerDevice = fbFunctions.httpsCallable('registerDevice');
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/London';
     await registerDevice({
       profileId: APP.activeProfileId,
       fcmToken: ns.fcmToken,
       profiles: APP.profiles,
-      lang: APP.lang || 'en'
+      lang: APP.lang || 'en',
+      timezone
     });
   } catch(e) {
     console.log('Sync to Firestore failed:', e.message);
@@ -3226,11 +3229,14 @@ async function enableNotifs() {
 }
 
 function scheduleLocalReminders() {
+  // Cancel existing poll interval and timers
+  if (window._notifInterval) clearInterval(window._notifInterval);
   if (window._notifTimers) window._notifTimers.forEach(t => clearTimeout(t));
   window._notifTimers = [];
+  if (!window._notifFired) window._notifFired = {};
+
   const ns = getNS();
   if (!ns || Notification.permission !== 'granted') return;
-  // Check if any reminder is active OR notifications are enabled
   const hasActive = ns.enabled || Object.keys(ns).some(k => k !== 'fcmToken' && k !== 'enabled' && ns[k] === true);
   if (!hasActive) return;
 
@@ -3250,53 +3256,57 @@ function scheduleLocalReminders() {
     }
   }
 
-  // dayFilter: null=every day, [0,2,4]=only those weekdays (0=Mon), 'weekly_mon'=once/week Monday
-  function scheduleAt(hhmm, title, body, tag, dayFilter) {
-    if (!hhmm) return;
-    const [h, m] = hhmm.split(':').map(Number);
-    function nextFire() {
-      const now = new Date();
-      const d = new Date(); d.setHours(h, m, 0, 0);
-      if (d <= now) d.setDate(d.getDate() + 1);
-      if (dayFilter === 'weekly_mon') {
-        while (d.getDay() !== 1) d.setDate(d.getDate() + 1); // 1=Monday in JS
-      } else if (Array.isArray(dayFilter)) {
-        // JS getDay: 0=Sun,1=Mon...6=Sat → our system: 0=Mon...6=Sun
-        const toApp = day => day === 0 ? 6 : day - 1;
-        let tries = 0;
-        while (!dayFilter.includes(toApp(d.getDay())) && tries++ < 8) {
-          d.setDate(d.getDate() + 1);
-        }
-      }
-      return d;
-    }
-    function fire() {
-      showNotif(title, body, tag);
-      const next = nextFire();
-      const tid = setTimeout(fire, Math.max(0, next - new Date()));
-      window._notifTimers.push(tid);
-    }
-    const first = nextFire();
-    const tid = setTimeout(fire, Math.max(0, first - new Date()));
-    window._notifTimers.push(tid);
-  }
-
   const PRESETS = {
-    meal:    {title: isEs?'🍽️ Comida principal':'🍽️ Main meal',                   body: isEs?'Hora de tu comida principal':'Time for your main meal',       days: null},
-    snack:   {title: isEs?'🥗 Snack':'🥗 Snack time',                             body: isEs?'Recordá registrar tu snack':"Don't forget to log your snack", days: null},
-    supps:   {title: isEs?'💊 Creatina + electrolitos':'💊 Creatine + electrolytes', body: isEs?'Suplementos de la mañana':'Morning supplements',           days: null},
-    supps2:  {title: isEs?'💊 Suplementos tarde':'💊 Afternoon supplements',       body: isEs?'Suplementos de la tarde':'Afternoon supplements',             days: null},
-    workout: {title: isEs?'🏋️ Hora de entrenar':'🏋️ Workout time',                body: isEs?'Hoy es día de entrenamiento':'Today is a training day',        days: cfDays},
-    weigh:   {title: isEs?'⚖️ Pesaje semanal':'⚖️ Weekly weigh-in',                body: isEs?'Actualizá tu peso y cintura en Settings':'Update weight & waist in Settings', days: 'weekly_mon'},
-    water:   {title: isEs?'💧 Tomar agua':'💧 Drink water',                       body: isEs?'Recordatorio de hidratación':'Hydration reminder',              days: null},
+    meal:    {title: isEs?'🍽️ Comida principal':'🍽️ Main meal',                     body: isEs?'Hora de tu comida principal':'Time for your main meal',       days: null},
+    snack:   {title: isEs?'🥗 Snack':'🥗 Snack time',                               body: isEs?'Recordá registrar tu snack':"Don't forget to log your snack", days: null},
+    supps:   {title: isEs?'💊 Creatina + electrolitos':'💊 Creatine + electrolytes', body: isEs?'Suplementos de la mañana':'Morning supplements',             days: null},
+    supps2:  {title: isEs?'💊 Suplementos tarde':'💊 Afternoon supplements',         body: isEs?'Suplementos de la tarde':'Afternoon supplements',             days: null},
+    workout: {title: isEs?'🏋️ Hora de entrenar':'🏋️ Workout time',                  body: isEs?'Hoy es día de entrenamiento':'Today is a training day',        days: cfDays},
+    weigh:   {title: isEs?'⚖️ Pesaje semanal':'⚖️ Weekly weigh-in',                  body: isEs?'Actualizá tu peso y cintura en Settings':'Update weight & waist', days: 'weekly_mon'},
+    water:   {title: isEs?'💧 Tomar agua':'💧 Drink water',                         body: isEs?'Recordatorio de hidratación':'Hydration reminder',              days: null},
   };
 
-  Object.entries(PRESETS).forEach(([k, v]) => {
-    if (ns[k] && ns[k+'Time']) scheduleAt(ns[k+'Time'], v.title, v.body, k, v.days);
-  });
-  (ns.custom||[]).forEach((r,i) => {
-    if (r.active && r.time) scheduleAt(r.time, '🔔 MagicTracker', r.label, 'custom_'+i, null);
-  });
+  // Poll every 30 seconds using LOCAL time — much more reliable on Android than long setTimeout
+  function checkAndFire() {
+    const now = new Date();
+    const hh = String(now.getHours()).padStart(2,'0');
+    const mm = String(now.getMinutes()).padStart(2,'0');
+    const currentTime = hh + ':' + mm;
+    const jsDay = now.getDay(); // 0=Sun..6=Sat JS convention
+    const toApp = d => d === 0 ? 6 : d - 1; // convert to 0=Mon..6=Sun
+    const appDay = toApp(jsDay);
+    const dateKey = now.getFullYear() + '-' + now.getMonth() + '-' + now.getDate();
+
+    // Re-read ns each poll so settings changes take effect immediately
+    const currentNS = getNS();
+
+    Object.entries(PRESETS).forEach(([k, v]) => {
+      if (!currentNS[k] || !currentNS[k+'Time']) return;
+      if (currentNS[k+'Time'] !== currentTime) return;
+      if (v.days === 'weekly_mon' && jsDay !== 1) return;
+      if (Array.isArray(v.days) && !v.days.includes(appDay)) return;
+      const fireKey = k + '-' + currentTime + '-' + dateKey;
+      if (window._notifFired[fireKey]) return;
+      window._notifFired[fireKey] = true;
+      showNotif(v.title, v.body, k);
+    });
+
+    (currentNS.custom||[]).forEach((r,i) => {
+      if (!r.active || r.time !== currentTime) return;
+      const fireKey = 'cx' + i + '-' + currentTime + '-' + dateKey;
+      if (window._notifFired[fireKey]) return;
+      window._notifFired[fireKey] = true;
+      showNotif('🔔 MagicTracker', r.label, 'custom_'+i);
+    });
+
+    // Clean up yesterday's fired keys
+    Object.keys(window._notifFired).forEach(k => {
+      if (!k.endsWith(dateKey)) delete window._notifFired[k];
+    });
+  }
+
+  checkAndFire();
+  window._notifInterval = setInterval(checkAndFire, 30000);
 }
 
 function renderNotifSettings() {
