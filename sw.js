@@ -1,5 +1,5 @@
-const CACHE = 'charly-tracker-v48';
-const FILES = ['./index.html', './manifest.json'];
+const CACHE = 'charly-tracker-v50';
+const FILES = ['./manifest.json', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)));
@@ -14,7 +14,20 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
-  e.respondWith(caches.match(e.request).then(cached => cached || fetch(e.request).catch(() => caches.match('./index.html'))));
+  const url = new URL(e.request.url);
+  // Network-first for HTML and SW — always get latest version
+  if (url.pathname.endsWith('.html') || url.pathname.endsWith('sw.js') || url.pathname === '/' || url.pathname.endsWith('/charly-tracker/')) {
+    e.respondWith(
+      fetch(e.request).then(r => {
+        const clone = r.clone();
+        caches.open(CACHE).then(c => c.put(e.request, clone));
+        return r;
+      }).catch(() => caches.match(e.request))
+    );
+  } else {
+    // Cache-first for icons, manifests, images
+    e.respondWith(caches.match(e.request).then(cached => cached || fetch(e.request)));
+  }
 });
 
 // ── FIREBASE MESSAGING ──
@@ -32,7 +45,6 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Handle background push notifications
 messaging.onBackgroundMessage(payload => {
   const { title, body, icon } = payload.notification || {};
   self.registration.showNotification(title || 'MagicTracker', {
@@ -45,7 +57,6 @@ messaging.onBackgroundMessage(payload => {
   });
 });
 
-// Handle notification click — open the app
 self.addEventListener('notificationclick', e => {
   e.notification.close();
   e.waitUntil(clients.matchAll({type:'window'}).then(list => {
