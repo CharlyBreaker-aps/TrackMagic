@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v5.5b (By Charly)</title>
+<title>MagicTracker v5.7 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
@@ -229,7 +229,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v5.5b (By Charly)",
+    appName: "MagicTracker v5.7 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -372,7 +372,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v5.5b (By Charly)",
+    appName: "MagicTracker v5.7 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -3165,11 +3165,25 @@ async function requestNotifPermission() {
 async function _writeToFirestore(token) {
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/London';
   const uid = token.substring(0, 28).replace(/[^a-zA-Z0-9]/g, '_');
+
+  // Force sync APP.profile.notifSettings to APP.profiles[] before writing
+  _saveNS();
+
+  // Build a clean copy of profiles with notifSettings included
+  const profiles = (APP.profiles || []).map(p => {
+    const clean = {...p};
+    // For the active profile, make sure notifSettings is from APP.profile (most current)
+    if (p.id === APP.activeProfileId && APP.profile?.notifSettings) {
+      clean.notifSettings = APP.profile.notifSettings;
+    }
+    return clean;
+  });
+
   const db = firebase.firestore();
   await db.collection('users').doc(uid).set({
     fcmToken: token,
     activeProfileId: APP.activeProfileId || 'charly',
-    profiles: APP.profiles || [],
+    profiles,
     lang: APP.lang || 'en',
     timezone,
     updatedAt: new Date().toISOString(),
@@ -3460,38 +3474,50 @@ async function testNotif() {
   const title = 'MagicTracker 🎯';
   const body = isEs ? '✓ Las notificaciones funcionan correctamente' : '✓ Notifications are working correctly';
 
-  if (Notification.permission !== 'granted') {
-    alert(isEs ? 'Permiso de notificaciones no activo.' : 'Notification permission not granted.');
+  if (typeof Notification === 'undefined') {
+    alert('Notifications API not supported in this browser.');
     return;
   }
 
-  let shown = false;
+  if (Notification.permission === 'denied') {
+    alert(isEs
+      ? 'Notificaciones bloqueadas. En Chrome: click en el candado 🔒 en la barra de URL → Notificaciones → Permitir.'
+      : 'Notifications blocked. In Chrome: click the 🔒 lock in the URL bar → Notifications → Allow.');
+    return;
+  }
 
-  // Try service worker first (works on mobile PWA)
+  if (Notification.permission !== 'granted') {
+    const perm = await Notification.requestPermission();
+    if (perm !== 'granted') {
+      alert(isEs ? 'Permiso denegado.' : 'Permission denied.');
+      return;
+    }
+  }
+
+  let swError = null, basicError = null;
+
+  // Try service worker
   if ('serviceWorker' in navigator) {
     try {
       const reg = await Promise.race([
         navigator.serviceWorker.ready,
-        new Promise((_,r) => setTimeout(() => r(new Error('timeout')), 2000))
+        new Promise((_,r) => setTimeout(() => r(new Error('SW timeout')), 2000))
       ]);
       if (reg?.showNotification) {
-        await reg.showNotification(title, {body, icon:'./icons/icon-192.png', badge:'./icons/icon-192.png', tag:'test'});
-        shown = true;
+        await reg.showNotification(title, {body, icon:'./icons/icon-192.png', tag:'test'});
+        return; // success
       }
-    } catch(e) { /* fall through */ }
+    } catch(e) { swError = e.message; }
   }
 
-  // Fallback: basic Notification API (works on desktop)
-  if (!shown) {
-    try {
-      new Notification(title, {body, icon:'./icons/icon-192.png'});
-      shown = true;
-    } catch(e) { /* fall through */ }
-  }
+  // Fallback: basic Notification
+  try {
+    new Notification(title, {body, icon:'./icons/icon-192.png'});
+    return; // success
+  } catch(e) { basicError = e.message; }
 
-  if (!shown) {
-    alert(isEs ? 'No se pudo mostrar la notificación. Verificá los permisos del sitio en el browser.' : 'Could not show notification. Check site permissions in browser settings.');
-  }
+  // Both failed — show debug info
+  alert(`Could not show notification.\nSW error: ${swError}\nBasic error: ${basicError}\nPermission: ${Notification.permission}`);
 }
 
 async function reRegisterDevice() {
