@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v5.9b (By Charly)</title>
+<title>MagicTracker v6.0 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
@@ -217,7 +217,7 @@ window.onerror = function(msg, src, line, col, err) {
     root.innerHTML = '<div style="padding:24px;font-family:sans-serif;background:#1a0000;min-height:100vh">'
       + '<div style="font-size:18px;color:#ff6b6b;margin-bottom:12px">⚠️ Something went wrong</div>'
       + '<div style="font-size:12px;color:#ff9999;font-family:monospace">' + msg + ' (line ' + line + ')</div>'
-      + '<div style="margin-top:20px"><button onclick="localStorage.clear();location.reload()" '
+      + '<div style="margin-top:20px"><button onclick="if(confirm(\'Clear all data?\')){localStorage.clear();location.reload()}" '
       + 'style="padding:12px 24px;background:#c0392b;color:#fff;border:none;border-radius:10px;font-size:15px;cursor:pointer">'
       + '🔄 Reset &amp; reload</button></div>'
       + '<div style="margin-top:12px;font-size:11px;color:#666">This will clear your local data and restart the app.</div></div>';
@@ -229,7 +229,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v5.9b (By Charly)",
+    appName: "MagicTracker v6.0 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -372,7 +372,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v5.9b (By Charly)",
+    appName: "MagicTracker v6.0 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -1093,6 +1093,13 @@ let APP = {
   echk: {}, eqty: {}, emult: {}, cust: {}, cchk: {}, cqty: {}, cmult: {}, atun: 0,
 };
 
+// ── Security: escape user input before rendering as HTML ──
+function escapeHTML(s) {
+  if (typeof s !== 'string') return String(s||'');
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+          .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
 function save() {
   try {
     if (APP.activeProfileId) {
@@ -1488,7 +1495,7 @@ function row(d,it,tp){
     <button class="qb p" onclick="${inf}('${d}','${it.id}',event)">+</button>
     ${eq>0?`<span class="qn">+${eq}</span><button class="qb" style="width:18px;height:18px;font-size:11px" onclick="${df2}('${d}','${it.id}',event)">−</button>`:''}
     <div class="iinfo">
-      <span class="iname ${dc}">${it.name}${bdg}</span>
+      <span class="iname ${dc}">${escapeHTML(it.name)}${bdg}</span>
       <span class="imac ${dc}">${mac}</span>
     </div>
     <div class="mwrap">
@@ -2621,7 +2628,7 @@ function updateSR(){
     customMatches.forEach((f,i)=>{
       customHtml+=`<div class="sri" style="position:relative" onclick="addCustomFoodToDay(${APP.customFoods.indexOf(f)})">
         <div style="flex:1">
-          <div class="sriname">${f.n} <span style="font-size:9px;padding:1px 5px;border-radius:4px;background:var(--bg3);color:var(--green);border:.5px solid var(--green)">custom</span></div>
+          <div class="sriname">${escapeHTML(f.n)} <span style="font-size:9px;padding:1px 5px;border-radius:4px;background:var(--bg3);color:var(--green);border:.5px solid var(--green)">custom</span></div>
         </div>
         <div class="srimac">${f.k}kcal<br>${f.p}g P · ${f.c}g C</div>
         <div class="sriadd">+</div>
@@ -2638,7 +2645,7 @@ function updateSR(){
       f.hm?`<span style="font-size:9px;padding:1px 5px;border-radius:4px;background:#2d1f4e;color:#a78bfa;flex-shrink:0">🏠 ${hmLabel}</span>`:'',
     ].filter(Boolean).join('');
     return`<div class="sri" onclick="addFood(${i},'${q.replace(/'/g,"\\'")}')">
-      <div style="flex:1"><div class="sriname">${f.n}${tags}</div><div class="sricat">${f.cat}</div></div>
+      <div style="flex:1"><div class="sriname">${escapeHTML(f.n)}${tags}</div><div class="sricat">${f.cat}</div></div>
       <div class="srimac">${f.k}kcal<br>${f.p}g P · ${f.c}g C</div>
       <div class="sriadd">+</div>
     </div>`;
@@ -3126,6 +3133,18 @@ function initFirebase() {
         new Notification(title||'MagicTracker', {body: body||'', icon:'./icons/icon-192.png'});
       }
     });
+    // Refresh token when FCM rotates it — update Firestore automatically
+    // This ensures push notifications keep working long-term
+    navigator.serviceWorker?.ready.then(reg => {
+      fbMsg.getToken({vapidKey: VAPID_KEY, serviceWorkerRegistration: reg}).then(token => {
+        if (token && getNS().fcmToken !== token) {
+          getNS().fcmToken = token;
+          _saveNS(); save();
+          registerDeviceInFirestore(token);
+          console.log('FCM token refreshed');
+        }
+      }).catch(() => {});
+    });
   } catch(e) { console.log('Firebase init error:', e); }
 }
 
@@ -3343,7 +3362,7 @@ function renderNotifSettings() {
       const time = ns[r.key+'Time'] || r.defaultTime;
       html += `<div style="display:flex;align-items:center;gap:8px;padding:9px 12px;border-top:.5px solid var(--border)">
         <span style="font-size:15px;flex-shrink:0">${r.icon}</span>
-        <span style="flex:1;font-size:13px;color:var(--text)">${r.label}</span>
+        <span style="flex:1;font-size:13px;color:var(--text)">${escapeHTML(r.label)}</span>
         <input type="time" value="${time}" onchange="setNotifTime('${r.key}',this.value)"
           style="font-size:11px;background:var(--bg2);border:.5px solid var(--border2);border-radius:6px;padding:3px 6px;color:var(--text);opacity:${active?1:0.4}">
         <div onclick="toggleNotif('${r.key}')" style="width:38px;height:22px;border-radius:11px;background:${active?'var(--green)':'var(--border2)'};cursor:pointer;position:relative;flex-shrink:0;transition:background .2s">
@@ -3357,7 +3376,7 @@ function renderNotifSettings() {
     customReminders.forEach((r,i) => {
       html += `<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-top:.5px solid var(--border)">
         <span style="font-size:15px;flex-shrink:0">🔔</span>
-        <span style="flex:1;font-size:13px;color:var(--text)">${r.label}</span>
+        <span style="flex:1;font-size:13px;color:var(--text)">${escapeHTML(r.label)}</span>
         <input type="time" value="${r.time||'09:00'}" onchange="setCustomNotifTime(${i},this.value)"
           style="font-size:11px;background:var(--bg2);border:.5px solid var(--border2);border-radius:6px;padding:3px 6px;color:var(--text)">
         <div onclick="toggleCustomNotif(${i})" style="width:38px;height:22px;border-radius:11px;background:${r.active?'var(--green)':'var(--border2)'};cursor:pointer;position:relative;flex-shrink:0">
