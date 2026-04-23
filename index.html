@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v6.0 (By Charly)</title>
+<title>MagicTracker v6.1 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
@@ -229,7 +229,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v6.0 (By Charly)",
+    appName: "MagicTracker v6.1 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -372,7 +372,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v6.0 (By Charly)",
+    appName: "MagicTracker v6.1 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -3504,7 +3504,6 @@ async function testNotif() {
 async function activateAndTest() {
   const isEs = APP.lang === 'es';
 
-  // 1. Ensure permission
   if (Notification.permission === 'denied') {
     alert(isEs
       ? 'Notificaciones bloqueadas. Click en el 🔒 en la barra de URL → Notificaciones → Permitir.'
@@ -3519,35 +3518,46 @@ async function activateAndTest() {
   getNS().enabled = true;
   _saveNS(); save();
 
-  // 2. Get FCM token and register in Firestore
+  let status = [];
+
+  // Get FCM token and register in Firestore
   try {
     if (!fbMsg) initFirebase();
     const reg = await Promise.race([
       navigator.serviceWorker.ready,
       new Promise((_,r) => setTimeout(() => r(new Error('SW timeout')), 3000))
     ]);
+    status.push('SW: ✓');
     const token = await fbMsg.getToken({vapidKey: VAPID_KEY, serviceWorkerRegistration: reg});
     if (token) {
+      status.push('Token: ✓ ' + token.substring(0,12) + '...');
       getNS().fcmToken = token;
       _saveNS(); save();
-      await registerDeviceInFirestore(token);
+      const result = await registerDeviceInFirestore(token);
+      status.push('Firestore: ' + (result?.ok ? '✓ uid=' + result.uid : '✗ ' + result?.error));
+    } else {
+      status.push('Token: ✗ null');
     }
   } catch(e) {
-    console.log('FCM registration skipped:', e.message);
+    status.push('FCM error: ' + e.message);
   }
 
   scheduleLocalReminders();
 
-  // 3. Send test notification
-  const title = 'MagicTracker 🎯';
-  const body = isEs ? '✓ Todo funcionando — las notificaciones van a llegar' : '✓ All set — notifications will arrive on time';
+  // Send test notification
   try {
     const reg = await navigator.serviceWorker.ready;
-    await reg.showNotification(title, {body, icon:'./icons/icon-192.png', tag:'test'});
+    await reg.showNotification('MagicTracker 🎯', {
+      body: isEs ? '✓ Todo funcionando' : '✓ All set',
+      icon:'./icons/icon-192.png', tag:'test'
+    });
+    status.push('Notif: ✓');
   } catch(e) {
-    try { new Notification(title, {body}); } catch(e2) {}
+    try { new Notification('MagicTracker 🎯', {body: '✓'}); status.push('Notif fallback: ✓'); }
+    catch(e2) { status.push('Notif: ✗ ' + e.message); }
   }
 
+  alert(status.join('\n'));
   render();
 }
 
