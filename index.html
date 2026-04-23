@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v6.1 (By Charly)</title>
+<title>MagicTracker v6.2 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
@@ -229,7 +229,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v6.1 (By Charly)",
+    appName: "MagicTracker v6.2 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -372,7 +372,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v6.1 (By Charly)",
+    appName: "MagicTracker v6.2 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -3518,8 +3518,6 @@ async function activateAndTest() {
   getNS().enabled = true;
   _saveNS(); save();
 
-  let status = [];
-
   // Get FCM token and register in Firestore
   try {
     if (!fbMsg) initFirebase();
@@ -3527,19 +3525,14 @@ async function activateAndTest() {
       navigator.serviceWorker.ready,
       new Promise((_,r) => setTimeout(() => r(new Error('SW timeout')), 3000))
     ]);
-    status.push('SW: ✓');
     const token = await fbMsg.getToken({vapidKey: VAPID_KEY, serviceWorkerRegistration: reg});
     if (token) {
-      status.push('Token: ✓ ' + token.substring(0,12) + '...');
       getNS().fcmToken = token;
       _saveNS(); save();
-      const result = await registerDeviceInFirestore(token);
-      status.push('Firestore: ' + (result?.ok ? '✓ uid=' + result.uid : '✗ ' + result?.error));
-    } else {
-      status.push('Token: ✗ null');
+      await registerDeviceInFirestore(token);
     }
   } catch(e) {
-    status.push('FCM error: ' + e.message);
+    console.log('FCM registration skipped:', e.message);
   }
 
   scheduleLocalReminders();
@@ -3548,16 +3541,13 @@ async function activateAndTest() {
   try {
     const reg = await navigator.serviceWorker.ready;
     await reg.showNotification('MagicTracker 🎯', {
-      body: isEs ? '✓ Todo funcionando' : '✓ All set',
+      body: isEs ? '✓ Todo funcionando' : '✓ All set — notifications are active',
       icon:'./icons/icon-192.png', tag:'test'
     });
-    status.push('Notif: ✓');
   } catch(e) {
-    try { new Notification('MagicTracker 🎯', {body: '✓'}); status.push('Notif fallback: ✓'); }
-    catch(e2) { status.push('Notif: ✗ ' + e.message); }
+    try { new Notification('MagicTracker 🎯', {body: isEs ? '✓ Activo' : '✓ Active'}); } catch(e2) {}
   }
 
-  alert(status.join('\n'));
   render();
 }
 
