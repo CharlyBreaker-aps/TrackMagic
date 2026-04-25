@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v7.2 (By Charly)</title>
+<title>MagicTracker v7.4 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
@@ -231,7 +231,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v7.2 (By Charly)",
+    appName: "MagicTracker v7.4 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -374,7 +374,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v7.2 (By Charly)",
+    appName: "MagicTracker v7.4 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -642,7 +642,7 @@ const FDB=[
 {n:'Pulled pork + rice 150g + coleslaw',k:680,p:44,c:55,f:0,cat:'Home meal',hi:1,hm:1},
 {n:'Pork mince + noodles 150g + spring onion',k:610,p:38,c:52,f:0,cat:'Home meal',hi:1,hm:1},
 {n:'Sausage x2 + mash + onion gravy',k:720,p:32,c:58,f:0,cat:'Home meal',hm:1},
-{n:'Bacon + eggs x2 + baked beans 200g',k:580,p:38,c:38,f:22,cat:'Home meal',hi:1,hm:1},
+{n:'Bacon + eggs x2 + baked beans 200g',k:580,p:38,c:38,f:22,cat:'Breakfast',hi:1,hm:1},
 // ── FISH / SEAFOOD ──
 {n:'Baked salmon 150g + sweet potato 150g + asparagus',k:530,p:40,c:35,f:0,cat:'Home meal',hi:1,hm:1},
 {n:'Salmon fillet 150g + white rice 150g + broccoli',k:610,p:44,c:55,f:0,cat:'Home meal',hi:1,hm:1},
@@ -2751,7 +2751,6 @@ function removeCustItem(d, itemId) {
 }
 
 function addFoodFromEl(el) {
-  // Find the .sri element with data attributes (in case click came from child)
   const sri = el.closest ? el.closest('[data-n]') : el;
   if (!sri) return;
   const n = sri.dataset.n;
@@ -2760,6 +2759,28 @@ function addFoodFromEl(el) {
   const c = parseInt(sri.dataset.c)||0;
   const f = parseInt(sri.dataset.f)||0;
   if (!n) return;
+
+  const isEs = APP.lang === 'es';
+
+  // Check if item exists in Breakfast section
+  const BFDB = FDB.filter(x => x.cat === 'Breakfast');
+  const inBreakfast = BFDB.find(x => x.n === n);
+  if (inBreakfast) {
+    alert(isEs
+      ? `"${n}" ya está disponible en la sección 🌅 Desayuno. Buscalo ahí y marcalo.`
+      : `"${n}" is already available in the 🌅 Breakfast section. Find it there and check it.`);
+    return;
+  }
+
+  // Check if item exists in Extra protein snacks or Optional extras
+  const inExtras = [...getExtraSnacks(), ...exItems(APP.day||currentDayId())].find(x => x.name === n);
+  if (inExtras) {
+    alert(isEs
+      ? `"${n}" ya está disponible en la sección 🥗 Snacks y extras. Buscalo ahí y marcalo.`
+      : `"${n}" is already available in the 🥗 Snacks & extras section. Find it there and check it.`);
+    return;
+  }
+
   addFood(n,k,p,c,f);
 }
 
