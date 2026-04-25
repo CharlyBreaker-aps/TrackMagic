@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v6.8 (By Charly)</title>
+<title>MagicTracker v6.9 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
@@ -229,7 +229,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v6.8 (By Charly)",
+    appName: "MagicTracker v6.9 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -372,7 +372,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v6.8 (By Charly)",
+    appName: "MagicTracker v6.9 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -2484,14 +2484,12 @@ function renderTracker() {
     const customNoBreakfast = cl3.filter(x=>!BREAKFASTS_DB.find(f=>f.n===x.name));
     if(customNoBreakfast.length){
       s+=`<div style="margin:0 12px 7px">`;
-      s+=`<div class="glbl" style="display:flex;justify-content:space-between;align-items:center">
-        <span>${t('searched_foods')}</span>
-        <span style="font-size:10px;color:var(--text3)">${isEs2?'Tocá ✕ para eliminar':'Tap ✕ to remove'}</span>
-      </div>`;
-      customNoBreakfast.forEach((x,i)=>{
-        const realIdx = cl3.indexOf(x);
-        s+=`<div style="position:relative">${row(d,x,'c')}
-          <button onclick="removeCustItem('${d}',${realIdx})" style="position:absolute;top:8px;right:4px;font-size:13px;background:transparent;border:none;color:var(--text3);cursor:pointer;padding:2px 4px;z-index:2">✕</button>
+      s+=`<div class="glbl">${t('searched_foods')}</div>`;
+      customNoBreakfast.forEach((x)=>{
+        const realIdx = cl3.findIndex(item=>item.id===x.id);
+        s+=`<div style="display:flex;align-items:center;gap:4px">
+          <button onclick="removeCustItem('${d}','${x.id}')" style="flex-shrink:0;font-size:15px;background:transparent;border:none;color:var(--text3);cursor:pointer;padding:4px 2px;min-width:24px;text-align:center">✕</button>
+          <div style="flex:1;min-width:0">${row(d,x,'c')}</div>
         </div>`;
       });
       s+=`</div>`;
@@ -2655,13 +2653,14 @@ function updateSR(){
   if(customMatches.length){
     customHtml=`<div style="font-size:10px;color:var(--green);margin-bottom:4px;font-weight:700">🏷 ${isEs?'Mis alimentos':'My foods'}</div>`;
     customMatches.forEach((f,i)=>{
-      customHtml+=`<div class="sri" style="position:relative" onclick="addCustomFoodToDay(${APP.customFoods.indexOf(f)})">
+      const fidx = APP.customFoods.indexOf(f);
+      customHtml+=`<div class="sri" style="position:relative" onclick="addCustomFoodToDay(${fidx})">
         <div style="flex:1">
           <div class="sriname">${escapeHTML(f.n)} <span style="font-size:9px;padding:1px 5px;border-radius:4px;background:var(--bg3);color:var(--green);border:.5px solid var(--green)">custom</span></div>
         </div>
         <div class="srimac">${f.k}kcal<br>${f.p}g P · ${f.c}g C${f.f?` · ${f.f}g F`:''}</div>
         <div class="sriadd">+</div>
-        <button onclick="deleteCustomFood(event,${APP.customFoods.indexOf(f)})" style="position:absolute;top:4px;right:30px;font-size:10px;background:transparent;border:none;color:var(--text3);cursor:pointer">✕</button>
+        <button onclick="deleteCustomFood(event,${fidx})" style="position:absolute;top:4px;right:30px;font-size:10px;background:transparent;border:none;color:var(--text3);cursor:pointer">✕</button>
       </div>`;
     });
   }
@@ -2673,7 +2672,7 @@ function updateSR(){
       f.hc?`<span class="th2">${t('high_carb')}</span>`:'',
       f.hm?`<span style="font-size:9px;padding:1px 5px;border-radius:4px;background:#2d1f4e;color:#a78bfa;flex-shrink:0">🏠 ${hmLabel}</span>`:'',
     ].filter(Boolean).join('');
-    return`<div class="sri" onclick="addFood('${f.n.replace(/'/g,"\\'")}',${f.k},${f.p},${f.c||0},${f.f||0})">
+    return`<div class="sri" onclick="addFoodFromEl(this)" data-n="${escapeHTML(f.n)}" data-k="${f.k}" data-p="${f.p}" data-c="${f.c||0}" data-f="${f.f||0}">
       <div style="flex:1"><div class="sriname">${escapeHTML(f.n)}${tags}</div><div class="sricat">${f.cat}</div></div>
       <div class="srimac">${f.k}kcal<br>${f.p}g P · ${f.c}g C${f.f?` · ${f.f}g F`:''}</div>
       <div class="sriadd">+</div>
@@ -2737,17 +2736,25 @@ function deleteCustomFood(e,idx){
   save();updateSR();
 }
 
-function removeCustItem(d, idx) {
-  if (!APP.cust[d] || idx < 0 || idx >= APP.cust[d].length) return;
-  const item = APP.cust[d][idx];
-  // Also clear its check/qty/mult state
-  if (item?.id) {
-    delete (APP.cchk[d]||{})[item.id];
-    delete (APP.cqty[d]||{})[item.id];
-    delete (APP.cmult[d]||{})[item.id];
-  }
+function removeCustItem(d, itemId) {
+  if (!APP.cust[d]) return;
+  const idx = APP.cust[d].findIndex(x => x.id === itemId);
+  if (idx < 0) return;
+  // Clear check/qty/mult state
+  [APP.cchk, APP.cqty, APP.cmult].forEach(store => {
+    if (store[d]) delete store[d][itemId];
+  });
   APP.cust[d].splice(idx, 1);
   save(); render();
+}
+
+function addFoodFromEl(el) {
+  const n = el.dataset.n;
+  const k = parseInt(el.dataset.k)||0;
+  const p = parseInt(el.dataset.p)||0;
+  const c = parseInt(el.dataset.c)||0;
+  const f = parseInt(el.dataset.f)||0;
+  addFood(n,k,p,c,f);
 }
 
 function addFood(n,k,p,c,f){
