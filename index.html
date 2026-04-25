@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v6.9 (By Charly)</title>
+<title>MagicTracker v7.2 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
@@ -116,7 +116,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .arow.done .aname{color:var(--green)}
 .akcal{font-size:11px;color:var(--text3)}
 /* Restaurant cards */
-.rest-hdr{display:flex;align-items:center;gap:8px;padding:11px 12px;cursor:pointer;background:var(--bg2)}
+.rest-hdr{display:flex;align-items:center;gap:8px;padding:11px 12px;cursor:pointer;background:var(--bg2);touch-action:manipulation;user-select:none;-webkit-user-select:none}
 .ricon{font-size:15px;flex-shrink:0}
 .rname{font-size:13px;font-weight:700;flex:1}
 .rsrc{font-size:9px;padding:2px 6px;border-radius:5px;background:var(--bg);border:0.5px solid var(--border2);color:var(--text3);white-space:nowrap}
@@ -126,7 +126,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .rbody{display:none}.rbody.open{display:block}
 .mopt{border-bottom:0.5px solid var(--border)}
 .mopt:last-child{border-bottom:none}
-.mhdr{display:flex;align-items:flex-start;gap:8px;padding:10px 12px;cursor:pointer}
+.mhdr{display:flex;align-items:flex-start;gap:8px;padding:10px 12px;cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none}
 .mradio{width:16px;height:16px;border-radius:50%;border:2px solid var(--border2);flex-shrink:0;margin-top:2px;display:flex;align-items:center;justify-content:center}
 .mradio.checked{border-color:var(--green);background:var(--green)}
 .mradio.checked::after{content:'';width:5px;height:5px;border-radius:50%;background:#fff}
@@ -163,7 +163,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .tbtn.th{border-color:#9B5000;color:#9B5000}
 .sinp{width:100%;padding:10px 13px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);font-size:13px;background:var(--bg2);color:var(--text);margin-bottom:8px}
 .sinp:focus{outline:none;border-color:var(--green)}
-.sri{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:0.5px solid var(--border);cursor:pointer}
+.sri{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:0.5px solid var(--border);cursor:pointer;-webkit-tap-highlight-color:rgba(29,158,117,0.15);touch-action:manipulation;user-select:none;-webkit-user-select:none}
+.sri>div{pointer-events:none}
+.sri button{pointer-events:auto}
 .sri:last-child{border-bottom:none}
 .sriname{font-size:12px;flex:1;display:flex;align-items:center;gap:4px;flex-wrap:wrap}
 .sricat{font-size:9px;color:var(--text3)}
@@ -229,7 +231,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v6.9 (By Charly)",
+    appName: "MagicTracker v7.2 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -372,7 +374,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v6.9 (By Charly)",
+    appName: "MagicTracker v7.2 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -2672,7 +2674,7 @@ function updateSR(){
       f.hc?`<span class="th2">${t('high_carb')}</span>`:'',
       f.hm?`<span style="font-size:9px;padding:1px 5px;border-radius:4px;background:#2d1f4e;color:#a78bfa;flex-shrink:0">🏠 ${hmLabel}</span>`:'',
     ].filter(Boolean).join('');
-    return`<div class="sri" onclick="addFoodFromEl(this)" data-n="${escapeHTML(f.n)}" data-k="${f.k}" data-p="${f.p}" data-c="${f.c||0}" data-f="${f.f||0}">
+    return`<div class="sri" onclick="addFoodFromEl(event.currentTarget||this)" data-n="${escapeHTML(f.n)}" data-k="${f.k}" data-p="${f.p}" data-c="${f.c||0}" data-f="${f.f||0}">
       <div style="flex:1"><div class="sriname">${escapeHTML(f.n)}${tags}</div><div class="sricat">${f.cat}</div></div>
       <div class="srimac">${f.k}kcal<br>${f.p}g P · ${f.c}g C${f.f?` · ${f.f}g F`:''}</div>
       <div class="sriadd">+</div>
@@ -2749,11 +2751,15 @@ function removeCustItem(d, itemId) {
 }
 
 function addFoodFromEl(el) {
-  const n = el.dataset.n;
-  const k = parseInt(el.dataset.k)||0;
-  const p = parseInt(el.dataset.p)||0;
-  const c = parseInt(el.dataset.c)||0;
-  const f = parseInt(el.dataset.f)||0;
+  // Find the .sri element with data attributes (in case click came from child)
+  const sri = el.closest ? el.closest('[data-n]') : el;
+  if (!sri) return;
+  const n = sri.dataset.n;
+  const k = parseInt(sri.dataset.k)||0;
+  const p = parseInt(sri.dataset.p)||0;
+  const c = parseInt(sri.dataset.c)||0;
+  const f = parseInt(sri.dataset.f)||0;
+  if (!n) return;
   addFood(n,k,p,c,f);
 }
 
