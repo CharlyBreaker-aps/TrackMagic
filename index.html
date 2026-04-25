@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v6.5 (By Charly)</title>
+<title>MagicTracker v6.7 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
@@ -229,7 +229,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v6.5 (By Charly)",
+    appName: "MagicTracker v6.7 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -372,7 +372,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v6.5 (By Charly)",
+    appName: "MagicTracker v6.7 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -1282,6 +1282,16 @@ function getCarbMax(d) {
   return p.carb_rest || _macros(p).carb_max;
 }
 
+function getFatMax(d) {
+  const p = getProfile();
+  if (!p) return 70;
+  // Fat target: 25-30% of target kcal depending on goal
+  const goal = p.goal || 'cut';
+  const targetKcal = getTargetKcal(d);
+  const pct = (goal === 'maintain' || goal === 'recomp') ? 0.30 : 0.25;
+  return Math.round(targetKcal * pct / 9);
+}
+
 function getDeficitRange(d) {
   const p = getProfile();
   if (!p) return [350,700];
@@ -2123,11 +2133,12 @@ function renderTracker() {
   const d = APP.day || (APP.day = currentDayId());
   const cf = isCFDay(d);
   const {k,p2,cb,ft,b,tdee,def,st,dm,dx} = (() => { const r=calc(d); return {...r,p2:r.p}; })();
-  const tK=getTargetKcal(d),tP=getProtMin(),tC=getCarbMax(d);
+  const tK=getTargetKcal(d),tP=getProtMin(),tC=getCarbMax(d),tF=getFatMax(d);
   const pct=Math.min(130,Math.round(k/tK*100));
   const pC=p2>=tP?'g':p2>=tP*.85?'a':'r';
   const kC=k>=tK*.9&&k<=tK*1.1?'g':k<tK*.9?'a':'r';
   const cC=cb<=tC?'b':cb<=tC*1.2?'a':'r';
+  const fC=ft<=tF?'':'over'; // amber if over fat target
   // When nothing logged yet, use a neutral "day in progress" state
   const dayNotStarted = k === 0;
   const STC={
@@ -2157,7 +2168,7 @@ function renderTracker() {
     <div class="stat"><div class="sv ${kC}">${k}</div><div class="sl">${t('kcal_in')}</div></div>
     <div class="stat"><div class="sv ${pC}">${p2}g</div><div class="sl">${t('protein')}</div></div>
     <div class="stat"><div class="sv ${cC}">${cb}g</div><div class="sl">${t('carbs')}</div></div>
-    <div class="stat"><div class="sv" style="color:var(--text2)">${ft}g</div><div class="sl">${APP.lang==='es'?'grasas':'fats'}</div></div>
+    <div class="stat"><div class="sv" style="color:${ft>tF?'var(--amber)':'var(--text2)'}">${ft}g</div><div class="sl">${APP.lang==='es'?`grasas/${tF}g`:`fats/${tF}g`}</div></div>
     <div class="stat"><div class="sv w">${b}</div><div class="sl">${t('activity')}</div></div>
   </div>`;
 
@@ -2172,7 +2183,7 @@ function renderTracker() {
     <div class="dm"><span class="dml">${t('estimated_deficit')}</span><span class="dmv" style="color:${cfg.col}">${def>=0?'−'+def:'+'+Math.abs(def)} kcal</span></div>
     <div class="dbadge ${cfg.cls}">${cfg.lbl}</div>
     <div class="prog"><div class="pf ${cfg.bc}" style="width:${Math.min(100,pct)}%"></div></div>
-    <div class="dhint">${t('target_range')}: ${dm}–${dx} · ${t('intake_target')}: ${tK} kcal · ${t('carbs_target')}: ≤${tC}g</div>
+    <div class="dhint">${t('target_range')}: ${dm}–${dx} · ${t('intake_target')}: ${tK} kcal · ${t('carbs_target')}: ≤${tC}g · ${APP.lang==='es'?'Grasas':'Fats'}: ≤${tF}g</div>
   </div>`;
 
   // ── GOAL PROGRESS CARD ──
@@ -2712,11 +2723,12 @@ function deleteCustomFood(e,idx){
 }
 
 function addFood(n,k,p,c,f){
-  const d=APP.day;if(!d)return;
+  const d=APP.day||currentDayId();
+  if(!d)return;
   if(!APP.cust[d])APP.cust[d]=[];
   APP.cust[d].push({id:'cx'+Date.now(),name:n,kcal:k,prot:p,carb:c||0,fat:f||0});
   const si=document.getElementById('si');if(si)si.value='';
-  document.getElementById('sr').innerHTML='';
+  const sr=document.getElementById('sr');if(sr)sr.innerHTML='';
   save();render();
 }
 
