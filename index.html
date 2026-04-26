@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v7.4 (By Charly)</title>
+<title>MagicTracker v7.6 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
@@ -231,7 +231,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v7.4 (By Charly)",
+    appName: "MagicTracker v7.6 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -374,7 +374,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v7.4 (By Charly)",
+    appName: "MagicTracker v7.6 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -757,6 +757,46 @@ const CHARLY_EX=(l)=>[
   {id:'ex6',name:l==='es'?'Arroz integral 150g':'Brown rice 150g',kcal:165,prot:4,carb:35,fat:1},
 ];
 
+const SW={id:'subway',name:'Subway',icon:'🥖',src:'Uber Eats / Walk-in',meals:[
+  {name:l==='es'?'Pollo grillado protein bowl':'Grilled chicken protein bowl',items:[{name:'Subway grilled chicken protein bowl',kcal:310,prot:38,carb:14,fat:9}]},
+  {name:l==='es'?'Pavo protein bowl':'Turkey protein bowl',items:[{name:'Subway turkey protein bowl',kcal:270,prot:30,carb:12,fat:8}]},
+  {name:l==='es'?'Wrap pollo grillado':'Grilled chicken wrap',items:[{name:'Subway grilled chicken wrap',kcal:420,prot:32,carb:38,fat:12}]},
+  {name:l==='es'?'Sub pollo grillado 6\' sin pan extra':'Grilled chicken 6\' sub',items:[{name:'Subway 6in grilled chicken sub',kcal:330,prot:28,carb:40,fat:5}]},
+  {name:l==='es'?'Steak + queso 6\'':'Steak + cheese 6\' sub',items:[{name:'Subway 6in steak cheese sub',kcal:380,prot:26,carb:42,fat:12}]},
+]};
+const PP={id:'pepes',name:"Pepe's Piri Piri",icon:'🍗',src:'Uber Eats',meals:[
+  {name:l==='es'?'1/2 pollo L&H':'1/2 chicken Lemon & Herb',note:'🌿 Lemon & Herb — not spicy',items:[{name:"Pepe's 1/2 chicken L&H",kcal:627,prot:90,carb:2,fat:29}]},
+  {name:l==='es'?'1/4 pollo L&H + arroz piri':'1/4 chicken L&H + piri rice',note:'🌿 Lemon & Herb — not spicy',items:[{name:"Pepe's 1/4 chicken L&H",kcal:399,prot:45,carb:1,fat:14},{name:"Pepe's piri rice",kcal:188,prot:4,carb:42,fat:0}]},
+  {name:l==='es'?'5 tiras de pollo L&H + arroz':'5 tender strips L&H + rice',note:'🌿 Lemon & Herb — not spicy',items:[{name:"Pepe's 5 tender strips L&H",kcal:166,prot:37,carb:0,fat:2},{name:"Pepe's piri rice",kcal:188,prot:4,carb:42,fat:0}]},
+  {name:l==='es'?'Chick n Rice L&H':'Chick n Rice L&H',note:'🌿 Lemon & Herb — not spicy',items:[{name:"Pepe's chick n rice L&H",kcal:587,prot:35,carb:79,fat:14}]},
+  {name:l==='es'?'Pollo en pitta L&H':'Chicken pitta L&H',note:'🌿 Lemon & Herb — not spicy',items:[{name:"Pepe's chicken pitta L&H",kcal:438,prot:36,carb:48,fat:8}]},
+  {name:l==='es'?'Wrap de pollo L&H':'Chicken wrap L&H',note:'🌿 Lemon & Herb — not spicy',items:[{name:"Pepe's chicken wrap L&H",kcal:374,prot:28,carb:38,fat:10}]},
+  {name:l==='es'?'1/2 pollo L&H + maíz + arroz':'1/2 chicken L&H + corn + rice',note:'🌿 Lemon & Herb — not spicy',items:[{name:"Pepe's 1/2 chicken L&H",kcal:627,prot:90,carb:2,fat:29},{name:"Pepe's corn on cob",kcal:91,prot:3,carb:18,fat:1},{name:"Pepe's piri rice",kcal:188,prot:4,carb:42,fat:0}]},
+]};
+const SB={id:'smokyboys',name:'Smoky Boys',icon:'🔥',src:'Uber Eats / Boxpark',meals:[
+  {name:l==='es'?'Sirloin steak + patatas':'Sirloin steak + chips',items:[{name:'Smoky Boys sirloin steak + chips',kcal:720,prot:52,carb:42,fat:32}]},
+  {name:l==='es'?'Burger de pollo grillado':'Grilled chicken burger',items:[{name:'Smoky Boys grilled chicken burger',kcal:540,prot:42,carb:38,fat:18}]},
+  {name:l==='es'?'Burger classic sin queso':'Classic burger no cheese',items:[{name:'Smoky Boys classic burger',kcal:620,prot:36,carb:40,fat:32}]},
+  {name:l==='es'?'Wrap de pollo grillado':'Grilled chicken wrap',items:[{name:'Smoky Boys chicken wrap',kcal:480,prot:38,carb:40,fat:14}]},
+  {name:l==='es'?'Alitas grilladas x8':'Grilled wings x8',items:[{name:'Smoky Boys grilled wings x8',kcal:560,prot:48,carb:4,fat:38}]},
+  {name:l==='es'?'Pulled brisket + arroz':'Pulled beef brisket + rice',items:[{name:'Smoky Boys pulled brisket',kcal:580,prot:44,carb:48,fat:18}]},
+  {name:l==='es'?'Burger bacon cheese':'Smoky bacon cheeseburger',items:[{name:'Smoky Boys bacon cheeseburger',kcal:750,prot:42,carb:40,fat:46}]},
+]};
+const SI={id:'sides',name:'SIDES Boxpark',icon:'🍔',src:'Uber Eats / Boxpark',meals:[
+  {name:l==='es'?'Nashville chicken burger':'Nashville chicken burger',items:[{name:'SIDES Nashville chicken burger',kcal:680,prot:38,carb:58,fat:28}]},
+  {name:l==='es'?'Classic chicken burger':'Classic chicken burger',items:[{name:'SIDES classic chicken burger',kcal:580,prot:36,carb:52,fat:22}]},
+  {name:l==='es'?'Tenders clásicos x5':'Classic tenders x5',items:[{name:'SIDES classic tenders x5',kcal:440,prot:38,carb:28,fat:18}]},
+  {name:l==='es'?'Nashville tenders x5':'Nashville tenders x5',items:[{name:'SIDES Nashville tenders x5',kcal:480,prot:38,carb:32,fat:20}]},
+  {name:l==='es'?'Burger meal sin bebida':'Burger meal no drink',items:[{name:'SIDES burger meal',kcal:820,prot:42,carb:72,fat:36}]},
+]};
+const FB2={id:'frankiebennys',name:"Frankie & Benny's",icon:'🍝',src:'Uber Eats / LDO Wembley',meals:[
+  {name:l==='es'?'Pollo grillado + pasta':'Grilled chicken + penne',items:[{name:"F&B grilled chicken penne",kcal:650,prot:44,carb:68,fat:18}]},
+  {name:l==='es'?'Pechuga grillada + patatas':'Grilled chicken breast + fries',items:[{name:"F&B grilled chicken breast",kcal:580,prot:48,carb:40,fat:20}]},
+  {name:l==='es'?'Burger de pollo sin bacon':'Chicken burger no bacon',items:[{name:"F&B chicken burger",kcal:640,prot:38,carb:56,fat:24}]},
+  {name:l==='es'?'Pasta bolognese clásica':'Classic pasta bolognese',items:[{name:"F&B pasta bolognese",kcal:720,prot:36,carb:78,fat:22}]},
+  {name:l==='es'?'Ribs BBQ rack entero':'Full rack BBQ ribs',items:[{name:"F&B full rack BBQ ribs",kcal:1100,prot:72,carb:28,fat:62}]},
+  {name:l==='es'?'Steak + patatas':'Sirloin steak + fries',items:[{name:"F&B sirloin steak + fries",kcal:820,prot:56,carb:44,fat:38}]},
+]};
 const buildCharlyRests=(d)=>{
 const l=APP.lang||'en';
 const SRC_PRESENCIAL=l==='es'?'Presencial':'Walk-in';
@@ -784,6 +824,19 @@ const I={id:'itsu',name:'Itsu',icon:'🍱',src:'Uber Eats',meals:[
   {name:'Thai salmon curry + edamame',items:[{name:'Thai salmon curry',kcal:736,prot:35,carb:80,fat:31},{name:'Edamame',kcal:132,prot:12,carb:10,fat:5}],snack:'B',atun:2},
   {name:'Tuna tartare poké + gyoza',items:[{name:'Tuna tartare poké',kcal:684,prot:33,carb:78,fat:27},{name:'Chicken gyoza',kcal:251,prot:20,carb:25,fat:8}],snack:'B',atun:1},
   {name:'Salmon tartare poké + edamame',items:[{name:'Salmon tartare poké',kcal:545,prot:22,carb:65,fat:22},{name:'Edamame',kcal:132,prot:12,carb:10,fat:5}],snack:'B',atun:2},
+  {name:l==='es'?'Sushi de atún + edamame':'Tuna sushi + edamame',items:[{name:'Tuna sashimi 6pc Itsu',kcal:150,prot:24,carb:0,fat:3},{name:'Edamame Itsu',kcal:132,prot:12,carb:10,fat:5}]},
+  {name:l==='es'?'Bento pollo sin arroz':'Chicken bento no rice',items:[{name:'Chicken bento Itsu no rice',kcal:380,prot:42,carb:18,fat:14}]},
+  {name:l==='es'?'Gyoza pollo + miso':'Chicken gyoza + miso',items:[{name:'Chicken gyoza 6pc Itsu',kcal:250,prot:18,carb:26,fat:8},{name:'Miso soup Itsu',kcal:40,prot:3,carb:4,fat:1}]},
+  {name:l==='es'?'Salmon + sashimi de atún':'Tuna & salmon sashimi',items:[{name:'Tuna & salmon sashimi Itsu',kcal:212,prot:28,carb:4,fat:6}]},
+  {name:l==='es'?'Teriyaki de pollo en cama':'Chicken teriyaki on a bed',items:[{name:'Chicken teriyaki on a bed Itsu',kcal:477,prot:32,carb:62,fat:10}]},
+  {name:l==='es'?'Teriyaki de salmón en cama':'Salmon teriyaki on a bed',items:[{name:'Salmon teriyaki on a bed Itsu',kcal:445,prot:28,carb:52,fat:12}]},
+  {name:l==='es'?'Poke de pollo grillado':'Chargrilled chicken poke',items:[{name:'Chargrilled chicken poke Itsu',kcal:641,prot:44,carb:72,fat:16}]},
+  {name:l==='es'?'Poke de salmón':'Poached salmon poke',items:[{name:'Poached salmon poke Itsu',kcal:571,prot:30,carb:68,fat:16}]},
+  {name:l==='es'?'Sushi de salmón full house':'Salmon full house Itsu',items:[{name:'Salmon full house Itsu',kcal:626,prot:31,carb:86,fat:14}]},
+  {name:l==='es'?'Best of Itsu':'Best of itsu',items:[{name:'Best of itsu sushi box',kcal:510,prot:26,carb:72,fat:10}]},
+  {name:l==='es'?'Katsu de pollo + edamame':'Katsu curry noodles + edamame',items:[{name:'Katsu curry noodles Itsu',kcal:451,prot:22,carb:58,fat:12},{name:'Edamame Itsu',kcal:132,prot:12,carb:10,fat:5}]},
+  {name:l==='es'?'Gyoza de pollo x6 + edamame':'Chicken gyoza x6 + edamame',items:[{name:'Chicken gyoza 6pc Itsu',kcal:250,prot:18,carb:26,fat:8},{name:'Edamame Itsu',kcal:132,prot:12,carb:10,fat:5}]},
+  {name:l==='es'?'Sashimi de salmón + edamame':'Salmon sashimi + edamame',items:[{name:'Salmon sashimi Itsu',kcal:188,prot:22,carb:2,fat:8},{name:'Edamame Itsu',kcal:132,prot:12,carb:10,fat:5}]},
 ]};
 const TB={id:'tacobell',name:'Taco Bell',icon:'🌮',src:'Uber Eats',meals:[
   {name:'2x Power Bowl + Chicken Quesadilla',items:[{name:'Power Bowl grilled chicken x2',kcal:780,prot:58,carb:80,fat:25},{name:'Chicken Quesadilla',kcal:510,prot:26,carb:41,fat:27}],snack:'A',atun:1},
@@ -795,15 +848,28 @@ const WA={id:'wagamama',name:'Wagamama',icon:'🍜',src:'Deliveroo',meals:[
   {name:'Chicken ramen + chicken yakitori',items:[{name:'Chicken ramen',kcal:540,prot:40,carb:65,fat:13},{name:'Chicken yakitori',kcal:220,prot:28,carb:6,fat:9}],snack:'B',atun:1},
   {name:'Teriyaki donburi + yakitori',items:[{name:'Teriyaki chicken donburi',kcal:720,prot:45,carb:80,fat:24},{name:'Chicken yakitori',kcal:220,prot:28,carb:6,fat:9}],snack:'B',atun:1},
   {name:'Chicken katsu curry',note:NOTE_CF,items:[{name:'Chicken katsu curry',kcal:988,prot:50,carb:108,fat:40}],snack:'B',atun:2},
+  {name:l==='es'?'Chilli chicken ramen':'Chilli chicken ramen',items:[{name:'Chilli chicken ramen',kcal:540,prot:38,carb:60,fat:12}]},
+  {name:l==='es'?'Ensalada pollo chilli caliente':'Warm chilli chicken salad',items:[{name:'Warm chilli chicken salad',kcal:491,prot:28,carb:32,fat:18}]},
+  {name:l==='es'?'Chicken yakitori x5':'Chicken yakitori x5',items:[{name:'Chicken yakitori x5',kcal:220,prot:28,carb:8,fat:6}]},
+  {name:l==='es'?'Donburi teriyaki + yakitori':'Teriyaki donburi + yakitori',items:[{name:'Teriyaki chicken donburi',kcal:620,prot:42,carb:72,fat:10},{name:'Chicken yakitori x3',kcal:132,prot:17,carb:5,fat:4}]},
+  {name:l==='es'?'Ensalada sirloin y shiitake':'Sirloin + shiitake salad',items:[{name:'Sirloin and shiitake salad',kcal:434,prot:53,carb:18,fat:14}]},
 ]};
 const KF={id:'kfc',name:'KFC',icon:'🍗',src:'Uber Eats',meals:[
   {name:'3x OR Breast + corn',items:[{name:'OR chicken breast x3',kcal:1170,prot:117,carb:33,fat:63},{name:'Corn on the cob',kcal:70,prot:3,carb:15,fat:2}],snack:'A'},
   {name:'2x OR Breast + corn',items:[{name:'OR chicken breast x2',kcal:780,prot:78,carb:22,fat:42},{name:'Corn on the cob',kcal:70,prot:3,carb:15,fat:2}],snack:'B',atun:1},
   {name:'4x Original Recipe Thigh',items:[{name:'OR chicken thigh x4',kcal:1120,prot:76,carb:32,fat:76}],snack:'A'},
+  {name:l==='es'?'3x Original Recipe Breast':'3x Original Recipe Breast',items:[{name:'3x Original Recipe Breast',kcal:660,prot:75,carb:18,fat:30}]},
+  {name:l==='es'?'2x Pechuga + ensalada col':'2x breast + coleslaw',items:[{name:'2x Original Recipe Breast',kcal:440,prot:50,carb:12,fat:20},{name:'KFC coleslaw',kcal:130,prot:1,carb:18,fat:6}]},
+  {name:l==='es'?'Filete burger sin mayonesa':'Fillet burger no mayo',items:[{name:'KFC Fillet burger',kcal:470,prot:28,carb:48,fat:18}]},
+  {name:l==='es'?'9 nuggets + maíz':'9 nuggets + corn',items:[{name:'KFC 9 nuggets',kcal:380,prot:22,carb:26,fat:16},{name:'Corn on cob KFC',kcal:90,prot:3,carb:18,fat:1}]},
 ]};
 const MC={id:'mcds',name:"McDonald's",icon:'🍟',src:'Uber Eats',meals:[
   {name:'3x Garlic Mayo Wrap grilled',note:NOTE_GRILLED,items:[{name:'Garlic Mayo Wrap grilled x3',kcal:1035,prot:75,carb:114,fat:31}],snack:'A'},
   {name:'2x Garlic Mayo Wrap grilled',items:[{name:'Garlic Mayo Wrap grilled x2',kcal:690,prot:50,carb:76,fat:21}],snack:'B',atun:1},
+  {name:l==='es'?'McPollo grillado + ensalada':'Grilled chicken wrap + side salad',items:[{name:'McChicken grilled wrap',kcal:310,prot:26,carb:34,fat:7},{name:'Side salad McD',kcal:15,prot:1,carb:3,fat:0}]},
+  {name:l==='es'?'Double cheeseburger':'Double cheeseburger',items:[{name:'McD double cheeseburger',kcal:440,prot:25,carb:34,fat:22}]},
+  {name:l==='es'?'6 McNuggets + ensalada':'6 McNuggets + side salad',items:[{name:'6 McNuggets McD',kcal:270,prot:14,carb:18,fat:14},{name:'Side salad McD',kcal:15,prot:1,carb:3,fat:0}]},
+  {name:l==='es'?'McPollo wrap Caesar':'Grilled chicken Caesar wrap',items:[{name:'Grilled chicken Caesar wrap McD',kcal:360,prot:24,carb:38,fat:10}]},
 ]};
 const NA={id:'nany',name:'Nany Bills',icon:'🍔',src:'Uber Eats',meals:[
   {name:l==='es'?'Burger bacon + papas chicas (CF)':'Bacon burger + small fries (CF)',items:[{name:l==='es'?'Burger con bacon + queso':'Bacon cheeseburger',kcal:850,prot:50,carb:45,fat:52},{name:l==='es'?'Papas chicas':'Small fries',kcal:300,prot:4,carb:40}],snack:'B',atun:1},
@@ -830,13 +896,23 @@ const YM={id:'youme',name:'You Me Sushi',icon:'🍣',src:'Uber Eats',meals:[
 ]};
 const KE={id:'kebab',name:l==='es'?'Kebab turco':'Turkish kebab',icon:'🥙',src:'Uber Eats',meals:[
   {name:'Chicken doner wrap',note:NOTE_GARLIC,items:[{name:'Chicken doner wrap',kcal:575,prot:40,carb:50,fat:24}],snack:'B',atun:1},
+  {name:l==='es'?'1/4 pechuga L&H + brócoli':'1/4 breast L&H + broccoli',note:'🌿 Lemon & Herb — not spicy',items:[{name:'1/4 chicken breast L&H',kcal:289,prot:42,carb:0,fat:10},{name:'Long stem broccoli',kcal:52,prot:4,carb:4,fat:2}]},
+  {name:l==='es'?'Pechuga butterfly L&H + maíz':'Butterfly breast L&H + corn',note:'🌿 Lemon & Herb — not spicy',items:[{name:'Chicken butterfly L&H',kcal:331,prot:52,carb:0,fat:12},{name:'Corn on the cob',kcal:189,prot:5,carb:34,fat:2}]},
+  {name:l==='es'?'Wrap de pollo L&H + ensalada':'Chicken wrap L&H + salad',note:'🌿 Lemon & Herb — not spicy',items:[{name:'Chicken wrap L&H',kcal:490,prot:38,carb:42,fat:14},{name:'Garden salad',kcal:17,prot:1,carb:3,fat:0}]},
+  {name:l==='es'?'1/2 pollo L&H + brócoli + ensalada':'1/2 chicken L&H + broccoli + salad',note:'🌿 Lemon & Herb — not spicy',items:[{name:'1/2 chicken L&H',kcal:550,prot:68,carb:0,fat:18},{name:'Long stem broccoli',kcal:52,prot:4,carb:4,fat:2},{name:'Garden salad',kcal:17,prot:1,carb:3,fat:0}]},
+  {name:l==='es'?'3 alitas L&H + maíz + ensalada':'3 wings L&H + corn + salad',note:'🌿 Lemon & Herb — not spicy',items:[{name:'3 wings L&H',kcal:420,prot:36,carb:0,fat:22},{name:'Corn on the cob',kcal:189,prot:5,carb:34,fat:2},{name:'Garden salad',kcal:17,prot:1,carb:3,fat:0}]},
+  {name:l==='es'?'4 muslos L&H + macho peas':'4 thighs L&H + macho peas',note:'🌿 Lemon & Herb — not spicy',items:[{name:'4 boneless thighs L&H',kcal:716,prot:85,carb:3,fat:20},{name:'Macho peas',kcal:155,prot:11,carb:18,fat:3}]},
+  {name:l==='es'?'Pechuga grillada L&H + spicy rice':'Grilled breast L&H + spicy rice',note:'🌿 Lemon & Herb — not spicy',items:[{name:'1/4 chicken breast L&H',kcal:289,prot:42,carb:0,fat:10},{name:'Spicy rice',kcal:246,prot:5,carb:45,fat:4}]},
   {name:l==='es'?'Chicken doner box (sin wrap)':'Chicken doner box (no wrap)',items:[{name:l==='es'?'Chicken doner + arroz sin wrap':'Chicken doner + rice no wrap',kcal:600,prot:45,carb:55}],snack:'B',atun:1},
 ]};
 const FG={id:'fiveguys',name:'Five Guys',icon:'🍟',src:SRC_PRESENCIAL,meals:[
   {name:l==='es'?'Little Bacon Cheeseburger sin papas':'Little Bacon Cheeseburger no fries',items:[{name:'Little Bacon Cheeseburger',kcal:760,prot:38,carb:40,fat:50}],snack:'B',atun:1},
   {name:'Little Bacon Cheeseburger + fries',note:NOTE_REFEED,items:[{name:'Little Bacon Cheeseburger',kcal:760,prot:38,carb:40,fat:50},{name:'Little fries',kcal:528,prot:7,carb:68,fat:25}],snack:'B',atun:2},
+  {name:l==='es'?'Little burger sin queso':'Little hamburger',items:[{name:'Five Guys little hamburger',kcal:540,prot:23,carb:39,fat:26}]},
+  {name:l==='es'?'Little burger con queso':'Little cheeseburger',items:[{name:'Five Guys little cheeseburger',kcal:610,prot:27,carb:40,fat:32}]},
+  {name:l==='es'?'Little bacon burger':'Little bacon burger',items:[{name:'Five Guys little bacon burger',kcal:620,prot:28,carb:39,fat:34}]},
 ]};
-const mp={lun:[N,I,TB,KF,MC,NA,PE,FW],mar:[N,I,TB,WA,KF,MC,ZI,YM,KE,PE],mie:[N,I,TB,NA,FG,KF,MC,PE,FW],jue:[N,I,TB,WA,KF,MC,ZI,YM,KE,PE],vie:[N,I,WA,TB,KF,MC,NA,PE,FW],sab:[N,I,WA,TB,KF,MC,YM,KE,FW,ZI],dom:[N,WA,I,FG,KF,MC,PE,FW,ZI]};
+const mp={lun:[N,PP,SW,I,SB,TB,KF,MC,NA,PE,FW],mar:[N,PP,SW,I,TB,WA,KF,MC,ZI,SI,YM,KE,PE],mie:[N,PP,SW,I,SB,TB,NA,FG,KF,MC,PE,FW],jue:[N,PP,SW,I,TB,WA,KF,MC,ZI,YM,KE,PE],vie:[N,PP,SW,I,SB,WA,TB,KF,MC,NA,PE,FW],sab:[N,PP,SW,I,SB,WA,TB,KF,MC,SI,YM,KE,FW,ZI],dom:[N,PP,SW,WA,I,SB,FB2,FG,KF,MC,PE,FW,ZI]};
 return mp[d]||[];
 };
 
