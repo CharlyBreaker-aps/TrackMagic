@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v7.6 (By Charly)</title>
+<title>MagicTracker v7.7 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
@@ -231,7 +231,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v7.6 (By Charly)",
+    appName: "MagicTracker v7.7 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -374,7 +374,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v7.6 (By Charly)",
+    appName: "MagicTracker v7.7 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -686,6 +686,22 @@ const FDB=[
 {n:'Prawn avocado salad + lemon dressing',k:380,p:30,c:14,f:0,cat:'Home meal',hi:1,hm:1},
 {n:'Chicken quinoa salad 150g + cucumber + tomato',k:480,p:40,c:42,f:0,cat:'Home meal',hi:1,hm:1},
 {n:'Protein shake 30g',k:120,p:24,c:4,f:2,cat:'Protein',hi:1,hm:1},
+{n:'Chicken breast Lidl 100g',k:106,p:24,c:0,f:1,cat:'Protein',hi:1},
+{n:'Chicken breast Lidl 150g',k:159,p:36,c:0,f:2,cat:'Protein',hi:1},
+{n:'Chicken breast Lidl 200g',k:212,p:48,c:0,f:2,cat:'Protein',hi:1},
+{n:'Lamb kebab Lidl x1',k:114,p:11,c:3,f:6,cat:'Protein'},
+{n:'Lamb kebab Lidl x2',k:228,p:22,c:6,f:13,cat:'Protein'},
+{n:'Lamb kebab Lidl x3',k:342,p:33,c:8,f:19,cat:'Protein',hi:1},
+{n:'Lamb kebab Lidl x4',k:456,p:44,c:11,f:25,cat:'Protein',hi:1},
+{n:'Egg noodles Lidl 100g',k:198,p:3,c:30,f:5,cat:'Carbs'},
+{n:'Egg noodles Lidl 205g',k:406,p:7,c:62,f:10,cat:'Carbs'},
+{n:'Egg noodles Lidl 410g',k:812,p:13,c:124,f:20,cat:'Carbs'},
+{n:'Chicken breast Lidl 200g + noodles 205g',k:618,p:55,c:62,f:12,cat:'Home meal',hi:1,hm:1},
+{n:'Chicken breast Lidl 150g + noodles + broccoli',k:619,p:46,c:62,f:12,cat:'Home meal',hi:1,hm:1},
+{n:'Lamb kebabs Lidl x3 + noodles 205g',k:748,p:40,c:70,f:29,cat:'Home meal',hi:1,hm:1},
+{n:'Lamb kebabs Lidl x4 + noodles 205g',k:862,p:51,c:73,f:35,cat:'Home meal',hi:1,hm:1},
+{n:'Chicken breast Lidl 200g + rice 150g',k:407,p:52,c:43,f:2,cat:'Home meal',hi:1,hm:1},
+{n:'Lamb kebabs Lidl x3 + rice 150g',k:537,p:37,c:48,f:19,cat:'Home meal',hi:1,hm:1},
 ];
 
 const PROT=FDB.filter(f=>f.hi&&f.p>=15);
@@ -757,6 +773,9 @@ const CHARLY_EX=(l)=>[
   {id:'ex6',name:l==='es'?'Arroz integral 150g':'Brown rice 150g',kcal:165,prot:4,carb:35,fat:1},
 ];
 
+
+const buildCharlyRests=(d)=>{
+const l=APP.lang||'en';
 const SW={id:'subway',name:'Subway',icon:'🥖',src:'Uber Eats / Walk-in',meals:[
   {name:l==='es'?'Pollo grillado protein bowl':'Grilled chicken protein bowl',items:[{name:'Subway grilled chicken protein bowl',kcal:310,prot:38,carb:14,fat:9}]},
   {name:l==='es'?'Pavo protein bowl':'Turkey protein bowl',items:[{name:'Subway turkey protein bowl',kcal:270,prot:30,carb:12,fat:8}]},
@@ -797,8 +816,6 @@ const FB2={id:'frankiebennys',name:"Frankie & Benny's",icon:'🍝',src:'Uber Eat
   {name:l==='es'?'Ribs BBQ rack entero':'Full rack BBQ ribs',items:[{name:"F&B full rack BBQ ribs",kcal:1100,prot:72,carb:28,fat:62}]},
   {name:l==='es'?'Steak + patatas':'Sirloin steak + fries',items:[{name:"F&B sirloin steak + fries",kcal:820,prot:56,carb:44,fat:38}]},
 ]};
-const buildCharlyRests=(d)=>{
-const l=APP.lang||'en';
 const SRC_PRESENCIAL=l==='es'?'Presencial':'Walk-in';
 const NOTE_LH=l==='es'?'Pedir Lemon & Herb — no picante':'Order Lemon & Herb — not spicy';
 const NOTE_LH2=l==='es'?'Pedir Lemon & Herb':'Order Lemon & Herb';
