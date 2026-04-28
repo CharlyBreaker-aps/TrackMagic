@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v7.9 (By Charly)</title>
+<title>MagicTracker v8.0 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
@@ -231,7 +231,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v7.9 (By Charly)",
+    appName: "MagicTracker v8.0 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -307,7 +307,7 @@ const T = {
     main_meal: 'Main meal',
     search_food: 'Search food',
     search_placeholder: 'chicken breast, rice, apple, salmon...',
-    search_hint: '500+ foods · type "protein" · "low cal" · "high carb" to filter',
+    search_hint: '270+ foods · type "protein" · "low cal" · "high carb" to filter',
     high_protein: 'high protein', low_cal: 'low cal', high_carb: 'high carb', home_meals_tag: 'home cooked',
     searched: 'added',
     no_results: 'No results. Try: chicken, rice, apple, salmon...',
@@ -448,7 +448,7 @@ const T = {
     main_meal: 'Plato principal',
     search_food: 'Buscar alimento',
     search_placeholder: 'chicken breast, arroz, manzana, salmon...',
-    search_hint: '500+ alimentos · "proteina" · "bajo cal" · "alta carbos" para filtrar',
+    search_hint: '270+ alimentos · "proteina" · "bajo cal" · "alta carbos" para filtrar',
     high_protein: 'alta proteína', low_cal: 'bajo cal', high_carb: 'alta carbos', home_meals_tag: 'comida casera',
     searched: 'buscado',
     no_results: 'Sin resultados. Probá: chicken, rice, apple, salmon...',
@@ -2707,13 +2707,15 @@ function updateSR(){
   if(customMatches.length){
     customHtml=`<div style="font-size:10px;color:var(--green);margin-bottom:4px;font-weight:700">🏷 ${isEs?'Mis alimentos':'My foods'}</div>`;
     customMatches.forEach((f,i)=>{
-      customHtml+=`<div class="sri" style="position:relative" onclick="addCustomFoodToDay(${APP.customFoods.indexOf(f)})">
+      const fidx = APP.customFoods.indexOf(f);
+      customHtml+=`<div class="sri" style="position:relative" onclick="addCustomFoodToDay(${fidx})">
         <div style="flex:1">
           <div class="sriname">${escapeHTML(f.n)} <span style="font-size:9px;padding:1px 5px;border-radius:4px;background:var(--bg3);color:var(--green);border:.5px solid var(--green)">custom</span></div>
         </div>
         <div class="srimac">${f.k}kcal<br>${f.p}g P · ${f.c}g C${f.f?" · "+f.f+"g F":""}</div>
         <div class="sriadd">+</div>
-        <button onclick="deleteCustomFood(event,${APP.customFoods.indexOf(f)})" style="position:absolute;top:4px;right:30px;font-size:10px;background:transparent;border:none;color:var(--text3);cursor:pointer">✕</button>
+        <button onclick="editCustomFood(event,${fidx})" style="position:absolute;top:2px;right:52px;font-size:10px;background:transparent;border:none;color:var(--text3);cursor:pointer;padding:2px 4px" title="Edit">✏️</button>
+        <button onclick="deleteCustomFood(event,${fidx})" style="position:absolute;top:2px;right:28px;font-size:10px;background:transparent;border:none;color:var(--text3);cursor:pointer;padding:2px 4px" title="Delete">✕</button>
       </div>`;
     });
   }
@@ -2779,6 +2781,70 @@ function addCustomFoodToDay(idx){
   if(!APP.cchk[d])APP.cchk[d]={};
   APP.cchk[d][_cid2]=true;
   save();render();
+}
+
+function editCustomFood(e, idx) {
+  e.stopPropagation();
+  const f = APP.customFoods[idx];
+  if (!f) return;
+  const isEs = APP.lang === 'es';
+  const sr = document.getElementById('sr');
+  if (!sr) return;
+
+  sr.innerHTML = `<div style="padding:8px;background:var(--bg2);border-radius:8px;margin-top:4px">
+    <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:8px">✏️ ${isEs?'Editar alimento':'Edit food'}</div>
+    <div style="display:flex;flex-direction:column;gap:7px">
+      <input id="ef-name" class="sinp" type="text" value="${escapeHTML(f.n)}" style="margin:0">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px">
+        <div><div style="font-size:9px;color:var(--text3);margin-bottom:2px">kcal</div>
+          <input id="ef-kcal" class="sinp" type="number" inputmode="numeric" value="${f.k||0}" style="margin:0;padding:8px"></div>
+        <div><div style="font-size:9px;color:var(--text3);margin-bottom:2px">${isEs?'Prot g':'Prot g'}</div>
+          <input id="ef-prot" class="sinp" type="number" inputmode="numeric" value="${f.p||0}" style="margin:0;padding:8px"></div>
+        <div><div style="font-size:9px;color:var(--text3);margin-bottom:2px">${isEs?'Carbos g':'Carbs g'}</div>
+          <input id="ef-carb" class="sinp" type="number" inputmode="numeric" value="${f.c||0}" style="margin:0;padding:8px"></div>
+        <div><div style="font-size:9px;color:var(--text3);margin-bottom:2px">${isEs?'Grasas g':'Fats g'}</div>
+          <input id="ef-fat" class="sinp" type="number" inputmode="numeric" value="${f.f||0}" style="margin:0;padding:8px"></div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button onclick="saveEditCustomFood(${idx})" style="flex:1;padding:9px;border-radius:var(--radius);border:none;background:var(--green);color:#fff;font-size:13px;font-weight:600;cursor:pointer">
+          ${isEs?'Guardar ✓':'Save ✓'}
+        </button>
+        <button onclick="updateSR()" style="padding:9px 14px;border-radius:var(--radius);border:.5px solid var(--border2);background:transparent;color:var(--text3);font-size:13px;cursor:pointer">
+          ${isEs?'Cancelar':'Cancel'}
+        </button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function saveEditCustomFood(idx) {
+  const f = APP.customFoods[idx];
+  if (!f) return;
+  const isEs = APP.lang === 'es';
+  const name = (document.getElementById('ef-name')?.value || '').trim();
+  const kcal = parseInt(document.getElementById('ef-kcal')?.value || 0);
+  const prot = parseInt(document.getElementById('ef-prot')?.value || 0);
+  const carb = parseInt(document.getElementById('ef-carb')?.value || 0);
+  const fat  = parseInt(document.getElementById('ef-fat')?.value  || 0);
+  if (!name || !kcal) {
+    alert(isEs ? 'Ingresá nombre y kcal como mínimo.' : 'Please enter at least a name and kcal.');
+    return;
+  }
+  const oldName = f.n;
+  // Update the custom food in the permanent list
+  APP.customFoods[idx] = {...f, n:name, k:kcal, p:prot, c:carb, f:fat};
+  // Also update any instances in today's searched foods
+  Object.keys(APP.cust||{}).forEach(d => {
+    (APP.cust[d]||[]).forEach(item => {
+      if (item.name === oldName) {
+        item.name = name; item.kcal = kcal; item.prot = prot; item.carb = carb; item.fat = fat;
+      }
+    });
+  });
+  save();
+  const sr = document.getElementById('sr');
+  if (sr) sr.innerHTML = `<div style="padding:8px;font-size:12px;color:var(--green)">✓ "${escapeHTML(name)}" ${isEs?'actualizado':'updated'}</div>`;
+  setTimeout(() => render(), 1000);
 }
 
 function deleteCustomFood(e,idx){
