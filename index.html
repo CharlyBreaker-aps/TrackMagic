@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v8.2 (By Charly)</title>
+<title>MagicTracker v8.3 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
@@ -231,7 +231,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v8.2 (By Charly)",
+    appName: "MagicTracker v8.3 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -762,12 +762,17 @@ const CHARLY_SB=(l)=>[
 ];
 const getATUN=(l)=>({name:l==='es'?'Atún en agua x1 lata':'Tuna in water x1 tin',kcal:130,prot:28,carb:0});
 const CHARLY_EXT=(l)=>[
-  {id:'se0',name:'Skyr Arla 150g',kcal:90,prot:15,carb:6},
-  {id:'se1',name:'Skyr Arla 200g',kcal:120,prot:20,carb:8},
-  {id:'se2',name:'Greek yogurt 0% 200g',kcal:120,prot:20,carb:6},
-  {id:'se3',name:'Edamame beans 150g',kcal:182,prot:17,carb:10},
-  {id:'se4',name:l==='es'?'Sardinas en tomate 120g':'Sardines in tomato 120g',kcal:200,prot:24,carb:3},
-  {id:'se5',name:l==='es'?'Jamón York 100g':'Ham York 100g',kcal:120,prot:18,carb:2},
+  {id:'se0',name:'Skyr Arla 150g',kcal:90,prot:15,carb:6,fat:0},
+  {id:'se1',name:'Skyr Arla 200g',kcal:120,prot:20,carb:8,fat:0},
+  {id:'se2',name:'Greek yogurt 0% 200g',kcal:120,prot:20,carb:6,fat:0},
+  {id:'se3',name:'Edamame beans 150g',kcal:182,prot:17,carb:10,fat:8},
+  {id:'se4',name:l==='es'?'Sardinas en tomate 120g':'Sardines in tomato 120g',kcal:200,prot:24,carb:3,fat:10},
+  {id:'se5',name:l==='es'?'Jamón York 100g':'Ham York 100g',kcal:120,prot:18,carb:2,fat:4},
+  {id:'se6',name:'Cottage cheese fat-free 300g',kcal:210,prot:33,carb:9,fat:1},
+  {id:'se7',name:l==='es'?'Huevos duros x3':'Hard-boiled eggs x3',kcal:210,prot:18,carb:1,fat:15},
+  {id:'se8',name:'Biltong Tesco 40g',kcal:110,prot:20,carb:1,fat:2},
+  {id:'se9',name:l==='es'?'Pan integral x2':'Wholemeal bread x2',kcal:160,prot:7,carb:30,fat:2},
+  {id:'se10',name:l==='es'?'Atun en agua 1 lata':'Tuna in water 1 tin',kcal:110,prot:25,carb:0,fat:1},
 ];
 const CHARLY_EX=(l)=>[
   {id:'ex0',name:l==='es'?'Galletas de arroz x4':'Rice cakes x4',kcal:100,prot:3,carb:21},
@@ -1170,13 +1175,12 @@ function escapeHTML(s) {
           .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
-function escapeHTML(s){if(typeof s!=="string")return String(s||"");return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");}
 
 function save() {
   try {
     if (APP.activeProfileId) {
       APP.allTrackingData[APP.activeProfileId] = {
-        day:APP.day, rest:APP.rest, meal:APP.meal, chk:APP.chk, qty:APP.qty,
+        day:APP.day, rest:APP.rest, meal:APP.meal, chk:APP.chk, qty:APP.qty, snacksOpen:APP.snacksOpen,
         mult:APP.mult, act:APP.act, sup:APP.sup, echk:APP.echk, eqty:APP.eqty,
         emult:APP.emult, cust:APP.cust, cchk:APP.cchk, cqty:APP.cqty, cmult:APP.cmult,
         atun:APP.atun, actBurn:APP.actBurn||{}, walkMins:APP.walkMins||{}
@@ -1204,6 +1208,7 @@ function load() {
 function loadProfileTracking(profileId) {
   const td = (APP.allTrackingData||{})[profileId] || {};
   APP.day = td.day || currentDayId();
+  APP.snacksOpen = td.snacksOpen !== false;
   APP.rest = td.rest||{}; APP.meal = td.meal||{}; APP.chk = td.chk||{};
   APP.qty = td.qty||{}; APP.mult = td.mult||{}; APP.act = td.act||{};
   APP.sup = td.sup||{}; APP.echk = td.echk||{}; APP.eqty = td.eqty||{};
@@ -1238,7 +1243,7 @@ function switchProfile(profileId) {
   if (APP.activeProfileId) {
     if (!APP.allTrackingData) APP.allTrackingData = {};
     APP.allTrackingData[APP.activeProfileId] = {
-      day:APP.day, rest:APP.rest, meal:APP.meal, chk:APP.chk, qty:APP.qty,
+      day:APP.day, rest:APP.rest, meal:APP.meal, chk:APP.chk, qty:APP.qty, snacksOpen:APP.snacksOpen,
       mult:APP.mult, act:APP.act, sup:APP.sup, echk:APP.echk, eqty:APP.eqty,
       emult:APP.emult, cust:APP.cust, cchk:APP.cchk, cqty:APP.cqty, cmult:APP.cmult, atun:APP.atun,
       actBurn:APP.actBurn||{}, walkMins:APP.walkMins||{}
@@ -2476,9 +2481,9 @@ function renderTracker() {
       </div><div class="rbody${isOpen2?' open':''}">`;
       r.meals.forEach((m2,mi)=>{
         const isSel2=selM2===mi;
-        const tK2=m2.items.reduce((acc,x)=>acc+x.kcal,0)+(m2.snack?getSnackItems(m2.snack).reduce((acc,x)=>acc+x.kcal,0):0);
-        const tP2=m2.items.reduce((acc,x)=>acc+x.prot,0)+(m2.snack?getSnackItems(m2.snack).reduce((acc,x)=>acc+x.prot,0):0);
-        const tC2=m2.items.reduce((acc,x)=>acc+(x.carb||0),0)+(m2.snack?getSnackItems(m2.snack).reduce((acc,x)=>acc+(x.carb||0),0):0);
+        const tK2=m2.items.reduce((acc,x)=>acc+x.kcal,0);
+        const tP2=m2.items.reduce((acc,x)=>acc+x.prot,0);
+        const tC2=m2.items.reduce((acc,x)=>acc+(x.carb||0),0);
         s+=`<div class="mopt"><div class="mhdr" onclick="selM('${d}','${r.id}',${mi})">
           <div class="mradio${isSel2?' checked':''}"></div>
           <div class="minfo">
@@ -2497,7 +2502,7 @@ function renderTracker() {
           </div>`;
           s+=`<div class="glbl">${r.name}${r.src?' — '+r.src:''}</div>`;
           m2.items.forEach((x,j)=>{s+=row(d,{...x,id:'m'+r.id+'_'+j},'m');});
-          if(m2.snack){s+=`<div class="glbl">Snack ${m2.snack}</div>`;getSnackItems(m2.snack).forEach(x=>{s+=row(d,x,'m');});}
+          // snacks moved to Snacks & extras section
           if(p.isCharly&&(m2.atun||0)>0){s+=`<div class="glbl">${isEs2?'Atún':'Tuna'}</div>`;for(let j=0;j<m2.atun;j++)s+=row(d,{...getATUN(APP.lang),id:'at'+j},'m');}
           s+=`</div>`;
         }
@@ -2533,7 +2538,12 @@ function renderTracker() {
 
   // Render snacks & extras section (always shown)
   function renderSnacksSection() {
-    let s = `<div class="sec">🥗 ${isEs2?'Snacks y extras':'Snacks & extras'}</div>`;
+    const snacksOpen = APP.snacksOpen !== false; // default open
+    const toggleBtn = `<span style="margin-left:auto;font-size:12px;color:var(--text3)">${snacksOpen?'▲':'▼'}</span>`;
+    let s = `<div class="sec" onclick="APP.snacksOpen=!${snacksOpen};save();render()" style="cursor:pointer;display:flex;align-items:center">
+      <span>🥗 ${isEs2?'Snacks y extras':'Snacks & extras'}</span>${toggleBtn}
+    </div>`;
+    if (!snacksOpen) return s;
     s += `<div class="exbox" style="margin:0 12px 7px"><div class="exhdr">${t('extra_protein_snacks')}</div>`;
     getExtraSnacks().forEach(x=>{s+=row(d,x,'e');});
     s += `</div><div class="exbox" style="margin:0 12px 7px"><div class="exhdr">${t('optional_extras')}</div>`;
@@ -2771,7 +2781,7 @@ function saveCustomFood(){
   const si=document.getElementById('si');
   if(si)si.value='';
   const sr=document.getElementById('sr');
-  if(sr)sr.innerHTML=`<div style="padding:8px;font-size:12px;color:var(--green)">✓ "${name}" ${APP.lang==='es'?'guardado y agregado a hoy':'saved and added to today'}</div>`;
+  if(sr)sr.innerHTML=`<div style="padding:8px;font-size:12px;color:var(--green)">✓ "${escapeHTML(name)}" ${APP.lang==='es'?'guardado y agregado a hoy':'saved and added to today'}</div>`;
   setTimeout(()=>render(),1200);
 }
 
@@ -3180,7 +3190,7 @@ function _getMealItemIds(d, rid, mi) {
   if (!r || !r.meals[mi]) return [];
   const m = r.meals[mi];
   const ids = m.items.map((_,j) => 'm'+rid+'_'+j);
-  if (m.snack) getSnackItems(m.snack).forEach(x => ids.push(x.id));
+  // snacks no longer tied to meal selection
   if (getProfile()?.isCharly) for (let j=0;j<(m.atun||0);j++) ids.push('at'+j);
   return ids;
 }
