@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v8.3 (By Charly)</title>
+<title>MagicTracker v8.4 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
@@ -231,7 +231,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v8.3 (By Charly)",
+    appName: "MagicTracker v8.4 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -1180,7 +1180,7 @@ function save() {
   try {
     if (APP.activeProfileId) {
       APP.allTrackingData[APP.activeProfileId] = {
-        day:APP.day, rest:APP.rest, meal:APP.meal, chk:APP.chk, qty:APP.qty, snacksOpen:APP.snacksOpen,
+        day:APP.day, rest:APP.rest, meal:APP.meal, chk:APP.chk, qty:APP.qty, snacksOpen:APP.snacksOpen, sfOpen:APP.sfOpen,
         mult:APP.mult, act:APP.act, sup:APP.sup, echk:APP.echk, eqty:APP.eqty,
         emult:APP.emult, cust:APP.cust, cchk:APP.cchk, cqty:APP.cqty, cmult:APP.cmult,
         atun:APP.atun, actBurn:APP.actBurn||{}, walkMins:APP.walkMins||{}
@@ -1209,6 +1209,7 @@ function loadProfileTracking(profileId) {
   const td = (APP.allTrackingData||{})[profileId] || {};
   APP.day = td.day || currentDayId();
   APP.snacksOpen = td.snacksOpen !== false;
+  APP.sfOpen = td.sfOpen !== false;
   APP.rest = td.rest||{}; APP.meal = td.meal||{}; APP.chk = td.chk||{};
   APP.qty = td.qty||{}; APP.mult = td.mult||{}; APP.act = td.act||{};
   APP.sup = td.sup||{}; APP.echk = td.echk||{}; APP.eqty = td.eqty||{};
@@ -1243,7 +1244,7 @@ function switchProfile(profileId) {
   if (APP.activeProfileId) {
     if (!APP.allTrackingData) APP.allTrackingData = {};
     APP.allTrackingData[APP.activeProfileId] = {
-      day:APP.day, rest:APP.rest, meal:APP.meal, chk:APP.chk, qty:APP.qty, snacksOpen:APP.snacksOpen,
+      day:APP.day, rest:APP.rest, meal:APP.meal, chk:APP.chk, qty:APP.qty, snacksOpen:APP.snacksOpen, sfOpen:APP.sfOpen,
       mult:APP.mult, act:APP.act, sup:APP.sup, echk:APP.echk, eqty:APP.eqty,
       emult:APP.emult, cust:APP.cust, cchk:APP.cchk, cqty:APP.cqty, cmult:APP.cmult, atun:APP.atun,
       actBurn:APP.actBurn||{}, walkMins:APP.walkMins||{}
@@ -2538,7 +2539,7 @@ function renderTracker() {
 
   // Render snacks & extras section (always shown)
   function renderSnacksSection() {
-    const snacksOpen = APP.snacksOpen !== false; // default open
+    const snacksOpen = APP.snacksOpen !== false;
     const toggleBtn = `<span style="margin-left:auto;font-size:12px;color:var(--text3)">${snacksOpen?'▲':'▼'}</span>`;
     let s = `<div class="sec" onclick="APP.snacksOpen=!${snacksOpen};save();render()" style="cursor:pointer;display:flex;align-items:center">
       <span>🥗 ${isEs2?'Snacks y extras':'Snacks & extras'}</span>${toggleBtn}
@@ -2549,15 +2550,23 @@ function renderTracker() {
     s += `</div><div class="exbox" style="margin:0 12px 7px"><div class="exhdr">${t('optional_extras')}</div>`;
     exItems(d).forEach(x=>{s+=row(d,x,'e');});
     s += `</div>`;
-    const cl3=APP.cust[d]||[];
-    const customNoBreakfast = cl3;
-    if(customNoBreakfast.length){
-      s+=`<div style="margin:0 12px 7px"><div class="glbl">${t('searched_foods')}</div>`;
-      customNoBreakfast.forEach(x=>{
-        s+=`<div style="display:flex;align-items:center;gap:4px"><button onclick="removeCustItem('${d}','${x.id}')" style="flex-shrink:0;font-size:15px;background:transparent;border:none;color:var(--text3);cursor:pointer;padding:4px 2px;min-width:24px">✕</button><div style="flex:1;min-width:0">${row(d,x,'c')}</div></div>`;
-      });
-      s+=`</div>`;
-    }
+    return s;
+  }
+
+  function renderSearchedFoodsSection() {
+    const cl3 = APP.cust[d] || [];
+    if (!cl3.length) return '';
+    const sfOpen = APP.sfOpen !== false;
+    const toggleBtn = `<span style="margin-left:auto;font-size:12px;color:var(--text3)">${sfOpen?'▲':'▼'}</span>`;
+    let s = `<div class="sec" onclick="APP.sfOpen=!${sfOpen};save();render()" style="cursor:pointer;display:flex;align-items:center">
+      <span>🔍 ${isEs2?'Alimentos buscados':'Searched foods'}</span>${toggleBtn}
+    </div>`;
+    if (!sfOpen) return s;
+    s += `<div style="margin:0 12px 7px">`;
+    cl3.forEach(x=>{
+      s+=`<div style="display:flex;align-items:center;gap:4px"><button onclick="removeCustItem('${d}','${x.id}')" style="flex-shrink:0;font-size:15px;background:transparent;border:none;color:var(--text3);cursor:pointer;padding:4px 2px;min-width:24px">✕</button><div style="flex:1;min-width:0">${row(d,x,'c')}</div></div>`;
+    });
+    s += `</div>`;
     return s;
   }
 
@@ -2572,10 +2581,12 @@ function renderTracker() {
     h += renderMealSection(isEs2?'Almuerzo — Comida principal':'Lunch — Main meal', '🥩', 'lunch', mainRests);
     h += renderMealSection(isEs2?'Cena — Comida principal':'Dinner — Main meal', '🌙', 'dinner', dinnerRests);
     h += renderSnacksSection();
+    h += renderSearchedFoodsSection();
   } else if (eating === '2meals') {
     h += renderMealSection(isEs2?'Primera comida — Almuerzo':'First meal — Lunch', '☀️', 'lunch', mainRests);
     h += renderMealSection(isEs2?'Segunda comida — Cena':'Second meal — Dinner', '🌙', 'dinner', dinnerRests);
     h += renderSnacksSection();
+    h += renderSearchedFoodsSection();
   } else if (eating === 'omad' || eating === 'ext_omad') {
     h += renderMealSection(isEs2?'Comida principal':'Main meal', '🍽️', 'main', mainRests);
     // Optional light breakfast for OMAD — uses row() with stable IDs
@@ -2596,9 +2607,11 @@ function renderTracker() {
     });
     h+=`</div></div>`;
     h += renderSnacksSection();
+    h += renderSearchedFoodsSection();
   } else {
     h += renderMealSection(t('main_meal'), '🍽️', 'main', mainRests);
     h += renderSnacksSection();
+    h += renderSearchedFoodsSection();
   }
 
   // Tuna tracker (Charly only)
