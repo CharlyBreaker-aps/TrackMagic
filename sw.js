@@ -1,4 +1,4 @@
-const CACHE = 'charly-tracker-v53';
+const CACHE = 'charly-tracker-v54';
 const FILES = ['./manifest.json', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -15,7 +15,6 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
-  // Network-first for HTML and SW — always get latest version
   if (url.pathname.endsWith('.html') || url.pathname.endsWith('sw.js') || url.pathname === '/' || url.pathname.endsWith('/charly-tracker/')) {
     e.respondWith(
       fetch(e.request).then(r => {
@@ -25,7 +24,6 @@ self.addEventListener('fetch', e => {
       }).catch(() => caches.match(e.request))
     );
   } else {
-    // Cache-first for icons, manifests, images
     e.respondWith(caches.match(e.request).then(cached => cached || fetch(e.request)));
   }
 });
@@ -47,12 +45,14 @@ const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage(payload => {
   const { title, body, icon } = payload.notification || {};
+  // Use title as tag so duplicate notifications for same type replace each other
+  const tag = (title || 'magictracker').toLowerCase().replace(/\s+/g, '-');
   self.registration.showNotification(title || 'MagicTracker', {
     body: body || '',
-    icon: icon || './icons/icon-192.png',
-    badge: './icons/icon-192.png',
-    tag: payload.data?.tag || 'magictracker',
-    renotify: true,
+    icon: icon || '/charly-tracker/icons/icon-192.png',
+    badge: '/charly-tracker/icons/icon-192.png',
+    tag: tag,
+    renotify: false,
     data: payload.data || {}
   });
 });
