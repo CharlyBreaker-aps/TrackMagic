@@ -6,8 +6,9 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v8.4 (By Charly)</title>
+<title>MagicTracker v9.0 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
@@ -206,6 +207,30 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .pstat-l{font-size:9px;color:var(--text3);margin-top:1px}
 /* Generic home meals */
 .home-meal-tag{font-size:9px;padding:1px 5px;border-radius:4px;background:#1a2a1a;color:#6fcf97;margin-left:3px}
+
+/* ── Auth screen ── */
+.auth-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:32px 20px;background:var(--bg)}
+.auth-logo{font-size:48px;margin-bottom:8px}
+.auth-title{font-size:22px;font-weight:800;color:var(--green);margin-bottom:4px;letter-spacing:-0.5px}
+.auth-sub{font-size:13px;color:var(--text3);margin-bottom:32px;text-align:center}
+.auth-card{width:100%;max-width:360px;background:var(--bg2);border-radius:16px;border:.5px solid var(--border2);padding:24px;display:flex;flex-direction:column;gap:12px}
+.auth-btn-google{display:flex;align-items:center;justify-content:center;gap:10px;padding:13px;border-radius:10px;border:.5px solid var(--border2);background:var(--bg3);color:var(--text);font-size:15px;font-weight:600;cursor:pointer;width:100%}
+.auth-btn-google:active{opacity:.8}
+.auth-divider{display:flex;align-items:center;gap:8px;color:var(--text3);font-size:11px}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:.5px;background:var(--border)}
+.auth-input{width:100%;padding:12px 14px;border-radius:10px;border:.5px solid var(--border2);background:var(--bg3);color:var(--text);font-size:14px;box-sizing:border-box;outline:none}
+.auth-input:focus{border-color:var(--green)}
+.auth-btn-primary{padding:13px;border-radius:10px;border:none;background:var(--green);color:#fff;font-size:15px;font-weight:700;cursor:pointer;width:100%}
+.auth-btn-primary:active{opacity:.85}
+.auth-toggle{font-size:12px;color:var(--text3);text-align:center;cursor:pointer}
+.auth-toggle span{color:var(--green);font-weight:600}
+.auth-error{font-size:12px;color:#ff6b6b;text-align:center;min-height:16px}
+.auth-loading{display:flex;flex-direction:column;align-items:center;gap:12px;color:var(--text3);font-size:14px;padding:40px}
+.sync-bar{position:fixed;bottom:0;left:0;right:0;background:var(--green);color:#fff;font-size:12px;text-align:center;padding:6px;z-index:999;transform:translateY(100%);transition:transform .3s}
+.sync-bar.show{transform:translateY(0)}
+.user-pill{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3);padding:3px 8px;border-radius:20px;background:var(--bg2);border:.5px solid var(--border);cursor:pointer}
+.user-pill img{width:18px;height:18px;border-radius:50%}
+
 </style>
 </head>
 <body>
@@ -231,7 +256,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v8.4 (By Charly)",
+    appName: "MagicTracker v9.0 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -1196,6 +1221,7 @@ function save() {
       }
     }
     localStorage.setItem('cvr_app', JSON.stringify(APP));
+  scheduleSave();
   } catch(e){}
 }
 function load() {
@@ -3358,6 +3384,153 @@ const VAPID_KEY = "BE_HmMjONo_sEJWHOgEVFgUn-DYXPAMRWiuYkD_8544tbpXkvO6SvLB_SP_pO
 
 let fbApp = null, fbMsg = null;
 
+// ══════════════════════════════════════════════
+// AUTH + SYNC SYSTEM
+// ══════════════════════════════════════════════
+let fbAuth = null;
+let currentUser = null;
+let syncTimeout = null;
+
+function getUserDocRef(uid) {
+  return firebase.firestore().collection('userData').doc(uid);
+}
+
+function renderLoginScreen(mode='login', errorMsg='') {
+  const isEs = APP.lang === 'es';
+  const isLogin = mode === 'login';
+  document.getElementById('root').innerHTML = `
+    <div class="auth-screen">
+      <div class="auth-logo">⚡</div>
+      <div class="auth-title">MagicTracker</div>
+      <div class="auth-sub">${isEs ? 'Tu tracker de nutrición personal' : 'Your personal nutrition tracker'}</div>
+      <div class="auth-card">
+        <button class="auth-btn-google" onclick="signInWithGoogle()">
+          <svg width="18" height="18" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+          ${isEs ? 'Continuar con Google' : 'Continue with Google'}
+        </button>
+        <div class="auth-divider">${isEs ? 'o con email' : 'or with email'}</div>
+        <input id="auth-email" class="auth-input" type="email" placeholder="Email" autocomplete="email"/>
+        <input id="auth-pass" class="auth-input" type="password" placeholder="${isEs ? 'Contraseña' : 'Password'}" autocomplete="${isLogin ? 'current-password' : 'new-password'}"/>
+        ${!isLogin ? `<input id="auth-pass2" class="auth-input" type="password" placeholder="${isEs ? 'Confirmar contraseña' : 'Confirm password'}"/>` : ''}
+        <div class="auth-error" id="auth-err">${errorMsg}</div>
+        <button class="auth-btn-primary" onclick="handleEmailAuth('${mode}')">
+          ${isLogin ? (isEs ? 'Iniciar sesión' : 'Sign in') : (isEs ? 'Crear cuenta' : 'Create account')}
+        </button>
+        <div class="auth-toggle" onclick="renderLoginScreen('${isLogin ? 'register' : 'login'}')">
+          ${isLogin
+            ? (isEs ? '¿No tenés cuenta? <span>Registrate</span>' : "Don't have an account? <span>Sign up</span>")
+            : (isEs ? '¿Ya tenés cuenta? <span>Iniciá sesión</span>' : 'Already have an account? <span>Sign in</span>')}
+        </div>
+      </div>
+    </div>`;
+  setTimeout(() => {
+    document.getElementById('auth-email')?.addEventListener('keydown', e => { if(e.key==='Enter') document.getElementById('auth-pass')?.focus(); });
+    document.getElementById('auth-pass')?.addEventListener('keydown', e => { if(e.key==='Enter') handleEmailAuth(mode); });
+  }, 50);
+}
+
+async function signInWithGoogle() {
+  try {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    await fbAuth.signInWithPopup(provider);
+  } catch(e) {
+    if (e.code !== 'auth/popup-closed-by-user') renderLoginScreen('login', e.message || 'Error');
+  }
+}
+
+async function handleEmailAuth(mode) {
+  const email = (document.getElementById('auth-email')?.value || '').trim();
+  const pass = document.getElementById('auth-pass')?.value || '';
+  const pass2 = document.getElementById('auth-pass2')?.value || '';
+  const isEs = APP.lang === 'es';
+  const setErr = msg => { if(document.getElementById('auth-err')) document.getElementById('auth-err').textContent = msg; };
+  if (!email || !pass) { setErr(isEs ? 'Completá todos los campos.' : 'Fill in all fields.'); return; }
+  if (mode === 'register' && pass !== pass2) { setErr(isEs ? 'Las contraseñas no coinciden.' : 'Passwords do not match.'); return; }
+  if (pass.length < 6) { setErr(isEs ? 'Mínimo 6 caracteres.' : 'Min 6 characters.'); return; }
+  try {
+    if (mode === 'register') {
+      await fbAuth.createUserWithEmailAndPassword(email, pass);
+    } else {
+      await fbAuth.signInWithEmailAndPassword(email, pass);
+    }
+  } catch(e) {
+    const msgs = {'auth/user-not-found':isEs?'Usuario no encontrado.':'User not found.','auth/wrong-password':isEs?'Contraseña incorrecta.':'Wrong password.','auth/email-already-in-use':isEs?'Email ya registrado.':'Email already in use.','auth/invalid-email':isEs?'Email inválido.':'Invalid email.','auth/invalid-credential':isEs?'Email o contraseña incorrectos.':'Invalid email or password.'};
+    setErr(msgs[e.code] || e.message);
+  }
+}
+
+function signOut() {
+  if (!confirm(APP.lang==='es' ? '¿Cerrar sesión?' : 'Sign out?')) return;
+  fbAuth.signOut();
+}
+
+const SYNC_FIELDS = ['day','rest','meal','chk','qty','mult','echk','eqty','emult','cchk','cqty','cmult','cust','customFoods','walkMins','snacksOpen','sfOpen','profiles','activeProfileId','lang','langSetByUser'];
+
+async function saveToCloud(uid) {
+  if (!uid) return;
+  try {
+    const data = { updatedAt: new Date().toISOString() };
+    SYNC_FIELDS.forEach(k => { if (APP[k] !== undefined) data[k] = APP[k]; });
+    await getUserDocRef(uid).set(data, { merge: true });
+    showSyncBar(APP.lang==='es' ? '✓ Sincronizado' : '✓ Synced');
+  } catch(e) { console.log('Cloud save error:', e.message); }
+}
+
+async function loadFromCloud(uid) {
+  if (!uid) return false;
+  try {
+    const doc = await getUserDocRef(uid).get();
+    if (!doc.exists) { await saveToCloud(uid); return false; }
+    const data = doc.data();
+    SYNC_FIELDS.forEach(k => { if (data[k] !== undefined) APP[k] = data[k]; });
+    console.log('Loaded from cloud:', data.updatedAt);
+    return true;
+  } catch(e) { console.log('Cloud load error:', e.message); return false; }
+}
+
+function showSyncBar(msg) {
+  let bar = document.getElementById('sync-bar');
+  if (!bar) { bar = document.createElement('div'); bar.id = 'sync-bar'; bar.className = 'sync-bar'; document.body.appendChild(bar); }
+  bar.textContent = msg;
+  bar.classList.add('show');
+  setTimeout(() => bar.classList.remove('show'), 2000);
+}
+
+function scheduleSave() {
+  if (syncTimeout) clearTimeout(syncTimeout);
+  syncTimeout = setTimeout(() => { if (currentUser) saveToCloud(currentUser.uid); }, 2000);
+}
+
+function initAuth() {
+  if (!firebase.apps.length) { fbApp = firebase.initializeApp(FB_CONFIG); } else { fbApp = firebase.app(); }
+  fbAuth = firebase.auth();
+  fbMsg = firebase.messaging();
+  fbMsg.onMessage(payload => {
+    const {title, body} = payload.notification || {};
+    if (Notification.permission === 'granted') new Notification(title||'MagicTracker', {body: body||'', icon:'./icons/icon-192.png'});
+  });
+  document.getElementById('root').innerHTML = '<div class="auth-loading"><div style="font-size:40px">⚡</div><div>Loading...</div></div>';
+  fbAuth.onAuthStateChanged(async (user) => {
+    if (!user) { currentUser = null; renderLoginScreen(); return; }
+    currentUser = user;
+    await loadFromCloud(user.uid);
+    ensureCharlyProfile();
+    render();
+    registerFCMToken(user.uid);
+  });
+}
+
+async function registerFCMToken(uid) {
+  try {
+    const reg = await Promise.race([navigator.serviceWorker.ready, new Promise((_,r) => setTimeout(() => r(new Error('timeout')), 3000))]);
+    const token = await fbMsg.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: reg });
+    if (token) {
+      getNS().fcmToken = token; _saveNS();
+      await getUserDocRef(uid).set({ fcmToken: token, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/London', activeProfileId: APP.activeProfileId || 'charly', profiles: APP.profiles || [], lang: APP.lang || 'en' }, { merge: true });
+    }
+  } catch(e) { console.log('FCM token error:', e.message); }
+}
+
 function initFirebase() {
   try {
     if (!firebase.apps.length) fbApp = firebase.initializeApp(FB_CONFIG);
@@ -3820,7 +3993,7 @@ function setNotifTime(key, val) {
   syncNotifSettingsToFirestore();
 }
 
-init();
+initAuth();
 </script>
 </body>
 </html>
