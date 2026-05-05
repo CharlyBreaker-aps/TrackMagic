@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v9.8 (By Charly)</title>
+<title>MagicTracker v9.9 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
@@ -256,7 +256,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v9.8 (By Charly)",
+    appName: "MagicTracker v9.9 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -1258,27 +1258,11 @@ function loadProfileTracking(profileId) {
 }
 
 function isCharlyAccount() {
-  // Charly's account has the hardcoded 'charly' profile OR has no profiles from onboarding
-  // Non-Charly users always have profiles with ids like 'user_TIMESTAMP'
-  if (!APP.profiles || APP.profiles.length === 0) return false;
-  return APP.profiles.some(p => p.id === 'charly');
+  return APP.profiles && APP.profiles.some(p => p.id === 'charly');
 }
 
 function ensureCharlyProfile() {
   if (!APP.profiles) APP.profiles = [];
-
-  // Only inject Charly profile if this account already has it
-  // (i.e. this is Charly's own account, not a new user's account)
-  const hasCharlyProfile = APP.profiles.some(p => p.id === 'charly');
-  const hasOnboardedProfiles = APP.profiles.some(p => p.id && p.id.startsWith('user_'));
-
-  // If user has their own onboarded profiles but no Charly profile, don't inject
-  if (hasOnboardedProfiles && !hasCharlyProfile) return;
-
-  // If no profiles at all yet, don't inject — onboarding will handle it
-  if (APP.profiles.length === 0 && !APP.activeProfileId) return;
-
-  // Otherwise this is Charly's account — inject/update the hardcoded profile
   const idx = APP.profiles.findIndex(p => p.id === 'charly');
   const PRESERVE = ['weight','waist','neck','age','target_weight','target_fat','start_weight','start_waist','weight_updated_at','current_fat','goal','eating','activity','mealstyle','city','cf_days','exercise_days','notifSettings'];
   if (idx < 0) {
@@ -3498,6 +3482,17 @@ async function saveToCloud(uid) {
   try {
     const data = { updatedAt: new Date().toISOString() };
     SYNC_FIELDS.forEach(k => { if (APP[k] !== undefined) data[k] = APP[k]; });
+    // Strip Charly's hardcoded profile from other users' cloud documents
+    // Charly is always re-injected client-side by ensureCharlyProfile()
+    // so it doesn't need to be stored in the cloud for any user
+    if (data.profiles) {
+      data.profiles = data.profiles.filter(p => p.id !== 'charly');
+    }
+    if (data.activeProfileId === 'charly') {
+      // Don't save 'charly' as activeProfileId for non-Charly accounts
+      const firstOwn = (data.profiles || []).find(p => p.id !== 'charly');
+      if (firstOwn) data.activeProfileId = firstOwn.id;
+    }
     await getUserDocRef(uid).set(data, { merge: true });
     showSyncBar(APP.lang==='es' ? '✓ Sincronizado' : '✓ Synced');
   } catch(e) { console.log('Cloud save error:', e.message); }
