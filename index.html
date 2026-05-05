@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v9.6 (By Charly)</title>
+<title>MagicTracker v9.7 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
@@ -256,7 +256,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v9.6 (By Charly)",
+    appName: "MagicTracker v9.7 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -1220,7 +1220,9 @@ function save() {
         if (APP.profile.notifSettings) APP.profiles[idx].notifSettings = APP.profile.notifSettings;
       }
     }
-    localStorage.setItem('cvr_app', JSON.stringify(APP));
+    const appData = {...APP};
+    if (currentUser) appData._uid = currentUser.uid;
+    localStorage.setItem('cvr_app', JSON.stringify(appData));
   scheduleSave();
   } catch(e){}
 }
@@ -3539,10 +3541,15 @@ function initAuth() {
     if (!user) { currentUser = null; renderLoginScreen(); return; }
     currentUser = user;
 
-    // Load local state first
-    load();
+    // Only load localStorage if it belongs to THIS user (check stored UID)
+    const cached = (() => { try { return JSON.parse(localStorage.getItem('cvr_app')||'{}'); } catch(e){return {};} })();
+    if (cached._uid === user.uid) {
+      // Cache belongs to this user — safe to use
+      Object.assign(APP, cached);
+    }
+    // else: different user or no cache — start fresh, load from cloud only
 
-    // Load from cloud (cloud wins)
+    // Load from cloud (always authoritative)
     const hadCloudData = await loadFromCloud(user.uid);
 
     // Brand new user with no data anywhere → onboarding
@@ -3558,21 +3565,20 @@ function initAuth() {
     // Ensure Charly profile for Charly's account
     ensureCharlyProfile();
 
-    // Make sure APP.profile is set from APP.activeProfileId
+    // Set APP.profile from APP.activeProfileId
     if (APP.activeProfileId && APP.profiles) {
       const p = APP.profiles.find(x => x.id === APP.activeProfileId);
       if (p) {
         APP.profile = p.isCharly ? APP.profiles.find(x => x.id==='charly')||{...CHARLY_PROFILE} : p;
         loadProfileTracking(APP.activeProfileId);
       } else if (APP.profiles.length > 0) {
-        // activeProfileId points to missing profile — fall back to first profile
         APP.activeProfileId = APP.profiles[0].id;
         APP.profile = APP.profiles[0];
         loadProfileTracking(APP.activeProfileId);
       }
     }
 
-    // If still no profile, go to onboarding
+    // No profile found anywhere → onboarding
     if (!APP.profile || !APP.activeProfileId) {
       APP.screen = 'onboard';
       APP.ob_step = 0;
