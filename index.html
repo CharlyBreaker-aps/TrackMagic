@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v9.3 (By Charly)</title>
+<title>MagicTracker v9.5 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
@@ -256,7 +256,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v9.3 (By Charly)",
+    appName: "MagicTracker v9.5 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -1255,10 +1255,29 @@ function loadProfileTracking(profileId) {
   }
 }
 
+function isCharlyAccount() {
+  // Charly's account has the hardcoded 'charly' profile OR has no profiles from onboarding
+  // Non-Charly users always have profiles with ids like 'user_TIMESTAMP'
+  if (!APP.profiles || APP.profiles.length === 0) return false;
+  return APP.profiles.some(p => p.id === 'charly');
+}
+
 function ensureCharlyProfile() {
   if (!APP.profiles) APP.profiles = [];
-  const idx = APP.profiles.findIndex(p => p.id==='charly');
-  // Fields that the user can change and should be preserved across const resets
+
+  // Only inject Charly profile if this account already has it
+  // (i.e. this is Charly's own account, not a new user's account)
+  const hasCharlyProfile = APP.profiles.some(p => p.id === 'charly');
+  const hasOnboardedProfiles = APP.profiles.some(p => p.id && p.id.startsWith('user_'));
+
+  // If user has their own onboarded profiles but no Charly profile, don't inject
+  if (hasOnboardedProfiles && !hasCharlyProfile) return;
+
+  // If no profiles at all yet, don't inject — onboarding will handle it
+  if (APP.profiles.length === 0 && !APP.activeProfileId) return;
+
+  // Otherwise this is Charly's account — inject/update the hardcoded profile
+  const idx = APP.profiles.findIndex(p => p.id === 'charly');
   const PRESERVE = ['weight','waist','neck','age','target_weight','target_fat','start_weight','start_waist','weight_updated_at','current_fat','goal','eating','activity','mealstyle','city','cf_days','exercise_days','notifSettings'];
   if (idx < 0) {
     APP.profiles.unshift({...CHARLY_PROFILE});
@@ -3555,7 +3574,17 @@ async function registerFCMToken(uid) {
     const token = await fbMsg.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: reg });
     if (token) {
       getNS().fcmToken = token; _saveNS();
-      await getUserDocRef(uid).set({ fcmToken: token, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/London', activeProfileId: APP.activeProfileId || 'charly', profiles: APP.profiles || [], lang: APP.lang || 'en' }, { merge: true });
+      // Write to users collection for Cloud Function (FCM notifications)
+      // Only include profiles that belong to this user (not Charly's hardcoded profile if this isn't Charly)
+      const userProfiles = (APP.profiles || []).filter(p => isCharlyAccount() ? true : p.id !== 'charly');
+      await firebase.firestore().collection('users').doc(uid.substring(0,28).replace(/[^a-zA-Z0-9]/g,'_')).set({
+        fcmToken: token,
+        activeProfileId: APP.activeProfileId || '',
+        profiles: userProfiles,
+        lang: APP.lang || 'en',
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/London',
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
     }
   } catch(e) { console.log('FCM token error:', e.message); }
 }
