@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v9.7 (By Charly)</title>
+<title>MagicTracker v9.8 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
@@ -256,7 +256,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v9.7 (By Charly)",
+    appName: "MagicTracker v9.8 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -3540,17 +3540,20 @@ function initAuth() {
   fbAuth.onAuthStateChanged(async (user) => {
     if (!user) { currentUser = null; renderLoginScreen(); return; }
     currentUser = user;
+    console.log('AUTH: user logged in uid=', user.uid);
 
     // Only load localStorage if it belongs to THIS user (check stored UID)
     const cached = (() => { try { return JSON.parse(localStorage.getItem('cvr_app')||'{}'); } catch(e){return {};} })();
+    console.log('AUTH: cached._uid=', cached._uid, 'match=', cached._uid === user.uid);
     if (cached._uid === user.uid) {
-      // Cache belongs to this user — safe to use
       Object.assign(APP, cached);
+      console.log('AUTH: loaded from cache, activeProfileId=', APP.activeProfileId);
+    } else {
+      console.log('AUTH: ignoring cache (different user), starting fresh');
     }
-    // else: different user or no cache — start fresh, load from cloud only
 
-    // Load from cloud (always authoritative)
     const hadCloudData = await loadFromCloud(user.uid);
+    console.log('AUTH: hadCloudData=', hadCloudData, 'APP.activeProfileId=', APP.activeProfileId, 'APP.profiles=', (APP.profiles||[]).map(p=>p.id));
 
     // Brand new user with no data anywhere → onboarding
     if (!hadCloudData && !APP.activeProfileId) {
