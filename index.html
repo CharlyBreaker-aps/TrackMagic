@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v9.5 (By Charly)</title>
+<title>MagicTracker v9.6 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
@@ -256,7 +256,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v9.5 (By Charly)",
+    appName: "MagicTracker v9.6 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -3539,14 +3539,14 @@ function initAuth() {
     if (!user) { currentUser = null; renderLoginScreen(); return; }
     currentUser = user;
 
-    // Always load local state first so APP is populated
+    // Load local state first
     load();
 
-    // Then try to load from cloud (cloud wins if data exists)
+    // Load from cloud (cloud wins)
     const hadCloudData = await loadFromCloud(user.uid);
 
+    // Brand new user with no data anywhere → onboarding
     if (!hadCloudData && !APP.activeProfileId) {
-      // Brand new user — no cloud data, no local profile → onboarding
       APP.screen = 'onboard';
       APP.ob_step = 0;
       APP.ob_data = { lang: APP.lang||'en', sex:null, age:'', height:'', weight:'', waist:'', goal:null, activity:null, eating:null, mealstyle:null, diet:[], name:'', exercise_type:null, exercise_days:[], exercise_duration:'60' };
@@ -3555,13 +3555,34 @@ function initAuth() {
       return;
     }
 
-    // Ensure Charly profile is always set up correctly
+    // Ensure Charly profile for Charly's account
     ensureCharlyProfile();
 
-    // If new user (no cloud data), save the initialized state to cloud
-    if (!hadCloudData) {
-      saveToCloud(user.uid);
+    // Make sure APP.profile is set from APP.activeProfileId
+    if (APP.activeProfileId && APP.profiles) {
+      const p = APP.profiles.find(x => x.id === APP.activeProfileId);
+      if (p) {
+        APP.profile = p.isCharly ? APP.profiles.find(x => x.id==='charly')||{...CHARLY_PROFILE} : p;
+        loadProfileTracking(APP.activeProfileId);
+      } else if (APP.profiles.length > 0) {
+        // activeProfileId points to missing profile — fall back to first profile
+        APP.activeProfileId = APP.profiles[0].id;
+        APP.profile = APP.profiles[0];
+        loadProfileTracking(APP.activeProfileId);
+      }
     }
+
+    // If still no profile, go to onboarding
+    if (!APP.profile || !APP.activeProfileId) {
+      APP.screen = 'onboard';
+      APP.ob_step = 0;
+      APP.ob_data = { lang: APP.lang||'en', sex:null, age:'', height:'', weight:'', waist:'', goal:null, activity:null, eating:null, mealstyle:null, diet:[], name:'', exercise_type:null, exercise_days:[], exercise_duration:'60' };
+      render();
+      registerFCMToken(user.uid);
+      return;
+    }
+
+    if (!hadCloudData) saveToCloud(user.uid);
 
     render();
     registerFCMToken(user.uid);
