@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v9.1 (By Charly)</title>
+<title>MagicTracker v9.2 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
@@ -256,7 +256,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v9.1 (By Charly)",
+    appName: "MagicTracker v9.2 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -1226,6 +1226,12 @@ function save() {
 }
 function load() {
   try {
+    // Migrate old localStorage key if needed
+    const oldKey = localStorage.getItem('magictracker');
+    if (oldKey && !localStorage.getItem('cvr_app')) {
+      localStorage.setItem('cvr_app', oldKey);
+      console.log('Migrated data from old key');
+    }
     const d = localStorage.getItem('cvr_app');
     if (d) { const p = JSON.parse(d); if (p && typeof p==='object') Object.assign(APP, p); }
   } catch(e) { try { localStorage.removeItem('cvr_app'); } catch(e2){} }
