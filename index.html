@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v9.0 (By Charly)</title>
+<title>MagicTracker v9.1 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
@@ -256,7 +256,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v9.0 (By Charly)",
+    appName: "MagicTracker v9.1 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -3480,7 +3480,7 @@ async function loadFromCloud(uid) {
   if (!uid) return false;
   try {
     const doc = await getUserDocRef(uid).get();
-    if (!doc.exists) { await saveToCloud(uid); return false; }
+    if (!doc.exists) { return false; } // new user — caller handles saving
     const data = doc.data();
     SYNC_FIELDS.forEach(k => { if (data[k] !== undefined) APP[k] = data[k]; });
     console.log('Loaded from cloud:', data.updatedAt);
@@ -3513,8 +3513,21 @@ function initAuth() {
   fbAuth.onAuthStateChanged(async (user) => {
     if (!user) { currentUser = null; renderLoginScreen(); return; }
     currentUser = user;
-    await loadFromCloud(user.uid);
+
+    // Always load local state first so APP is populated
+    load();
+
+    // Then try to load from cloud (cloud wins if data exists)
+    const hadCloudData = await loadFromCloud(user.uid);
+
+    // Ensure Charly profile is always set up correctly
     ensureCharlyProfile();
+
+    // If new user (no cloud data), save the initialized state to cloud
+    if (!hadCloudData) {
+      saveToCloud(user.uid);
+    }
+
     render();
     registerFCMToken(user.uid);
   });
