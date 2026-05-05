@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v10.0 (By Charly)</title>
+<title>MagicTracker v10.1 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
@@ -256,7 +256,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v10.0 (By Charly)",
+    appName: "MagicTracker v10.1 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -3561,12 +3561,19 @@ function initAuth() {
 
 async function registerFCMToken(uid) {
   try {
-    const reg = await Promise.race([navigator.serviceWorker.ready, new Promise((_,r) => setTimeout(() => r(new Error('timeout')), 3000))]);
-    const token = await fbMsg.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: reg });
+    if (!fbMsg) return;
+    let token = null;
+    try {
+      const reg = await Promise.race([
+        navigator.serviceWorker.ready,
+        new Promise((_,r) => setTimeout(() => r(new Error('timeout')), 3000))
+      ]);
+      token = await fbMsg.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: reg });
+    } catch(e) {
+      try { token = await fbMsg.getToken({ vapidKey: VAPID_KEY }); } catch(e2) {}
+    }
     if (token) {
       getNS().fcmToken = token; _saveNS();
-      // Write to users collection for Cloud Function (FCM notifications)
-      // Only include profiles that belong to this user (not Charly's hardcoded profile if this isn't Charly)
       const userProfiles = (APP.profiles || []).filter(p => isCharlyAccount() ? true : p.id !== 'charly');
       await firebase.firestore().collection('users').doc(uid.substring(0,28).replace(/[^a-zA-Z0-9]/g,'_')).set({
         fcmToken: token,
@@ -3983,40 +3990,49 @@ async function activateAndTest() {
   getNS().enabled = true;
   _saveNS(); save();
 
-  // Use fbMsg from initAuth — it's already initialized
-  // If for some reason it's null, get it from the existing Firebase app
   if (!fbMsg) {
-    try {
-      fbMsg = firebase.messaging();
-    } catch(e) {
-      console.log('Could not get messaging:', e.message);
-    }
+    try { fbMsg = firebase.messaging(); } catch(e) { console.log('messaging error:', e.message); }
   }
 
+  // Get FCM token — try with SW first, fall back to without SW
   try {
-    const reg = await Promise.race([
-      navigator.serviceWorker.ready,
-      new Promise((_,r) => setTimeout(() => r(new Error('SW timeout')), 3000))
-    ]);
-    const token = await fbMsg.getToken({vapidKey: VAPID_KEY, serviceWorkerRegistration: reg});
+    let token = null;
+    try {
+      const reg = await Promise.race([
+        navigator.serviceWorker.ready,
+        new Promise((_,r) => setTimeout(() => r(new Error('SW timeout')), 2000))
+      ]);
+      token = await fbMsg.getToken({vapidKey: VAPID_KEY, serviceWorkerRegistration: reg});
+    } catch(e) {
+      // SW not ready — try getting token without specifying SW registration
+      try {
+        token = await fbMsg.getToken({vapidKey: VAPID_KEY});
+      } catch(e2) {
+        console.log('FCM token failed:', e2.message);
+      }
+    }
     if (token) {
       getNS().fcmToken = token;
       _saveNS(); save();
       await registerDeviceInFirestore(token);
     }
   } catch(e) {
-    console.log('FCM registration skipped:', e.message);
+    console.log('FCM registration error:', e.message);
   }
 
   scheduleLocalReminders();
 
+  // Send test notification — try SW first, fall back to basic Notification API
   const title = 'MagicTracker 🎯';
-  const body = isEs ? '✓ Todo funcionando — las notificaciones van a llegar' : '✓ All set — notifications will arrive on time';
+  const body = isEs ? '✓ Todo funcionando' : '✓ All set — notifications active';
   try {
-    const reg = await navigator.serviceWorker.ready;
+    const reg = await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise((_,r) => setTimeout(() => r(new Error('timeout')), 2000))
+    ]);
     await reg.showNotification(title, {body, icon:'./icons/icon-192.png', tag:'test'});
   } catch(e) {
-    try { new Notification(title, {body}); } catch(e2) {}
+    try { new Notification(title, {body, icon:'./icons/icon-192.png'}); } catch(e2) {}
   }
 
   render();
