@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v9.9 (By Charly)</title>
+<title>MagicTracker v10.0 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
@@ -256,7 +256,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v9.9 (By Charly)",
+    appName: "MagicTracker v10.0 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -3305,59 +3305,14 @@ function resetD(d){
 // INIT
 // ══════════════════════════════════════════════
 function init() {
-  load();
-  if (!APP.langSetByUser) APP.lang = 'en';
-  if (!APP.allTrackingData) APP.allTrackingData = {};
-
-  // Always ensure Charly is in the profiles list
-  ensureCharlyProfile();
-
-  // FIRST TIME: no activeProfileId and no prior data → show onboarding
-  const hadPriorData = localStorage.getItem('tracker_s');
-  if (!APP.activeProfileId && !hadPriorData) {
-    // Brand new device — show onboarding
-    APP.screen = 'onboard';
-    APP.ob_step = 0;
-    APP.ob_data = { lang:'en', sex:null, age:'', height:'', weight:'', waist:'', goal:null, activity:null, eating:null, mealstyle:null, diet:[], name:'', exercise_type:null, exercise_days:[], exercise_duration:'60' };
-    render();
-    return;
-  }
-
-  // Migrate old data: had prior data but no activeProfileId → default to Charly
-  if (!APP.activeProfileId) {
-    APP.activeProfileId = 'charly';
-  }
-
-  // Ensure activeProfileId exists in profiles list
-  if (!APP.profiles.find(p => p.id === APP.activeProfileId)) {
-    APP.activeProfileId = 'charly';
-  }
-
-  // Load active profile
-  const prof = APP.profiles.find(p => p.id === APP.activeProfileId);
-  APP.profile = prof.isCharly ? APP.profiles.find(x=>x.id==='charly')||{...CHARLY_PROFILE} : prof;
-  loadProfileTracking(APP.activeProfileId);
-  APP.screen = 'tracker';
-  save();
-  render();
-
-  if('serviceWorker' in navigator){
-    window.addEventListener('load',()=>{
-      navigator.serviceWorker.register('./sw.js').catch(()=>{});
+  // With auth, initAuth() handles loading data and rendering
+  // init() only handles SW registration and local reminders
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js').catch(() => {});
     });
   }
-  // Start Firebase and schedule any saved reminders
-  try { initFirebase(); } catch(e) {}
   scheduleLocalReminders();
-
-  // Auto re-register in Firestore on every app open (keeps token fresh)
-  const existingToken = getNS()?.fcmToken;
-  if (existingToken && Notification.permission === 'granted') {
-    setTimeout(() => registerDeviceInFirestore(existingToken), 3000);
-  }
-
-  // On Android/iOS PWA, reschedule when app comes back to foreground
-  // (timers are cleared when app goes to background on some devices)
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible') {
       scheduleLocalReminders();
@@ -3587,6 +3542,17 @@ function initAuth() {
     }
 
     if (!hadCloudData) saveToCloud(user.uid);
+
+    // Reschedule reminders when app comes back to foreground
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') scheduleLocalReminders();
+    });
+
+    // Auto re-register FCM token on app open to keep it fresh
+    const existingToken = getNS()?.fcmToken;
+    if (existingToken && Notification.permission === 'granted') {
+      setTimeout(() => registerDeviceInFirestore(existingToken), 3000);
+    }
 
     render();
     registerFCMToken(user.uid);
@@ -4003,7 +3969,6 @@ async function testNotif() {
 async function activateAndTest() {
   const isEs = APP.lang === 'es';
 
-  // 1. Ensure permission
   if (Notification.permission === 'denied') {
     alert(isEs
       ? 'Notificaciones bloqueadas. Click en el 🔒 en la barra de URL → Notificaciones → Permitir.'
@@ -4018,9 +3983,17 @@ async function activateAndTest() {
   getNS().enabled = true;
   _saveNS(); save();
 
-  // 2. Get FCM token and register in Firestore
+  // Use fbMsg from initAuth — it's already initialized
+  // If for some reason it's null, get it from the existing Firebase app
+  if (!fbMsg) {
+    try {
+      fbMsg = firebase.messaging();
+    } catch(e) {
+      console.log('Could not get messaging:', e.message);
+    }
+  }
+
   try {
-    if (!fbMsg) initFirebase();
     const reg = await Promise.race([
       navigator.serviceWorker.ready,
       new Promise((_,r) => setTimeout(() => r(new Error('SW timeout')), 3000))
@@ -4037,7 +4010,6 @@ async function activateAndTest() {
 
   scheduleLocalReminders();
 
-  // 3. Send test notification
   const title = 'MagicTracker 🎯';
   const body = isEs ? '✓ Todo funcionando — las notificaciones van a llegar' : '✓ All set — notifications will arrive on time';
   try {
