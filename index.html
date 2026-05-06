@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v10.7 (By Charly)</title>
+<title>MagicTracker v10.8 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
@@ -256,7 +256,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v10.7 (By Charly)",
+    appName: "MagicTracker v10.8 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -399,7 +399,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v10.7 (By Charly)",
+    appName: "MagicTracker v6.0 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -3606,7 +3606,8 @@ async function registerFCMToken(uid) {
     if (token) {
       getNS().fcmToken = token; _saveNS();
       const userProfiles = (APP.profiles || []).filter(p => isCharlyAccount() ? true : p.id !== 'charly');
-      await firebase.firestore().collection('users').doc(uid.substring(0,28).replace(/[^a-zA-Z0-9]/g,'_')).set({
+      // Use Firebase Auth UID as document ID — same as _writeToFirestore
+      await firebase.firestore().collection('users').doc(uid).set({
         fcmToken: token,
         activeProfileId: APP.activeProfileId || '',
         profiles: userProfiles,
@@ -3683,7 +3684,8 @@ async function _writeToFirestore(token) {
   _saveNS();
 
   const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/London';
-  const uid = token.substring(0, 28).replace(/[^a-zA-Z0-9]/g, '_');
+  // Always use Firebase Auth UID as document ID — consistent across all registrations
+  const docId = currentUser ? currentUser.uid : token.substring(0, 28).replace(/[^a-zA-Z0-9]/g, '_');
 
   // Force sync APP.profile.notifSettings to APP.profiles[] before writing
   const profiles = (APP.profiles || []).map(p => {
@@ -3695,7 +3697,7 @@ async function _writeToFirestore(token) {
   });
 
   const db = firebase.firestore();
-  await db.collection('users').doc(uid).set({
+  await db.collection('users').doc(docId).set({
     fcmToken: token,
     activeProfileId: APP.activeProfileId || 'charly',
     profiles,
@@ -3703,7 +3705,7 @@ async function _writeToFirestore(token) {
     timezone,
     updatedAt: new Date().toISOString(),
   }, {merge: true});
-  return uid;
+  return docId;
 }
 
 async function registerDeviceInFirestore(token) {
