@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v10.6 (By Charly)</title>
+<title>MagicTracker v10.7 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
@@ -256,7 +256,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v10.6 (By Charly)",
+    appName: "MagicTracker v10.7 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -3516,10 +3516,9 @@ function initAuth() {
   if (!firebase.apps.length) { fbApp = firebase.initializeApp(FB_CONFIG); } else { fbApp = firebase.app(); }
   fbAuth = firebase.auth();
   fbMsg = firebase.messaging();
-  fbMsg.onMessage(payload => {
-    const {title, body} = payload.notification || {};
-    if (Notification.permission === 'granted') new Notification(title||'MagicTracker', {body: body||'', icon:'./icons/icon-192.png'});
-  });
+  // Foreground FCM messages — suppress them since local polling handles foreground notifications
+  // Background messages are handled by sw.js onBackgroundMessage
+  fbMsg.onMessage(() => { /* suppress foreground FCM - local polling handles it */ });
   document.getElementById('root').innerHTML = '<div class="auth-loading"><div style="font-size:40px">⚡</div><div>Loading...</div></div>';
   fbAuth.onAuthStateChanged(async (user) => {
     if (!user) { currentUser = null; renderLoginScreen(); return; }
@@ -3624,13 +3623,6 @@ function initFirebase() {
     if (!firebase.apps.length) fbApp = firebase.initializeApp(FB_CONFIG);
     else fbApp = firebase.app();
     fbMsg = firebase.messaging();
-    // Handle foreground messages
-    fbMsg.onMessage(payload => {
-      const {title, body} = payload.notification || {};
-      if(Notification.permission === 'granted') {
-        new Notification(title||'MagicTracker', {body: body||'', icon:'./icons/icon-192.png'});
-      }
-    });
     // Refresh token when FCM rotates it — update Firestore automatically
     // This ensures push notifications keep working long-term
     navigator.serviceWorker?.ready.then(reg => {
