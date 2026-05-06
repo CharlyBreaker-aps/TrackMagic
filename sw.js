@@ -1,4 +1,4 @@
-const CACHE = 'charly-tracker-v54';
+const CACHE = 'charly-tracker-v56';
 const FILES = ['./manifest.json', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -7,9 +7,11 @@ self.addEventListener('install', e => {
 });
 
 self.addEventListener('activate', e => {
-  e.waitUntil(caches.keys().then(keys =>
-    Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-  ));
+  e.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
+    )
+  );
   self.clients.claim();
 });
 
@@ -43,17 +45,18 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
+// Data-only messages — title/body come from payload.data, not payload.notification
+// This prevents Firebase from auto-displaying AND our handler displaying = no duplicates
 messaging.onBackgroundMessage(payload => {
-  const { title, body, icon } = payload.notification || {};
-  // Use title as tag so duplicate notifications for same type replace each other
-  const tag = (title || 'magictracker').toLowerCase().replace(/\s+/g, '-');
-  self.registration.showNotification(title || 'MagicTracker', {
-    body: body || '',
-    icon: icon || '/charly-tracker/icons/icon-192.png',
+  const title = payload.data?.title || payload.notification?.title || 'MagicTracker';
+  const body  = payload.data?.body  || payload.notification?.body  || '';
+  const tag   = payload.data?.tag   || 'magictracker';
+  self.registration.showNotification(title, {
+    body,
+    icon: '/charly-tracker/icons/icon-192.png',
     badge: '/charly-tracker/icons/icon-192.png',
-    tag: tag,
+    tag,
     renotify: false,
-    data: payload.data || {}
   });
 });
 
