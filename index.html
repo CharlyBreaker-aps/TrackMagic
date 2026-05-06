@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v10.5 (By Charly)</title>
+<title>MagicTracker v10.6 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
@@ -256,7 +256,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v10.5 (By Charly)",
+    appName: "MagicTracker v10.6 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -3488,15 +3488,12 @@ async function loadFromCloud(uid) {
     if (!doc.exists) { return false; }
     const data = doc.data();
     SYNC_FIELDS.forEach(k => { if (data[k] !== undefined) APP[k] = data[k]; });
-    // Restore notifSettings into the active profile after loading
-    if (data.notifSettings && APP.profiles) {
-      const activeId = APP.activeProfileId;
-      const profileIdx = APP.profiles.findIndex(p => p.id === activeId);
-      if (profileIdx >= 0) APP.profiles[profileIdx].notifSettings = data.notifSettings;
-      if (APP.profile && APP.profile.id === activeId) APP.profile.notifSettings = data.notifSettings;
-    }
     // Store charlyOverrides for ensureCharlyProfile to apply after re-injection
-    if (data.charlyOverrides) APP._charlyOverrides = data.charlyOverrides;
+    // Include notifSettings so it survives ensureCharlyProfile re-injection
+    APP._charlyOverrides = data.charlyOverrides || {};
+    if (data.notifSettings) {
+      APP._charlyOverrides.notifSettings = data.notifSettings;
+    }
     console.log('Loaded from cloud:', data.updatedAt);
     return true;
   } catch(e) { console.log('Cloud load error:', e.message); return false; }
