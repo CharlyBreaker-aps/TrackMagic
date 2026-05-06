@@ -1,4 +1,4 @@
-const CACHE = 'charly-tracker-v56';
+const CACHE = 'charly-tracker-v57';
 const FILES = ['./manifest.json', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -53,8 +53,8 @@ messaging.onBackgroundMessage(payload => {
   const tag   = payload.data?.tag   || 'magictracker';
   self.registration.showNotification(title, {
     body,
-    icon: '/charly-tracker/icons/icon-192.png',
-    badge: '/charly-tracker/icons/icon-192.png',
+    icon: 'https://charlybreaker-aps.github.io/charly-tracker/icons/icon-192.png',
+    badge: 'https://charlybreaker-aps.github.io/charly-tracker/icons/icon-192.png',
     tag,
     renotify: false,
   });
