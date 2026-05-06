@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v10.3 (By Charly)</title>
+<title>MagicTracker v10.5 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
@@ -256,7 +256,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v10.3 (By Charly)",
+    appName: "MagicTracker v10.5 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -1264,13 +1264,21 @@ function isCharlyAccount() {
 function ensureCharlyProfile() {
   if (!APP.profiles) APP.profiles = [];
   const idx = APP.profiles.findIndex(p => p.id === 'charly');
-  const PRESERVE = ['weight','waist','neck','age','target_weight','target_fat','start_weight','start_waist','weight_updated_at','current_fat','goal','eating','activity','mealstyle','city','cf_days','exercise_days','notifSettings'];
+  const PRESERVE = ['weight','waist','neck','age','target_weight','target_fat','start_weight',
+    'start_waist','weight_updated_at','current_fat','goal','eating','activity','mealstyle',
+    'city','cf_days','exercise_days','notifSettings','bmr','neat','tdee_cf','tdee_rest',
+    'target_cf','target_rest','prot_min','carb_cf','carb_rest'];
   if (idx < 0) {
-    APP.profiles.unshift({...CHARLY_PROFILE});
+    const fresh = {...CHARLY_PROFILE};
+    // Apply cloud overrides if available
+    if (APP._charlyOverrides) Object.assign(fresh, APP._charlyOverrides);
+    APP.profiles.unshift(fresh);
   } else {
     const existing = APP.profiles[idx];
     const updated = {...CHARLY_PROFILE};
     PRESERVE.forEach(k => { if(existing[k] !== undefined) updated[k] = existing[k]; });
+    // Also apply cloud overrides (in case they're more recent than in-memory)
+    if (APP._charlyOverrides) Object.assign(updated, APP._charlyOverrides);
     APP.profiles[idx] = updated;
   }
 }
@@ -3444,16 +3452,29 @@ async function saveToCloud(uid) {
   try {
     const data = { updatedAt: new Date().toISOString() };
     SYNC_FIELDS.forEach(k => { if (APP[k] !== undefined) data[k] = APP[k]; });
-    // Strip Charly's hardcoded profile from other users' cloud documents
-    // Charly is always re-injected client-side by ensureCharlyProfile()
-    // so it doesn't need to be stored in the cloud for any user
+    // Strip Charly's hardcoded profile — re-injected client-side always
     if (data.profiles) {
       data.profiles = data.profiles.filter(p => p.id !== 'charly');
     }
     if (data.activeProfileId === 'charly') {
-      // Don't save 'charly' as activeProfileId for non-Charly accounts
       const firstOwn = (data.profiles || []).find(p => p.id !== 'charly');
       if (firstOwn) data.activeProfileId = firstOwn.id;
+    }
+    // Save notifSettings separately so it survives Charly profile re-injection
+    const ns = getNS();
+    if (ns && Object.keys(ns).length > 0) {
+      data.notifSettings = ns;
+    }
+    // Save Charly's mutable fields separately so they survive re-injection
+    const charlyProfile = (APP.profiles || []).find(p => p.id === 'charly');
+    if (charlyProfile) {
+      const CHARLY_MUTABLE = ['weight','waist','neck','age','target_weight','target_fat',
+        'start_weight','start_waist','weight_updated_at','current_fat','goal','eating',
+        'activity','mealstyle','city','cf_days','exercise_days','bmr','neat',
+        'tdee_cf','tdee_rest','target_cf','target_rest','prot_min','carb_cf','carb_rest'];
+      const charlyData = {};
+      CHARLY_MUTABLE.forEach(k => { if (charlyProfile[k] !== undefined) charlyData[k] = charlyProfile[k]; });
+      data.charlyOverrides = charlyData;
     }
     await getUserDocRef(uid).set(data, { merge: true });
     showSyncBar(APP.lang==='es' ? '✓ Sincronizado' : '✓ Synced');
@@ -3464,9 +3485,18 @@ async function loadFromCloud(uid) {
   if (!uid) return false;
   try {
     const doc = await getUserDocRef(uid).get();
-    if (!doc.exists) { return false; } // new user — caller handles saving
+    if (!doc.exists) { return false; }
     const data = doc.data();
     SYNC_FIELDS.forEach(k => { if (data[k] !== undefined) APP[k] = data[k]; });
+    // Restore notifSettings into the active profile after loading
+    if (data.notifSettings && APP.profiles) {
+      const activeId = APP.activeProfileId;
+      const profileIdx = APP.profiles.findIndex(p => p.id === activeId);
+      if (profileIdx >= 0) APP.profiles[profileIdx].notifSettings = data.notifSettings;
+      if (APP.profile && APP.profile.id === activeId) APP.profile.notifSettings = data.notifSettings;
+    }
+    // Store charlyOverrides for ensureCharlyProfile to apply after re-injection
+    if (data.charlyOverrides) APP._charlyOverrides = data.charlyOverrides;
     console.log('Loaded from cloud:', data.updatedAt);
     return true;
   } catch(e) { console.log('Cloud load error:', e.message); return false; }
