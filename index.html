@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v11.0 (By Charly)</title>
+<title>MagicTracker v11.1 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
@@ -256,7 +256,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v11.0 (By Charly)",
+    appName: "MagicTracker v11.1 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -399,7 +399,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v11.0 (By Charly)",
+    appName: "MagicTracker v11.1 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -2291,6 +2291,25 @@ function renderTracker() {
   dayList.forEach(x=>{h+=`<button class="dtab ${x.cf?'cf':'rs'}${x.id===d?' active':''}" onclick="setDay('${x.id}')">${x.label}${x.cf?t('cf_label'):''}</button>`;});
   h+=`</div>`;
 
+  // ── TRAINING DAY TOGGLE — prominent, right under day tabs ──
+  const isEs2 = APP.lang === 'es';
+  const hasOverride = APP.trainOverride && APP.trainOverride[d] !== undefined;
+  h += `<div style="margin:6px 12px 4px;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:${cf?'rgba(29,158,117,0.15)':'rgba(255,255,255,0.04)'};border:1.5px solid ${cf?'var(--green)':'var(--border2)'};border-radius:var(--radius)">
+    <div style="display:flex;align-items:center;gap:8px">
+      <span style="font-size:20px">${cf?'💪':'😴'}</span>
+      <div>
+        <div style="font-size:14px;font-weight:700;color:${cf?'var(--green)':'var(--text2)'}">${cf?(isEs2?'Día de entrenamiento':'Training day'):(isEs2?'Día de descanso':'Rest day')}</div>
+        <div style="font-size:10px;color:var(--text3)">${hasOverride?(isEs2?'modificado manualmente':'manually overridden'):(isEs2?'según tu plan semanal':'from your weekly plan')}</div>
+      </div>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center">
+      ${hasOverride?`<button onclick="delete APP.trainOverride['${d}'];save();render()" style="font-size:10px;padding:3px 8px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer">${isEs2?'Reset':'Reset'}</button>`:''}
+      <button onclick="toggleTrainDay('${d}')" style="font-size:13px;font-weight:700;padding:8px 16px;border-radius:8px;border:none;background:${cf?'var(--green)':'var(--bg3)'};color:${cf?'#fff':'var(--text)'};cursor:pointer;touch-action:manipulation">
+        ${cf?(isEs2?'→ Descanso':'→ Rest'):(isEs2?'→ Entreno':'→ Train')}
+      </button>
+    </div>
+  </div>`;
+
   // Stats
   h+=`<div class="stats">
     <div class="stat"><div class="sv ${kC}">${k}</div><div class="sl">${t('kcal_in')}</div></div>
@@ -2312,28 +2331,6 @@ function renderTracker() {
     <div class="dbadge ${cfg.cls}">${cfg.lbl}</div>
     <div class="prog"><div class="pf ${cfg.bc}" style="width:${Math.min(100,pct)}%"></div></div>
     <div class="dhint">${t('target_range')}: ${dm}–${dx} · ${t('intake_target')}: ${tK} kcal · ${t('carbs_target')}: ≤${tC}g</div>
-  </div>`;
-
-  // ── TRAINING DAY TOGGLE ──
-  const isEs2 = APP.lang === 'es';
-  const hasOverride = APP.trainOverride && APP.trainOverride[d] !== undefined;
-  const trainLabel = cf
-    ? (isEs2 ? '💪 Día de entrenamiento' : '💪 Training day')
-    : (isEs2 ? '😴 Día de descanso' : '😴 Rest day');
-  const trainSub = hasOverride
-    ? (isEs2 ? '(modificado manualmente)' : '(manually overridden)')
-    : (isEs2 ? '(según tu plan semanal)' : '(from your weekly plan)');
-  h += `<div style="margin:4px 12px 2px;display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:${cf?'rgba(29,158,117,0.1)':'var(--bg2)'};border:0.5px solid ${cf?'var(--green)':'var(--border)'};border-radius:var(--radius)">
-    <div>
-      <div style="font-size:13px;font-weight:600;color:${cf?'var(--green)':'var(--text3)'}">${trainLabel}</div>
-      <div style="font-size:10px;color:var(--text3)">${trainSub}</div>
-    </div>
-    <div style="display:flex;gap:6px;align-items:center">
-      ${hasOverride ? `<button onclick="delete APP.trainOverride['${d}'];save();render()" style="font-size:10px;padding:3px 7px;border-radius:6px;border:0.5px solid var(--border);background:transparent;color:var(--text3);cursor:pointer">${isEs2?'Resetear':'Reset'}</button>` : ''}
-      <button onclick="toggleTrainDay('${d}')" style="font-size:12px;padding:6px 14px;border-radius:8px;border:none;background:${cf?'var(--green)':'var(--bg3)'};color:${cf?'#fff':'var(--text3)'};cursor:pointer;font-weight:600">
-        ${cf ? (isEs2?'→ Descanso':'→ Rest') : (isEs2?'→ Entrenamiento':'→ Train')}
-      </button>
-    </div>
   </div>`;
 
   // ── GOAL PROGRESS CARD ──
