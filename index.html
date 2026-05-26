@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v11.1 (By Charly)</title>
+<title>MagicTracker v11.2 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
@@ -256,7 +256,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v11.1 (By Charly)",
+    appName: "MagicTracker v11.2 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -399,7 +399,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v11.1 (By Charly)",
+    appName: "MagicTracker v11.2 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -2714,6 +2714,7 @@ function renderTracker() {
 }
 
 function renderSearch() {
+  const isEs = APP.lang === 'es';
   return `<div class="search-card">
     <div class="shdr">${t('search_food')}</div>
     <div class="sbody">
@@ -2723,8 +2724,18 @@ function renderSearch() {
         <button class="tbtn th" onclick="setSearch('alta carbos')">🟠 ${t('high_carb')}</button>
         <button class="tbtn" style="border-color:#8B5CF6;color:#8B5CF6" onclick="setSearch('home cooked')">🏠 ${t('home_meals_tag')||'home cooked'}</button>
       </div>
-      <input id="si" class="sinp" type="text" placeholder="${t('search_placeholder')}">
+      <div style="display:flex;gap:6px;align-items:center">
+        <input id="si" class="sinp" type="text" placeholder="${t('search_placeholder')}" style="flex:1;margin:0">
+        <button onclick="openBarcodeScanner()" title="${isEs?'Escanear código de barras':'Scan barcode'}" style="flex-shrink:0;padding:10px 12px;border-radius:var(--radius);border:.5px solid var(--border2);background:var(--bg2);color:var(--text);font-size:18px;cursor:pointer;touch-action:manipulation">📷</button>
+      </div>
+      <input id="barcode-input" type="file" accept="image/*" capture="environment" style="display:none" onchange="handleBarcodeImage(this)">
       <div id="sr"></div>
+      <div id="online-search-row" style="display:none;padding:6px 0">
+        <button onclick="searchOnline()" style="width:100%;padding:9px;border-radius:var(--radius);border:.5px solid var(--border2);background:var(--bg2);color:var(--text3);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
+          🌐 ${isEs?'Buscar online (Open Food Facts)':'Search online (Open Food Facts)'}
+        </button>
+      </div>
+      <div id="online-results"></div>
       <div class="shint">${t('search_hint')}</div>
     </div>
   </div>
@@ -2802,8 +2813,13 @@ function updateSR(){
       <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:10px">+ ${isEs?'Agregar alimento manualmente':'Add food manually'}</div>
       ${manualFormHtml(q,isEs)}
     </div>`;
+    const onlineRow = document.getElementById('online-search-row');
+    if (onlineRow) onlineRow.style.display = 'block';
     return;
   }
+  // Show online search button alongside local results
+  const onlineRow = document.getElementById('online-search-row');
+  if (onlineRow) onlineRow.style.display = 'block';
 
   const hmLabel=t('home_meals_tag')||'Home cooked meals';
   const hdr=type==='p'?`<div style="font-size:10px;color:var(--green);margin-bottom:5px;font-weight:700">🟢 ${t('high_protein')}</div>`
@@ -3033,6 +3049,189 @@ function addFood(n,k,p,c,f){
   const si=document.getElementById('si');if(si)si.value='';
   const sr=document.getElementById('sr');if(sr)sr.innerHTML='';
   save();render();
+}
+
+// ══════════════════════════════════════════════
+// ONLINE FOOD SEARCH — Open Food Facts + USDA
+// ══════════════════════════════════════════════
+
+function openBarcodeScanner() {
+  document.getElementById('barcode-input')?.click();
+}
+
+async function handleBarcodeImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const isEs = APP.lang === 'es';
+  const el = document.getElementById('online-results');
+  if (!el) return;
+  el.innerHTML = `<div style="padding:12px;text-align:center;color:var(--text3);font-size:13px">📷 ${isEs?'Procesando imagen...':'Processing image...'}</div>`;
+
+  // Use ZXing to decode barcode from image
+  try {
+    const ZXing = await loadZXing();
+    const img = new Image();
+    img.src = URL.createObjectURL(file);
+    await new Promise(r => img.onload = r);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = img.width; canvas.height = img.height;
+    canvas.getContext('2d').drawImage(img, 0, 0);
+    const imageData = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height);
+
+    const hints = new Map();
+    const result = ZXing.decode(imageData.data, imageData.width, imageData.height, hints);
+    if (result) {
+      await searchByBarcode(result.text);
+    } else {
+      el.innerHTML = `<div style="padding:12px;text-align:center;color:var(--amber);font-size:13px">${isEs?'No se pudo leer el código. Intentá de nuevo con mejor iluminación.':'Could not read barcode. Try again with better lighting.'}</div>`;
+    }
+  } catch(e) {
+    el.innerHTML = `<div style="padding:12px;text-align:center;color:var(--amber);font-size:13px">${isEs?'Error al leer el código: '+e.message:'Error reading barcode: '+e.message}</div>`;
+  }
+  input.value = '';
+}
+
+let _zxingLoaded = null;
+async function loadZXing() {
+  if (_zxingLoaded) return _zxingLoaded;
+  // Use ZXing WASM via CDN
+  return new Promise((resolve, reject) => {
+    if (window.ZXingWASM) { _zxingLoaded = window.ZXingWASM; resolve(window.ZXingWASM); return; }
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/zxing-wasm@1.2.9/dist/reader/zxing_reader.min.js';
+    s.onload = () => { _zxingLoaded = window.ZXingWASM; resolve(window.ZXingWASM); };
+    s.onerror = () => reject(new Error('ZXing load failed'));
+    document.head.appendChild(s);
+  });
+}
+
+async function searchByBarcode(barcode) {
+  const isEs = APP.lang === 'es';
+  const el = document.getElementById('online-results');
+  if (!el) return;
+  el.innerHTML = `<div style="padding:12px;text-align:center;color:var(--text3);font-size:13px">🔍 ${isEs?'Buscando código '+barcode+'...':'Searching barcode '+barcode+'...'}</div>`;
+  try {
+    const r = await fetch(`https://world.openfoodfacts.org/api/v2/product/${barcode}?fields=product_name,nutriments,brands,quantity`);
+    const data = await r.json();
+    if (data.status === 1 && data.product) {
+      renderOnlineResults([parseOFFProduct(data.product)], isEs);
+    } else {
+      el.innerHTML = `<div style="padding:12px;text-align:center;color:var(--amber);font-size:13px">${isEs?'Producto no encontrado en Open Food Facts.':'Product not found in Open Food Facts.'}</div>`;
+    }
+  } catch(e) {
+    el.innerHTML = `<div style="padding:12px;color:var(--amber);font-size:13px">${isEs?'Error de conexión.':'Connection error.'}</div>`;
+  }
+}
+
+async function searchOnline() {
+  const q = document.getElementById('si')?.value?.trim();
+  if (!q || q.length < 2) return;
+  const isEs = APP.lang === 'es';
+  const el = document.getElementById('online-results');
+  if (!el) return;
+  el.innerHTML = `<div style="padding:12px;text-align:center;color:var(--text3);font-size:13px">🌐 ${isEs?'Buscando en Open Food Facts...':'Searching Open Food Facts...'}</div>`;
+
+  try {
+    // Search Open Food Facts
+    const url = `https://world.openfoodfacts.org/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&fields=product_name,nutriments,brands,quantity&page_size=8&lc=en&cc=gb`;
+    const r = await fetch(url);
+    const data = await r.json();
+    const products = (data.products || [])
+      .map(parseOFFProduct)
+      .filter(p => p && p.k > 0 && p.p > 0);
+
+    if (products.length > 0) {
+      renderOnlineResults(products, isEs);
+    } else {
+      // Fallback to USDA
+      await searchUSDA(q, isEs);
+    }
+  } catch(e) {
+    await searchUSDA(q, isEs);
+  }
+}
+
+async function searchUSDA(q, isEs) {
+  const el = document.getElementById('online-results');
+  if (!el) return;
+  el.innerHTML = `<div style="padding:6px 12px;font-size:11px;color:var(--text3)">🌐 ${isEs?'Buscando en USDA FoodData...':'Searching USDA FoodData...'}</div>`;
+  try {
+    const r = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(q)}&pageSize=6&api_key=DEMO_KEY`);
+    const data = await r.json();
+    const foods = (data.foods || []).slice(0, 6).map(f => {
+      const n = (name, unit) => Math.round((f.foodNutrients||[]).find(x=>x.nutrientName===name)?.value||0);
+      return {
+        n: f.description,
+        k: n('Energy','kcal') || n('Energy (Atwater General Factors)','kcal'),
+        p: n('Protein','g'),
+        c: n('Carbohydrate, by difference','g'),
+        f: n('Total lipid (fat)','g'),
+        src: 'USDA',
+        per: '100g'
+      };
+    }).filter(x => x.k > 0);
+    if (foods.length > 0) {
+      renderOnlineResults(foods, isEs);
+    } else {
+      el.innerHTML = `<div style="padding:12px;text-align:center;color:var(--text3);font-size:13px">${isEs?'Sin resultados online.':'No online results found.'}</div>`;
+    }
+  } catch(e) {
+    el.innerHTML = `<div style="padding:12px;color:var(--amber);font-size:13px">${isEs?'Error de conexión.':'Connection error.'}</div>`;
+  }
+}
+
+function parseOFFProduct(p) {
+  if (!p || !p.nutriments) return null;
+  const nm = p.nutriments;
+  const per = p.quantity || '100g';
+  // Values per 100g
+  const k = Math.round(nm['energy-kcal_100g'] || nm['energy_100g']/4.184 || 0);
+  const pr = Math.round(nm['proteins_100g'] || 0);
+  const cb = Math.round(nm['carbohydrates_100g'] || 0);
+  const ft = Math.round(nm['fat_100g'] || 0);
+  const name = [p.brands, p.product_name].filter(Boolean).join(' — ').substring(0, 60);
+  return { n: name || 'Unknown', k, p: pr, c: cb, f: ft, src: 'OFF', per };
+}
+
+function renderOnlineResults(products, isEs) {
+  const el = document.getElementById('online-results');
+  if (!el) return;
+  let h = `<div style="margin-top:8px">`;
+  h += `<div style="font-size:10px;color:var(--text3);margin-bottom:6px;font-weight:600">🌐 ${isEs?'Resultados online (por 100g)':'Online results (per 100g)'}</div>`;
+  products.forEach((f, i) => {
+    if (!f) return;
+    h += `<div style="display:flex;align-items:center;gap:4px;margin-bottom:4px">
+      <div class="sri" style="flex:1" onclick="addFoodFromEl(event.currentTarget||this)"
+        data-n="${escapeHTML(f.n)}" data-k="${f.k}" data-p="${f.p}" data-c="${f.c||0}" data-f="${f.f||0}">
+        <div style="flex:1">
+          <div class="sriname">${escapeHTML(f.n)} <span style="font-size:9px;padding:1px 4px;border-radius:4px;background:var(--bg3);color:var(--text3)">${f.src}</span></div>
+          <div class="sricat" style="font-size:9px">${f.per||'100g'}</div>
+        </div>
+        <div class="srimac">${f.k}kcal<br>${f.p}g P · ${f.c}g C${f.f?' · '+f.f+'g F':''}</div>
+        <div class="sriadd">+</div>
+      </div>
+      <button onclick="saveOnlineFood(${i})" data-idx="${i}" style="flex-shrink:0;font-size:10px;padding:4px 6px;border-radius:6px;border:.5px solid var(--green);background:transparent;color:var(--green);cursor:pointer" title="${isEs?'Guardar en Mis alimentos':'Save to My foods'}">💾</button>
+    </div>`;
+  });
+  h += `</div>`;
+  el.innerHTML = h;
+  // Store results for save function
+  window._onlineResults = products;
+}
+
+function saveOnlineFood(idx) {
+  const f = (window._onlineResults || [])[idx];
+  if (!f) return;
+  const isEs = APP.lang === 'es';
+  if (!APP.customFoods) APP.customFoods = [];
+  if (APP.customFoods.find(x => x.n === f.n)) {
+    alert(isEs ? 'Ya está guardado en Mis alimentos.' : 'Already saved in My foods.');
+    return;
+  }
+  APP.customFoods.push({ n: f.n, k: f.k, p: f.p, c: f.c||0, f: f.f||0 });
+  save();
+  alert(isEs ? `"${f.n}" guardado en Mis alimentos ✓` : `"${f.n}" saved to My foods ✓`);
 }
 
 function setSearch(v){const si=document.getElementById('si');if(si){si.value=v;si.focus();}updateSR();}
