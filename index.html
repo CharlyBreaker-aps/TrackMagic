@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v11.2 (By Charly)</title>
+<title>MagicTracker v11.3 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
@@ -256,7 +256,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v11.2 (By Charly)",
+    appName: "MagicTracker v11.3 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -399,7 +399,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v11.2 (By Charly)",
+    appName: "MagicTracker v11.3 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -2727,8 +2727,10 @@ function renderSearch() {
       <div style="display:flex;gap:6px;align-items:center">
         <input id="si" class="sinp" type="text" placeholder="${t('search_placeholder')}" style="flex:1;margin:0">
         <button onclick="openBarcodeScanner()" title="${isEs?'Escanear código de barras':'Scan barcode'}" style="flex-shrink:0;padding:10px 12px;border-radius:var(--radius);border:.5px solid var(--border2);background:var(--bg2);color:var(--text);font-size:18px;cursor:pointer;touch-action:manipulation">📷</button>
+        <button onclick="openFoodPhotoIdentifier()" title="${isEs?'Identificar comida por foto':'Identify food by photo'}" style="flex-shrink:0;padding:10px 12px;border-radius:var(--radius);border:.5px solid var(--border2);background:var(--bg2);color:var(--text);font-size:18px;cursor:pointer;touch-action:manipulation">🍽️</button>
       </div>
       <input id="barcode-input" type="file" accept="image/*" capture="environment" style="display:none" onchange="handleBarcodeImage(this)">
+      <input id="food-photo-input" type="file" accept="image/*" capture="environment" style="display:none" onchange="handleFoodPhotoImage(this)">
       <div id="sr"></div>
       <div id="online-search-row" style="display:none;padding:6px 0">
         <button onclick="searchOnline()" style="width:100%;padding:9px;border-radius:var(--radius);border:.5px solid var(--border2);background:var(--bg2);color:var(--text3);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px">
@@ -3054,6 +3056,84 @@ function addFood(n,k,p,c,f){
 // ══════════════════════════════════════════════
 // ONLINE FOOD SEARCH — Open Food Facts + USDA
 // ══════════════════════════════════════════════
+
+function openFoodPhotoIdentifier() {
+  document.getElementById('food-photo-input')?.click();
+}
+
+async function handleFoodPhotoImage(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const isEs = APP.lang === 'es';
+  const el = document.getElementById('online-results');
+  if (!el) return;
+
+  el.innerHTML = `<div style="padding:12px;text-align:center;color:var(--text3);font-size:13px">🍽️ ${isEs?'Identificando comida...':'Identifying food...'}</div>`;
+
+  try {
+    // Convert image to base64
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+    // Call Cloud Function
+    const uid = currentUser?.uid;
+    if (!uid) { el.innerHTML = `<div style="padding:12px;color:var(--amber);font-size:13px">${isEs?'Iniciá sesión para usar esta función.':'Sign in to use this feature.'}</div>`; return; }
+
+    const r = await fetch('https://europe-west1-trackmagic-27a67.cloudfunctions.net/identifyFood', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageBase64: base64, uid })
+    });
+
+    const data = await r.json();
+
+    if (r.status === 429) {
+      el.innerHTML = `<div style="padding:12px;color:var(--amber);font-size:13px">🚫 ${isEs?'Límite diario alcanzado (20 fotos/día).':'Daily limit reached (20 photos/day).'}</div>`;
+      return;
+    }
+
+    if (data.error) {
+      el.innerHTML = `<div style="padding:12px;color:var(--amber);font-size:13px">❌ ${data.error}</div>`;
+      return;
+    }
+
+    if (data.results && data.results.length > 0) {
+      const identified = data.identified?.join(', ') || '';
+      let h = `<div style="margin-top:8px">`;
+      h += `<div style="font-size:11px;color:var(--green);margin-bottom:4px;font-weight:600">🍽️ ${isEs?'Identificado:':'Identified:'} <span style="color:var(--text2)">${escapeHTML(identified)}</span></div>`;
+      h += `<div style="font-size:10px;color:var(--text3);margin-bottom:6px">${isEs?`${data.remaining} fotos restantes hoy`:`${data.remaining} photos remaining today`}</div>`;
+      window._onlineResults = data.results;
+      data.results.forEach((f, i) => {
+        h += `<div style="display:flex;align-items:center;gap:4px;margin-bottom:4px">
+          <div class="sri" style="flex:1" onclick="addFoodFromEl(event.currentTarget||this)"
+            data-n="${escapeHTML(f.n)}" data-k="${f.k}" data-p="${f.p}" data-c="${f.c||0}" data-f="${f.f||0}">
+            <div style="flex:1">
+              <div class="sriname">${escapeHTML(f.n)} <span style="font-size:9px;padding:1px 4px;border-radius:4px;background:var(--bg3);color:var(--text3)">${f.src}</span></div>
+              <div class="sricat" style="font-size:9px">${f.per||'100g'}</div>
+            </div>
+            <div class="srimac">${f.k}kcal<br>${f.p}g P · ${f.c}g C${f.f?' · '+f.f+'g F':''}</div>
+            <div class="sriadd">+</div>
+          </div>
+          <button onclick="saveOnlineFood(${i})" style="flex-shrink:0;font-size:10px;padding:4px 6px;border-radius:6px;border:.5px solid var(--green);background:transparent;color:var(--green);cursor:pointer">💾</button>
+        </div>`;
+      });
+      h += `</div>`;
+      el.innerHTML = h;
+    } else {
+      el.innerHTML = `<div style="padding:12px;color:var(--text3);font-size:13px">
+        ${isEs?'No se encontraron macros para':'Could not find macros for'}: <strong>${escapeHTML(data.searchQuery||'')}</strong><br>
+        <span style="font-size:11px">${isEs?'Intentá buscar por nombre manualmente.':'Try searching by name manually.'}</span>
+      </div>`;
+    }
+  } catch(e) {
+    el.innerHTML = `<div style="padding:12px;color:var(--amber);font-size:13px">${isEs?'Error de conexión.':'Connection error.'} ${e.message}</div>`;
+  }
+  input.value = '';
+}
 
 function openBarcodeScanner() {
   document.getElementById('barcode-input')?.click();
