@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v11.4 (By Charly)</title>
+<title>MagicTracker v11.5 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
@@ -256,7 +256,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v11.4 (By Charly)",
+    appName: "MagicTracker v11.5 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -399,7 +399,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v11.4 (By Charly)",
+    appName: "MagicTracker v11.5 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -2209,12 +2209,20 @@ function renderHelp() {
   ];
 
   const sections = [
-    { icon:'📊', title: isEs?'Stats del día (los 4 números arriba)':'Daily stats (4 numbers at top)', desc: isEs?'Muestra en tiempo real: kcal ingeridas, proteína total, carbos totales, y calorías quemadas por actividad. Los colores indican si estás en objetivo (verde), cerca (naranja) o fuera (rojo).':'Shows in real time: kcal ingested, total protein, total carbs, and calories burned by activity. Colors indicate if you\'re on target (green), close (orange), or off (red).' },
-    { icon:'🎯', title: isEs?'Caja de déficit':'Deficit box', desc: isEs?'Muestra tu balance calórico del día: BMR + NEAT + actividad - lo que comiste = déficit real. Verde = estás en el rango objetivo. Naranja = comiste poco (déficit demasiado alto). Rojo = comiste de más.':'Shows your daily calorie balance: BMR + NEAT + activity - what you ate = real deficit. Green = you\'re in target range. Orange = ate too little (deficit too high). Red = ate too much.' },
-    { icon:'🏋️', title: isEs?'Actividad física':'Physical activity', desc: isEs?'Marcá las actividades que hiciste hoy. El tiempo de caminata se puede ajustar con los botones de minutos. El ejercicio muestra las kcal calculadas automáticamente con opción de ajuste manual (✏️).':'Mark activities you did today. Walk duration can be adjusted with the minute buttons. Exercise shows auto-calculated kcal with manual adjustment option (✏️).' },
-    { icon:'🍽️', title: isEs?'Plato principal':'Main meal', desc: isEs?'Elegí tu restaurant o tipo de comida, luego seleccioná el plato. Los ítems se despliegan con checkboxes para marcar lo que comiste. + agrega porciones extra, los botones −/+ ajustan el gramaje (½× hasta 2×).':'Choose your restaurant or food type, then select a dish. Items unfold with checkboxes to mark what you ate. + adds extra portions, −/+ buttons adjust serving size (½× to 2×).' },
-    { icon:'🔍', title: isEs?'Buscador':'Search', desc: isEs?'Buscá cualquier alimento por nombre. Los tags filtran categorías: 🟢 alta proteína, 🔵 bajo cal, 🟠 alta carbos, 🏠 comida casera. Al agregar un alimento buscado aparece en la sección "Alimentos buscados" del plato.':'Search any food by name. Tags filter categories: 🟢 high protein, 🔵 low cal, 🟠 high carb, 🏠 home cooked. Adding a searched food shows it in the "Searched foods" section of your meal.' },
-    { icon:'⚙️', title: isEs?'Settings':'Settings', desc: isEs?'Editá tu perfil (peso, edad, objetivo, ejercicio), cambiá entre perfiles, creá perfiles nuevos para otras personas, o eliminá perfiles que no uses.':'Edit your profile (weight, age, goal, exercise), switch between profiles, create new profiles for other people, or delete unused profiles.' },
+    { icon:'📊', title: isEs?'Stats del día':'Daily stats', desc: isEs?'Muestra en tiempo real: kcal ingeridas, proteína, carbos, grasas y calorías quemadas por actividad. Los colores indican si estás en objetivo (verde), cerca (naranja) o fuera (rojo).':'Shows in real time: kcal ingested, protein, carbs, fat and calories burned by activity. Colors indicate if you\'re on target (green), close (orange), or off (red).' },
+    { icon:'💪', title: isEs?'Toggle día de entrenamiento':'Training day toggle', desc: isEs?'Debajo de los tabs de día aparece un botón para cambiar entre "Día de entrenamiento" y "Día de descanso". Esto recalcula las calorías del día automáticamente y agrega o quita el ejercicio en la sección de actividad. Si lo cambiás manualmente, aparece un botón "Reset" para volver al plan semanal.':'Below the day tabs is a button to switch between "Training day" and "Rest day". This automatically recalculates daily calories and adds/removes exercise from the activity section. If changed manually, a "Reset" button appears to revert to the weekly plan.' },
+    { icon:'🎯', title: isEs?'Caja de déficit':'Deficit box', desc: isEs?'Muestra tu balance calórico: BMR + NEAT + actividad − lo que comiste = déficit real. Verde = en rango objetivo. Naranja = comiste poco. Rojo = comiste de más. Cuando superás tu objetivo de peso se muestra "🎉 Objetivo alcanzado".':'Shows your calorie balance: BMR + NEAT + activity − what you ate = real deficit. Green = on target. Orange = ate too little. Red = ate too much. When you exceed your weight goal it shows "🎉 Goal reached".' },
+    { icon:'📈', title: isEs?'Progreso hacia el objetivo':'Goal progress', desc: isEs?'Muestra tu % de grasa corporal estimado (basado en cintura y altura), tu peso actual vs objetivo, y el progreso en barra. Podés editar los objetivos de peso y % grasa desde Settings → perfil.':'Shows your estimated body fat % (based on waist and height), current vs target weight, and progress bar. You can edit weight and body fat targets from Settings → profile.' },
+    { icon:'🏋️', title: isEs?'Actividad física':'Physical activity', desc: isEs?'Marcá las actividades del día. El tiempo de caminata se ajusta con botones. El ejercicio muestra kcal calculadas con opción de ajuste manual (✏️). En días de entrenamiento el ejercicio aparece automáticamente según tu perfil.':'Mark today\'s activities. Walk duration adjusts with buttons. Exercise shows calculated kcal with manual adjustment (✏️). On training days exercise appears automatically based on your profile.' },
+    { icon:'🍽️', title: isEs?'Plato principal / Restaurantes':'Main meal / Restaurants', desc: isEs?'Elegí restaurante o tipo de comida y seleccioná el plato. Los ítems tienen checkboxes para marcar lo que comiste. Los botones −/+ ajustan la porción (½× hasta 2×). Restaurantes disponibles: Nando\'s, Itsu, Pepe\'s, KFC, McDonald\'s, Subway, Wagamama y más.':'Choose a restaurant or food type and select a dish. Items have checkboxes to mark what you ate. −/+ buttons adjust serving (½× to 2×). Available: Nando\'s, Itsu, Pepe\'s, KFC, McDonald\'s, Subway, Wagamama and more.' },
+    { icon:'🥗', title: isEs?'Snacks y extras':'Snacks & extras', desc: isEs?'Sección colapsable con snacks predefinidos (Skyr, yogurt, edamame, sardines, cottage cheese, huevos duros, biltong, pan integral, atún). Se pueden marcar/desmarcar individualmente.':'Collapsible section with predefined snacks (Skyr, yogurt, edamame, sardines, cottage cheese, hard-boiled eggs, biltong, wholemeal bread, tuna). Can be checked/unchecked individually.' },
+    { icon:'🔍', title: isEs?'Buscador + búsqueda online':'Search + online search', desc: isEs?'Buscá cualquier alimento en la base de datos local (270+ items). Si no encontrás lo que buscás, usá "🌐 Buscar online" para buscar en Open Food Facts (millones de productos de supermercado). También podés editar los macros de cualquier item antes de agregarlo con el botón ✏️.':'Search any food in the local database (270+ items). If not found, use "🌐 Search online" for Open Food Facts (millions of supermarket products). You can also edit any item\'s macros before adding it with the ✏️ button.' },
+    { icon:'📷', title: isEs?'Cámara — código de barras e identificación':'Camera — barcode & food identification', desc: isEs?'El botón 📷 en el buscador abre la cámara. Si la foto tiene un código de barras, lo escanea y busca el producto en Open Food Facts. Si es una foto de comida, usa inteligencia artificial (Gemini) para identificarla y estimar los macros por 100g. Límite: 20 fotos por día.':'The 📷 button in the search opens the camera. If the photo has a barcode, it scans it and looks up the product in Open Food Facts. If it\'s a food photo, it uses AI (Gemini) to identify it and estimate macros per 100g. Limit: 20 photos per day.' },
+    { icon:'💾', title: isEs?'Mis alimentos (custom foods)':'My foods (custom foods)', desc: isEs?'Podés guardar cualquier alimento con macros propios desde el formulario manual del buscador, o guardar resultados online con 💾. Los alimentos guardados aparecen primero en el buscador con el badge "custom" y se pueden editar (✏️) o eliminar (✕).':'Save any food with custom macros from the search manual form, or save online results with 💾. Saved foods appear first in search with "custom" badge and can be edited (✏️) or deleted (✕).' },
+    { icon:'🔔', title: isEs?'Notificaciones':'Notifications', desc: isEs?'Activá recordatorios desde Settings → Notificaciones. Podés configurar hora para: comida principal, snack, suplementos (mañana y tarde), entrenamiento, agua y pesaje semanal. Las notificaciones llegan aunque la app esté cerrada.':'Activate reminders from Settings → Notifications. Set times for: main meal, snack, supplements (morning and afternoon), workout, water and weekly weigh-in. Notifications arrive even when the app is closed.' },
+    { icon:'👤', title: isEs?'Perfiles múltiples':'Multiple profiles', desc: isEs?'Podés tener varios perfiles bajo tu cuenta (distintos objetivos o personas). Cada perfil tiene sus propios datos, macros y seguimiento. Cambiá de perfil desde Settings → Perfiles. Cada usuario que se registre tendrá sus propios datos independientes.':'You can have multiple profiles under your account (different goals or people). Each profile has its own data, macros and tracking. Switch profiles from Settings → Profiles. Each registered user has their own independent data.' },
+    { icon:'☁️', title: isEs?'Sincronización en la nube':'Cloud sync', desc: isEs?'Todos los datos se guardan automáticamente en la nube (Firestore). Podés acceder desde cualquier dispositivo con el mismo usuario. Los datos nunca se pierden aunque borres las cookies o reinstales la app.':'All data saves automatically to the cloud (Firestore). Access from any device with the same account. Data is never lost even if you clear cookies or reinstall the app.' },
+    { icon:'⚙️', title: isEs?'Settings':'Settings', desc: isEs?'Editá tu perfil (peso, cintura, edad, objetivo, días de entreno, ejercicio), cambiá el peso/grasa objetivo, activá notificaciones, cambiá entre perfiles o creá uno nuevo para otra persona.':'Edit your profile (weight, waist, age, goal, training days, exercise), change target weight/body fat, activate notifications, switch profiles or create one for another person.' },
   ];
 
   let html = renderTopbar(false);
@@ -3753,11 +3761,6 @@ function init() {
     });
   }
   scheduleLocalReminders();
-  document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-      scheduleLocalReminders();
-    }
-  });
 }
 
 
@@ -4004,18 +4007,16 @@ function initAuth() {
     // Always start on tracker screen — never restore settings/help screens
     if (APP.screen === 'settings' || APP.screen === 'help') APP.screen = 'tracker';
 
-    // Reschedule reminders when app comes back to foreground
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') scheduleLocalReminders();
-    });
-
-    // Auto re-register FCM token on app open to keep it fresh
-    const existingToken = getNS()?.fcmToken;
-    if (existingToken && Notification.permission === 'granted') {
-      setTimeout(() => registerDeviceInFirestore(existingToken), 3000);
+    // Reschedule reminders when app comes back to foreground (only register once)
+    if (!window._visibilityHandlerRegistered) {
+      window._visibilityHandlerRegistered = true;
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') scheduleLocalReminders();
+      });
     }
 
     render();
+    // Single FCM registration on app open — registerFCMToken handles everything
     registerFCMToken(user.uid);
   });
 }
@@ -4052,14 +4053,14 @@ function initFirebase() {
     if (!firebase.apps.length) fbApp = firebase.initializeApp(FB_CONFIG);
     else fbApp = firebase.app();
     fbMsg = firebase.messaging();
-    // Refresh token when FCM rotates it — update Firestore automatically
-    // This ensures push notifications keep working long-term
+    // Refresh token only if it actually changed — avoids unnecessary Firestore writes
     navigator.serviceWorker?.ready.then(reg => {
       fbMsg.getToken({vapidKey: VAPID_KEY, serviceWorkerRegistration: reg}).then(token => {
         if (token && getNS().fcmToken !== token) {
           getNS().fcmToken = token;
-          _saveNS(); save();
-          registerDeviceInFirestore(token);
+          _saveNS();
+          // Only update users collection if token changed
+          if (currentUser) registerFCMToken(currentUser.uid);
           console.log('FCM token refreshed');
         }
       }).catch(() => {});
