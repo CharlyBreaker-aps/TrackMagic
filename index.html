@@ -707,7 +707,6 @@ const FDB=[
 {n:'Prawn avocado salad + lemon dressing',k:380,p:30,c:14,f:14,cat:'Home meal',hi:1,hm:1},
 {n:'Chicken quinoa salad 150g + cucumber + tomato',k:480,p:40,c:42,f:8,cat:'Home meal',hi:1,hm:1},
 {n:'Protein shake 30g',k:120,p:24,c:4,f:2,cat:'Protein',hi:1,hm:1},
-,
 {n:'Isey Skyr Vanilla 150g',k:84,p:15,c:6,f:0,cat:'Dairy',hi:1,lc:1},
 {n:'Isey Skyr Vanilla 200g',k:112,p:20,c:8,f:0,cat:'Dairy',hi:1,lc:1},
 {n:'Isey Skyr Vanilla 300g',k:168,p:29,c:11,f:1,cat:'Dairy',hi:1,lc:1},
@@ -1223,7 +1222,7 @@ function save() {
     const appData = {...APP};
     if (currentUser) appData._uid = currentUser.uid;
     localStorage.setItem('cvr_app', JSON.stringify(appData));
-  scheduleSave();
+    scheduleSave();
   } catch(e){}
 }
 function load() {
@@ -1341,7 +1340,7 @@ function jsDayToIdx(jsDay){ return jsDay===0?6:jsDay-1; }
 function idxToJsDay(idx){ return idx===6?0:idx+1; }
 function currentDayId() {
   const i = new Date().getDay(); // 0=Sun
-  const days7 = ['dom','lun','mar','mié','jue','vie','sáb'];
+  const days7 = ['dom','lun','mar','mie','jue','vie','sab'];
   return days7[i];
 }
 
@@ -1988,12 +1987,11 @@ function renderSettings() {
 
       <div class="sec">${tl.ob_data_title||'Body stats'}</div>
       <div class="ob-inputs">
-        <div class="ob-input-row">
-          <div class="ob-input-group">
-            <label class="ob-label">${tl.ob_weight}</label>
-            <input class="ob-input" type="number" inputmode="decimal" placeholder="kg" value="${ed.weight||p.weight||''}" oninput="seSetInput('weight',this.value)">
-            <span class="ob-unit">kg</span>
-          </div>
+        <div class="ob-input-group">
+          <label class="ob-label">${tl.ob_weight}</label>
+          <input class="ob-input" type="number" inputmode="decimal" placeholder="kg" value="${ed.weight||p.weight||''}" oninput="seSetInput('weight',this.value)">
+          <span class="ob-unit">kg</span>
+        </div>
         <div class="ob-input-row">
           <div class="ob-input-group">
             <label class="ob-label">${tl.ob_waist}</label>
@@ -2005,7 +2003,6 @@ function renderSettings() {
             <input class="ob-input" type="number" inputmode="numeric" placeholder="cm" value="${ed.neck||p.neck||''}" oninput="seSetInput('neck',this.value)">
             <span class="ob-unit">cm</span>
           </div>
-        </div>
         </div>
         <div class="ob-input-row">
           <div class="ob-input-group">
@@ -3247,10 +3244,6 @@ async function handleFoodPhotoImage(input) {
   input.value = '';
 }
 
-function openBarcodeScanner() {
-  document.getElementById('barcode-input')?.click();
-}
-
 async function handleBarcodeImage(input) {
   const file = input.files[0];
   if (!file) return;
@@ -3352,10 +3345,17 @@ async function searchUSDA(q, isEs) {
     const r = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(q)}&pageSize=6&api_key=DEMO_KEY`);
     const data = await r.json();
     const foods = (data.foods || []).slice(0, 6).map(f => {
-      const n = (name, unit) => Math.round((f.foodNutrients||[]).find(x=>x.nutrientName===name)?.value||0);
+      const n = (name, unitName) => {
+        const match = (f.foodNutrients||[]).find(x => x.nutrientName === name && (!unitName || (x.unitName||'').toLowerCase() === unitName.toLowerCase()));
+        if (match) return Math.round(match.value || 0);
+        // Fall back to any nutrient with that name if unit-filtered match not found
+        return Math.round((f.foodNutrients||[]).find(x => x.nutrientName === name)?.value || 0);
+      };
+      const rawKcal = n('Energy','kcal') || n('Energy (Atwater General Factors)','kcal');
+      const rawKj   = n('Energy','kJ')   || n('Energy (Atwater General Factors)','kJ');
       return {
         n: f.description,
-        k: n('Energy','kcal') || n('Energy (Atwater General Factors)','kcal'),
+        k: rawKcal || (rawKj ? Math.round(rawKj / 4.184) : 0),
         p: n('Protein','g'),
         c: n('Carbohydrate, by difference','g'),
         f: n('Total lipid (fat)','g'),
@@ -3378,7 +3378,8 @@ function parseOFFProduct(p) {
   const nm = p.nutriments;
   const per = p.quantity || '100g';
   // Values per 100g
-  const k = Math.round(nm['energy-kcal_100g'] || nm['energy_100g']/4.184 || 0);
+  const kcalDirect = nm['energy-kcal_100g'];
+  const k = Math.round(kcalDirect != null ? kcalDirect : (nm['energy_100g'] ? nm['energy_100g']/4.184 : 0));
   const pr = Math.round(nm['proteins_100g'] || 0);
   const cb = Math.round(nm['carbohydrates_100g'] || 0);
   const ft = Math.round(nm['fat_100g'] || 0);
@@ -3421,7 +3422,7 @@ function saveOnlineFood(idx) {
     alert(isEs ? 'Ya está guardado en Mis alimentos.' : 'Already saved in My foods.');
     return;
   }
-  APP.customFoods.push({ n: f.n, k: f.k, p: f.p, c: f.c||0, f: f.f||0 });
+  APP.customFoods.push({ id: 'cf_' + Date.now(), n: f.n, k: f.k, p: f.p, c: f.c||0, f: f.f||0 });
   save();
   alert(isEs ? `"${f.n}" guardado en Mis alimentos ✓` : `"${f.n}" saved to My foods ✓`);
 }
@@ -3498,9 +3499,17 @@ function saveEdit(){
   if(ed.mealstyle)p.mealstyle=ed.mealstyle;
   if(ed.city!==undefined)p.city=ed.city;
   if(ed.exercise_type)p.exercise_type=ed.exercise_type;
+  if(ed.exercise_duration!==undefined&&ed.exercise_duration!=='')p.exercise_duration=parseInt(ed.exercise_duration)||p.exercise_duration||60;
   if(ed.exercise_days){p.exercise_days=[...ed.exercise_days];p.cf_days=[...ed.exercise_days];}
   if(ed.target_weight!==undefined&&ed.target_weight!=='')p.target_weight=parseFloat(ed.target_weight);
   if(ed.target_fat!==undefined&&ed.target_fat!=='')p.target_fat=parseFloat(ed.target_fat);
+  // Recompute exercise_burn whenever type or duration may have changed
+  if(ed.exercise_type||ed.exercise_duration!==undefined){
+    const tl2=T[APP.lang];
+    const exType=tl2.ob_exercise_types.find(e=>e.id===p.exercise_type)||{kcal:400};
+    const dur2=p.exercise_duration||60;
+    p.exercise_burn=Math.round(exType.kcal*dur2/60);
+  }
   // Store start weight if not already set
   if(!p.start_weight)p.start_weight=p.weight;
   // Recalculate macros for everyone (unified Mifflin formula)
@@ -3513,12 +3522,6 @@ function saveEdit(){
   p.deficit_min_cf=m.deficit_min_cf; p.deficit_max_cf=m.deficit_max_cf;
   p.deficit_min_rest=m.deficit_min_rest; p.deficit_max_rest=m.deficit_max_rest;
   p.deficit_min=m.deficit_min; p.deficit_max=m.deficit_max;
-  if(ed.exercise_type||ed.exercise_duration){
-    const tl2=T[APP.lang];
-    const exType=tl2.ob_exercise_types.find(e=>e.id===p.exercise_type)||{kcal:400};
-    const dur2=p.exercise_duration||60;
-    p.exercise_burn=Math.round(exType.kcal*dur2/60);
-  }
   // Update in profiles list
   const idx=APP.profiles.findIndex(x=>x.id===p.id);
   if(idx>=0)APP.profiles[idx]={...p};
@@ -3604,25 +3607,25 @@ async function validateCity(q){
 function obSetCity(c){obSetCityQuick(c);}
 function obToggleDiet(id){
   const d=APP.ob_data.diet;
-  if(id==='none'){APP.ob_data.diet=['none'];render();return;}
+  if(id==='none'){APP.ob_data.diet=['none'];save();render();return;}
   const idx=d.indexOf(id);
   if(idx>=0)d.splice(idx,1);else{d.push(id);const ni=d.indexOf('none');if(ni>=0)d.splice(ni,1);}
-  render();
+  save();render();
 }
 function obNext(){APP.ob_step++;save();render();}
 function obBack(){if(APP.ob_step>0){APP.ob_step--;save();render();}}
 function obFinish(){
   try {
   const od=APP.ob_data;
-  const m=calcMacros({
-    sex:od.sex, age:parseInt(od.age)||30, height:parseInt(od.height)||170,
-    weight:parseFloat(od.weight)||70, goal:od.goal||'cut', activity:od.activity||'moderate',
-    exercise_days:od.exercise_days||[], exercise_burn:0, exercise_duration:parseInt(od.exercise_duration||60)
-  });
   const tl=T[od.lang||'en'];
   const exType=(tl.ob_exercise_types||[]).find(e=>e.id===od.exercise_type)||{kcal:400};
   const dur=parseInt(od.exercise_duration||'60');
   const burnPerSession=Math.round(exType.kcal * dur/60);
+  const m=calcMacros({
+    sex:od.sex, age:parseInt(od.age)||30, height:parseInt(od.height)||170,
+    weight:parseFloat(od.weight)||70, goal:od.goal||'cut', activity:od.activity||'moderate',
+    exercise_days:od.exercise_days||[], exercise_burn:burnPerSession, exercise_duration:dur
+  });
   const newProfile={
     id:'user_'+Date.now(),
     name:od.name||'User',
@@ -3841,7 +3844,19 @@ function renderLoginScreen(mode='login', errorMsg='') {
 async function signInWithGoogle() {
   try {
     const provider = new firebase.auth.GoogleAuthProvider();
-    await fbAuth.signInWithPopup(provider);
+    provider.setCustomParameters({ prompt: 'select_account' });
+    try {
+      await fbAuth.signInWithPopup(provider);
+    } catch(popupErr) {
+      // Popup blocked (common on mobile PWA) — fall back to redirect
+      if (popupErr.code === 'auth/popup-blocked' || popupErr.code === 'auth/popup-closed-by-user') {
+        if (popupErr.code === 'auth/popup-blocked') {
+          await fbAuth.signInWithRedirect(provider);
+        }
+        return;
+      }
+      throw popupErr;
+    }
   } catch(e) {
     if (e.code !== 'auth/popup-closed-by-user') renderLoginScreen('login', e.message || 'Error');
   }
@@ -3944,6 +3959,8 @@ function initAuth() {
   if (!firebase.apps.length) { fbApp = firebase.initializeApp(FB_CONFIG); } else { fbApp = firebase.app(); }
   fbAuth = firebase.auth();
   fbMsg = firebase.messaging();
+  // Handle redirect result from signInWithRedirect (Google on mobile PWA)
+  fbAuth.getRedirectResult().catch(() => {});
   // Foreground FCM messages — suppress them since local polling handles foreground notifications
   // Background messages are handled by sw.js onBackgroundMessage
   fbMsg.onMessage(() => { /* suppress foreground FCM - local polling handles it */ });
@@ -4208,7 +4225,7 @@ function scheduleLocalReminders() {
     const jsDay = now.getDay(); // 0=Sun..6=Sat JS convention
     const toApp = d => d === 0 ? 6 : d - 1; // convert to 0=Mon..6=Sun
     const appDay = toApp(jsDay);
-    const dateKey = now.getFullYear() + '-' + now.getMonth() + '-' + now.getDate();
+    const dateKey = now.getFullYear() + '-' + (now.getMonth()+1) + '-' + now.getDate();
 
     // Re-read ns each poll so settings changes take effect immediately
     const currentNS = getNS();
@@ -4513,6 +4530,7 @@ function setNotifTime(key, val) {
   syncNotifSettingsToFirestore();
 }
 
+init();
 initAuth();
 </script>
 </body>

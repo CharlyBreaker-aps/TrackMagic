@@ -53,8 +53,8 @@ messaging.onBackgroundMessage(payload => {
   const tag   = payload.data?.tag   || 'magictracker';
   self.registration.showNotification(title, {
     body,
-    icon: 'https://charlybreaker-aps.github.io/charly-tracker/icons/icon-192.png',
-    badge: 'https://charlybreaker-aps.github.io/charly-tracker/icons/icon-192.png',
+    icon: self.registration.scope + 'icons/icon-192.png',
+    badge: self.registration.scope + 'icons/icon-192.png',
     tag,
     renotify: false,
   });
@@ -62,10 +62,11 @@ messaging.onBackgroundMessage(payload => {
 
 self.addEventListener('notificationclick', e => {
   e.notification.close();
-  e.waitUntil(clients.matchAll({type:'window'}).then(list => {
+  const appUrl = self.registration.scope;
+  e.waitUntil(clients.matchAll({type:'window', includeUncontrolled: true}).then(list => {
     for (const c of list) {
-      if (c.url.includes('github.io') && 'focus' in c) return c.focus();
+      if (c.url.startsWith(appUrl) && 'focus' in c) return c.focus();
     }
-    return clients.openWindow('https://charlybreaker-aps.github.io/charly-tracker/');
+    return clients.openWindow(appUrl);
   }));
 });
