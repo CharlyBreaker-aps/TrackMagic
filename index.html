@@ -2428,8 +2428,10 @@ function renderTracker() {
   </div>`;
 
   // ── CALORIE RING + MACRO PILLS ──
+  const [dm0]=getDeficitRange(d);
+  const dynBudget=Math.max(1200, getTDEE(d)+b-dm0); // dynamic: grows as activity is logged
   const ringC = 289; // circumference 2π×46
-  const ringPct = Math.min(100, Math.round(k/tK*100));
+  const ringPct = Math.min(100, Math.round(k/dynBudget*100));
   const ringOffset = Math.round(ringC * (1 - ringPct/100));
   const ringColor = cfg.cls==='ok'?'var(--green)':cfg.cls==='low'?'var(--amber)':cfg.cls==='excess'||cfg.cls==='over'?'var(--red)':'var(--bg3)';
   const pPct = Math.min(100, Math.round(p2/(tP||1)*100));
@@ -2446,8 +2448,8 @@ function renderTracker() {
       <div class="ring-center">
         <div class="ring-kcal" style="color:${ringColor}">${k.toLocaleString()}</div>
         <div class="ring-sub">${isEs?'kcal ingeridas':'kcal eaten'}</div>
-        <div class="ring-target">/ ${tK.toLocaleString()}</div>
-        ${(()=>{const [dm2]=getDeficitRange(d);const dynBudget=getTDEE(d)+b-dm2;const left=dynBudget-k;const overBudget=left<0;const leftColor=overBudget?'var(--red)':'var(--green)';const leftLabel=overBudget?(isEs?`${Math.abs(left).toLocaleString()} de más`:`${Math.abs(left).toLocaleString()} over`):(isEs?`${left.toLocaleString()} restantes`:`${left.toLocaleString()} left`);return `<div class="ring-left" style="color:${leftColor}">${leftLabel}</div>`;})()}
+        <div class="ring-target">/ ${dynBudget.toLocaleString()}</div>
+        ${(()=>{const left=dynBudget-k;const overBudget=left<0;const leftColor=overBudget?'var(--red)':'var(--green)';const leftLabel=overBudget?(isEs?`${Math.abs(left).toLocaleString()} de más`:`${Math.abs(left).toLocaleString()} over`):(isEs?`${left.toLocaleString()} restantes`:`${left.toLocaleString()} left`);return `<div class="ring-left" style="color:${leftColor}">${leftLabel}</div>`;})()}
       </div>
     </div>
     <div class="macros-col">
