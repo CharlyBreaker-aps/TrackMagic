@@ -2447,7 +2447,7 @@ function renderTracker() {
         <div class="ring-kcal" style="color:${ringColor}">${k.toLocaleString()}</div>
         <div class="ring-sub">${isEs?'kcal ingeridas':'kcal eaten'}</div>
         <div class="ring-target">/ ${tK.toLocaleString()}</div>
-        ${(()=>{const left=tK-k;const overBudget=left<0;const leftColor=overBudget?'var(--red)':'var(--green)';const leftLabel=overBudget?(isEs?`${Math.abs(left).toLocaleString()} de más`:`${Math.abs(left).toLocaleString()} over`):(isEs?`${left.toLocaleString()} restantes`:`${left.toLocaleString()} left`);return `<div class="ring-left" style="color:${leftColor}">${leftLabel}</div>`;})()}
+        ${(()=>{const [dm2]=getDeficitRange(d);const dynBudget=getTDEE(d)+b-dm2;const left=dynBudget-k;const overBudget=left<0;const leftColor=overBudget?'var(--red)':'var(--green)';const leftLabel=overBudget?(isEs?`${Math.abs(left).toLocaleString()} de más`:`${Math.abs(left).toLocaleString()} over`):(isEs?`${left.toLocaleString()} restantes`:`${left.toLocaleString()} left`);return `<div class="ring-left" style="color:${leftColor}">${leftLabel}</div>`;})()}
       </div>
     </div>
     <div class="macros-col">
