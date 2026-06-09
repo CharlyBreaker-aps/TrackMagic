@@ -209,6 +209,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .ring-kcal{font-size:21px;font-weight:800;line-height:1;}
 .ring-sub{font-size:9px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:.05em;}
 .ring-target{font-size:10px;color:var(--text2);margin-top:3px;}
+.ring-left{font-size:11px;font-weight:700;margin-top:4px;line-height:1;}
 .macros-col{flex:1;display:flex;flex-direction:column;gap:7px;}
 .macro-pill{background:var(--bg2);border-radius:10px;padding:7px 10px;}
 .macro-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;}
@@ -2446,6 +2447,7 @@ function renderTracker() {
         <div class="ring-kcal" style="color:${ringColor}">${k.toLocaleString()}</div>
         <div class="ring-sub">${isEs?'kcal ingeridas':'kcal eaten'}</div>
         <div class="ring-target">/ ${tK.toLocaleString()}</div>
+        ${(()=>{const left=tK-k;const overBudget=left<0;const leftColor=overBudget?'var(--red)':'var(--green)';const leftLabel=overBudget?(isEs?`${Math.abs(left).toLocaleString()} de más`:`${Math.abs(left).toLocaleString()} over`):(isEs?`${left.toLocaleString()} restantes`:`${left.toLocaleString()} left`);return `<div class="ring-left" style="color:${leftColor}">${leftLabel}</div>`;})()}
       </div>
     </div>
     <div class="macros-col">
@@ -2485,7 +2487,7 @@ function renderTracker() {
       </div>
     </div>
     <div class="def-prog2"><div class="def-prog2-fill ${cfg.bc}" style="width:${Math.min(100,pct)}%"></div></div>
-    <div class="def-toggle" onclick="APP._defOpen=!APP._defOpen;render()">
+    <div class="def-toggle" onclick="APP._defOpen=${defOpen?'false':'true'};render()">
       <span>${defOpen?'▲':'▼'}</span>
       ${defOpen?(isEs?'Ocultar desglose':'Hide breakdown'):(isEs?'Ver desglose (TDEE, objetivos)':'Show breakdown (TDEE, targets)')}
     </div>
@@ -2634,7 +2636,7 @@ function renderTracker() {
       </div>`;
     }
     h+=`<div class="prog-strip">
-      <div class="prog-strip-hdr" onclick="APP._progOpen=!APP._progOpen;render()">
+      <div class="prog-strip-hdr" onclick="APP._progOpen=${progOpen?'false':'true'};render()">
         <span class="prog-strip-title">🎯 ${isEs?'Progreso':'Goal progress'}</span>
         <span class="prog-strip-exp">${progOpen?(isEs?'▲ Ocultar':'▲ Hide'):(isEs?'▼ Ver detalles':'▼ Details')}</span>
       </div>
