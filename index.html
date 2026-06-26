@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v11.7 (By Charly)</title>
+<title>MagicTracker v11.9 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
@@ -260,7 +260,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v11.7 (By Charly)",
+    appName: "MagicTracker v11.9 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -403,7 +403,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v11.7 (By Charly)",
+    appName: "MagicTracker v11.9 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -2331,37 +2331,67 @@ function renderTracker() {
     <div class="stat"><div class="sv w">${b}</div><div class="sl">${t('activity')}</div></div>
   </div>`;
 
-  // Deficit box
-  const donutPct = Math.min(100, Math.max(0, Math.round((1 - k/tdee) * 100)));
-  const remaining = Math.max(0, tdee - k);
-  const circ = 2 * Math.PI * 26;
-  const dashOffset = circ * (1 - donutPct/100);
-  const donutColor = st==='ok' ? 'var(--green)' : st==='low' ? 'var(--amber)' : st==='excess' ? 'var(--red)' : 'var(--text3)';
-  h+=`<div class="def-box ${cfg.cls}" style="display:flex;gap:12px;align-items:center">
-    <div style="flex-shrink:0;position:relative;width:72px;height:72px">
-      <svg width="72" height="72" viewBox="0 0 72 72">
-        <circle cx="36" cy="36" r="26" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="7"/>
-        <circle cx="36" cy="36" r="26" fill="none" stroke="${donutColor}" stroke-width="7"
-          stroke-dasharray="${circ.toFixed(1)}" stroke-dashoffset="${dashOffset.toFixed(1)}"
-          stroke-linecap="round" transform="rotate(-90 36 36)"
-          style="transition:stroke-dashoffset .4s ease"/>
-      </svg>
-      <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
-        <div style="font-size:13px;font-weight:700;color:${donutColor};line-height:1">${remaining}</div>
-        <div style="font-size:8px;color:var(--text3);line-height:1.2">kcal</div>
+  // Deficit box — nutrition app style donut
+  const kcalConsumed = k;
+  const kcalGoal = tK;
+  const kcalLeft = Math.max(0, kcalGoal - kcalConsumed);
+  const kcalOver2 = Math.max(0, kcalConsumed - kcalGoal);
+  const fillPct = Math.min(100, Math.round(kcalConsumed / kcalGoal * 100));
+  const r = 42;
+  const stroke = 8;
+  const circumference = 2 * Math.PI * r;
+  const filledArc = circumference * fillPct / 100;
+  const arcColor = fillPct <= 100 ? '#1D9E75' : '#E74C3C';
+  const isEs3 = APP.lang === 'es';
+
+  h+=`<div class="def-box ${cfg.cls}">
+    <div style="display:flex;gap:16px;align-items:center">
+      <!-- Donut ring -->
+      <div style="position:relative;flex-shrink:0;width:110px;height:110px">
+        <svg width="110" height="110" viewBox="0 0 110 110" style="transform:rotate(-90deg)">
+          <!-- Background track -->
+          <circle cx="55" cy="55" r="${r}" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="${stroke}"/>
+          <!-- Filled arc -->
+          <circle cx="55" cy="55" r="${r}" fill="none" stroke="${arcColor}" stroke-width="${stroke}"
+            stroke-dasharray="${filledArc.toFixed(2)} ${circumference.toFixed(2)}"
+            stroke-linecap="round"/>
+        </svg>
+        <!-- Center text -->
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:1px">
+          ${kcalOver2 > 0
+            ? `<div style="font-size:11px;color:#E74C3C;font-weight:600;line-height:1">${isEs3?'Te pasaste':'Over'}</div>
+               <div style="font-size:20px;font-weight:700;color:#E74C3C;line-height:1">${kcalOver2}</div>
+               <div style="font-size:10px;color:var(--text3);line-height:1">kcal</div>`
+            : `<div style="font-size:22px;font-weight:700;color:${kcalLeft===0?'#1D9E75':'var(--text)'};line-height:1">${kcalLeft}</div>
+               <div style="font-size:10px;color:var(--text3);line-height:1.2">kcal<br>${isEs3?'restantes':'left'}</div>`
+          }
+        </div>
       </div>
-    </div>
-    <div style="flex:1;min-width:0">
-      <div class="dr"><span>${t('bmr_neat')} <span style="font-size:9px;color:var(--text3)">(${APP.lang==='es'?'base':'base'})</span></span><span class="dv">${getTDEE(d)} kcal</span></div>
-      <div class="dr"><span>${t('activity_label')}</span><span class="dv" style="color:${b>0?'var(--green)':'var(--text3)'}">${b} kcal</span></div>
-      <div class="dr" style="font-weight:600"><span>${t('total_tdee')}</span><span class="dv">${tdee} kcal</span></div>
-      <div class="dhr"></div>
-      <div class="dr"><span>${t('kcal_ingested')}</span><span class="dv">${k} kcal</span></div>
-      <div class="dhr"></div>
-      <div class="dm"><span class="dml">${t('estimated_deficit')}</span><span class="dmv" style="color:${cfg.col}">${def>=0?'−'+def:'+'+Math.abs(def)} kcal</span></div>
-      <div class="dbadge ${cfg.cls}">${cfg.lbl}</div>
-      <div class="prog"><div class="pf ${cfg.bc}" style="width:${Math.min(100,pct)}%"></div></div>
-      <div class="dhint">${t('target_range')}: ${dm}–${dx} · ${t('intake_target')}: ${tK} kcal</div>
+      <!-- Right side breakdown -->
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
+        <div style="display:flex;justify-content:space-between;font-size:12px">
+          <span style="color:var(--text3)">${isEs3?'Objetivo':'Goal'}</span>
+          <span style="font-weight:600">${kcalGoal} kcal</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px">
+          <span style="color:var(--text3)">${isEs3?'Comido':'Eaten'}</span>
+          <span style="font-weight:600;color:${arcColor}">${kcalConsumed} kcal</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px">
+          <span style="color:var(--text3)">${isEs3?'Ejercicio':'Exercise'}</span>
+          <span style="font-weight:600;color:#1D9E75">+${b} kcal</span>
+        </div>
+        <div style="height:0.5px;background:var(--border2);margin:3px 0"></div>
+        <div style="display:flex;justify-content:space-between;font-size:12px">
+          <span style="color:var(--text3)">TDEE</span>
+          <span style="font-weight:600">${tdee} kcal</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:12px">
+          <span style="color:var(--text3)">${isEs3?'Déficit real':'Real deficit'}</span>
+          <span style="font-weight:600;color:${cfg.col}">${def>=0?'−'+def:'+'+Math.abs(def)} kcal</span>
+        </div>
+        <div class="dbadge ${cfg.cls}" style="margin-top:2px;align-self:flex-start">${cfg.lbl}</div>
+      </div>
     </div>
   </div>`;
 
