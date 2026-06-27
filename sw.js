@@ -1,4 +1,4 @@
-const CACHE = 'charly-tracker-v57';
+const CACHE = 'charly-tracker-v59';
 const FILES = ['./manifest.json', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -53,8 +53,8 @@ messaging.onBackgroundMessage(payload => {
   const tag   = payload.data?.tag   || 'magictracker';
   self.registration.showNotification(title, {
     body,
-    icon: self.registration.scope + 'icons/icon-192.png',
-    badge: self.registration.scope + 'icons/icon-192.png',
+    icon: 'https://charlybreaker-aps.github.io/charly-tracker/icons/icon-192.png',
+    badge: 'https://charlybreaker-aps.github.io/charly-tracker/icons/icon-192.png',
     tag,
     renotify: false,
   });
@@ -62,11 +62,15 @@ messaging.onBackgroundMessage(payload => {
 
 self.addEventListener('notificationclick', e => {
   e.notification.close();
-  const appUrl = self.registration.scope;
-  e.waitUntil(clients.matchAll({type:'window', includeUncontrolled: true}).then(list => {
-    for (const c of list) {
-      if (c.url.startsWith(appUrl) && 'focus' in c) return c.focus();
-    }
-    return clients.openWindow(appUrl);
-  }));
+  const url = 'https://charlybreaker-aps.github.io/charly-tracker/';
+  e.waitUntil(
+    clients.matchAll({type:'window', includeUncontrolled: true}).then(list => {
+      for (const c of list) {
+        if (c.url.startsWith('https://charlybreaker-aps.github.io/charly-tracker') && 'focus' in c) {
+          return c.focus();
+        }
+      }
+      return clients.openWindow(url);
+    })
+  );
 });
