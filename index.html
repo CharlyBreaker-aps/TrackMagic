@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v12.0 (By Charly)</title>
+<title>MagicTracker v12.1 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
@@ -260,7 +260,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v12.0 (By Charly)",
+    appName: "MagicTracker v12.1 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -403,7 +403,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v12.0 (By Charly)",
+    appName: "MagicTracker v12.1 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -2331,66 +2331,61 @@ function renderTracker() {
     <div class="stat"><div class="sv w">${b}</div><div class="sl">${t('activity')}</div></div>
   </div>`;
 
-  // Deficit box — nutrition app style donut
-  const kcalGoal = tK + b;  // target intake + exercise burned = dynamic daily goal
+  // Deficit box — donut shows consumed vs intake target (tK already includes deficit)
+  const isEs3 = APP.lang === 'es';
   const kcalConsumed = k;
+  const kcalGoal = tK; // intake target = TDEE - deficit goal (already calculated)
   const kcalLeft = Math.max(0, kcalGoal - kcalConsumed);
   const kcalOver2 = Math.max(0, kcalConsumed - kcalGoal);
   const fillPct = Math.min(100, Math.round(kcalConsumed / Math.max(1, kcalGoal) * 100));
-  const r = 42;
-  const stroke = 8;
-  const circumference = 2 * Math.PI * r;
-  const filledArc = circumference * fillPct / 100;
-  const arcColor = fillPct <= 100 ? '#1D9E75' : '#E74C3C';
-  const isEs3 = APP.lang === 'es';
+  const R = 42, SW = 9;
+  const C = 2 * Math.PI * R;
+  const filledArc = C * fillPct / 100;
+  const arcColor = kcalOver2 > 0 ? '#E74C3C' : fillPct > 85 ? '#F39C12' : '#1D9E75';
 
   h+=`<div class="def-box ${cfg.cls}">
-    <div style="display:flex;gap:16px;align-items:center">
-      <!-- Donut ring -->
-      <div style="position:relative;flex-shrink:0;width:110px;height:110px">
-        <svg width="110" height="110" viewBox="0 0 110 110" style="transform:rotate(-90deg)">
-          <!-- Background track -->
-          <circle cx="55" cy="55" r="${r}" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="${stroke}"/>
-          <!-- Filled arc -->
-          <circle cx="55" cy="55" r="${r}" fill="none" stroke="${arcColor}" stroke-width="${stroke}"
-            stroke-dasharray="${filledArc.toFixed(2)} ${circumference.toFixed(2)}"
-            stroke-linecap="round"/>
+    <div style="display:flex;gap:14px;align-items:center">
+      <div style="position:relative;flex-shrink:0;width:114px;height:114px">
+        <svg width="114" height="114" viewBox="0 0 114 114" style="transform:rotate(-90deg)">
+          <circle cx="57" cy="57" r="${R}" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="${SW}"/>
+          <circle cx="57" cy="57" r="${R}" fill="none" stroke="${arcColor}" stroke-width="${SW}"
+            stroke-dasharray="${filledArc.toFixed(2)} ${C.toFixed(2)}"
+            stroke-linecap="round" style="transition:all .3s ease"/>
         </svg>
-        <!-- Center text -->
-        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:1px">
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center">
           ${kcalOver2 > 0
-            ? `<div style="font-size:11px;color:#E74C3C;font-weight:600;line-height:1">${isEs3?'Te pasaste':'Over'}</div>
-               <div style="font-size:20px;font-weight:700;color:#E74C3C;line-height:1">${kcalOver2}</div>
-               <div style="font-size:10px;color:var(--text3);line-height:1">kcal</div>`
-            : `<div style="font-size:22px;font-weight:700;color:${kcalLeft===0?'#1D9E75':'var(--text)'};line-height:1">${kcalLeft}</div>
-               <div style="font-size:10px;color:var(--text3);line-height:1.2">kcal<br>${isEs3?'restantes':'left'}</div>`
+            ? `<div style="font-size:11px;color:#E74C3C;font-weight:600">${isEs3?'Excedido':'Over'}</div>
+               <div style="font-size:22px;font-weight:800;color:#E74C3C;line-height:1">+${kcalOver2}</div>
+               <div style="font-size:9px;color:var(--text3)">kcal</div>`
+            : `<div style="font-size:24px;font-weight:800;color:var(--text);line-height:1">${kcalLeft}</div>
+               <div style="font-size:9px;color:var(--text3);line-height:1.4">kcal<br>${isEs3?'restantes':'remaining'}</div>`
           }
         </div>
       </div>
-      <!-- Right side breakdown -->
-      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:4px">
-        <div style="display:flex;justify-content:space-between;font-size:12px">
-          <span style="color:var(--text3)">${isEs3?'Objetivo base':'Base goal'}</span>
-          <span style="font-weight:600">${tK} kcal</span>
+      <div style="flex:1;display:flex;flex-direction:column;gap:5px">
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px">
+          <span style="color:var(--text3)">${isEs3?'Objetivo':'Goal'}</span>
+          <span style="font-weight:700">${kcalGoal} kcal</span>
         </div>
-        <div style="display:flex;justify-content:space-between;font-size:12px">
-          <span style="color:var(--text3)">${isEs3?'Ejercicio':'Exercise'}</span>
-          <span style="font-weight:600;color:#1D9E75">+${b} kcal</span>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px">
+          <span style="color:var(--text3)">${isEs3?'Consumido':'Eaten'}</span>
+          <span style="font-weight:700;color:${arcColor}">${kcalConsumed} kcal</span>
         </div>
-        <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;border-top:0.5px solid var(--border2);padding-top:3px">
-          <span>${isEs3?'Objetivo del día':'Daily goal'}</span>
-          <span style="color:#1D9E75">${kcalGoal} kcal</span>
+        <div style="height:0.5px;background:var(--border2)"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px">
+          <span style="color:var(--text3)">${isEs3?'Ejercicio hoy':'Exercise today'}</span>
+          <span style="font-weight:700;color:#1D9E75">+${b} kcal</span>
         </div>
-        <div style="height:0.5px;background:var(--border2);margin:2px 0"></div>
-        <div style="display:flex;justify-content:space-between;font-size:12px">
-          <span style="color:var(--text3)">${isEs3?'Comido':'Eaten'}</span>
-          <span style="font-weight:600;color:${arcColor}">${kcalConsumed} kcal</span>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px">
+          <span style="color:var(--text3)">TDEE</span>
+          <span style="font-weight:700">${tdee} kcal</span>
         </div>
-        <div style="display:flex;justify-content:space-between;font-size:12px">
-          <span style="color:var(--text3)">${isEs3?'Déficit real':'Real deficit'}</span>
-          <span style="font-weight:600;color:${cfg.col}">${def>=0?'−'+def:'+'+Math.abs(def)} kcal</span>
+        <div style="height:0.5px;background:var(--border2)"></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px">
+          <span style="color:var(--text3)">${isEs3?'Déficit':'Deficit'}</span>
+          <span style="font-weight:700;color:${cfg.col}">${def>=0?'−'+def:'+'+Math.abs(def)} kcal</span>
         </div>
-        <div class="dbadge ${cfg.cls}" style="margin-top:2px;align-self:flex-start">${cfg.lbl}</div>
+        <div class="dbadge ${cfg.cls}" style="align-self:flex-start">${cfg.lbl}</div>
       </div>
     </div>
   </div>`;
