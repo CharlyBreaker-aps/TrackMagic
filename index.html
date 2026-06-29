@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v13.2 (By Charly)</title>
+<title>MagicTracker v13.3 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
@@ -261,7 +261,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v13.2 (By Charly)",
+    appName: "MagicTracker v13.3 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -404,7 +404,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v13.2 (By Charly)",
+    appName: "MagicTracker v13.3 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -4550,44 +4550,52 @@ async function activateAndTest() {
 
   try {
     let token = null;
+    let swReg = null;
+
+    // Get or register SW
     try {
-      dbg('waiting for SW...');
-      const reg = await Promise.race([
-        navigator.serviceWorker.ready,
-        new Promise((_,r) => setTimeout(() => r(new Error('SW timeout 5s')), 5000))
-      ]);
-      dbg('SW ready, getting token...');
-      token = await Promise.race([
-        fbMsg.getToken({vapidKey: VAPID_KEY, serviceWorkerRegistration: reg}),
-        new Promise((_,r) => setTimeout(() => r(new Error('getToken timeout 10s')), 10000))
-      ]);
+      dbg('getting SW registrations...');
+      const regs = await navigator.serviceWorker.getRegistrations();
+      dbg('found: ' + regs.length + ' registrations');
+      swReg = regs.find(r => r.active?.scriptURL?.includes('sw.js')) || regs[0];
+    } catch(e) { dbg('getRegistrations error: ' + e.message); }
+
+    if (!swReg) {
+      try {
+        dbg('registering sw.js...');
+        swReg = await navigator.serviceWorker.register('./sw.js');
+        // Wait for SW to activate
+        await new Promise(resolve => {
+          if (swReg.active) { resolve(); return; }
+          swReg.addEventListener('updatefound', () => {
+            swReg.installing?.addEventListener('statechange', () => {
+              if (swReg.active) resolve();
+            });
+          });
+          setTimeout(resolve, 3000);
+        });
+        dbg('sw.js registered');
+      } catch(e) { dbg('SW register error: ' + e.message); }
+    }
+
+    try {
+      if (swReg) {
+        dbg('getting FCM token with SW...');
+        token = await fbMsg.getToken({vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg});
+      } else {
+        dbg('getting FCM token without SW...');
+        token = await fbMsg.getToken({vapidKey: VAPID_KEY});
+      }
       dbg('token=' + (token ? token.substring(0,20)+'...' : 'null'));
     } catch(e) {
       dbg('getToken error: ' + e.message);
-      try {
-        dbg('trying with getRegistration...');
-        const regs = await navigator.serviceWorker.getRegistrations();
-        dbg('registrations: ' + regs.length);
-        const swReg = regs.find(r => r.active?.scriptURL?.includes('sw.js')) || regs[0];
-        if (swReg) {
-          token = await fbMsg.getToken({vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg});
-          dbg('token2=' + (token ? token.substring(0,20)+'...' : 'null'));
-        } else {
-          dbg('no SW registration found, registering fresh...');
-          const newReg = await navigator.serviceWorker.register('./sw.js');
-          await new Promise(r => setTimeout(r, 1000));
-          token = await fbMsg.getToken({vapidKey: VAPID_KEY, serviceWorkerRegistration: newReg});
-          dbg('token3=' + (token ? token.substring(0,20)+'...' : 'null'));
-        }
-      } catch(e2) {
-        dbg('getToken fallback error: ' + e2.message);
-      }
     }
+
     if (token) {
       getNS().fcmToken = token;
       _saveNS(); save();
       await registerDeviceInFirestore(token);
-      dbg('device registered');
+      dbg('device registered ✓');
     } else {
       dbg('no token obtained');
     }
