@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v13.4 (By Charly)</title>
+<title>MagicTracker v11.5 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
@@ -22,7 +22,7 @@
   --radius:12px;--radius-sm:8px;
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);max-width:480px;margin:0 auto;min-height:100vh;padding-bottom:32px;overflow-x:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);max-width:480px;margin:0 auto;min-height:100vh;min-height:100dvh;padding-bottom:32px;overflow-x:hidden}
 
 /* ── TOPBAR ── */
 .topbar{display:flex;align-items:center;padding:14px 16px 10px;gap:10px;border-bottom:0.5px solid var(--border)}
@@ -53,7 +53,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .ob-inputs{display:flex;flex-direction:column;gap:12px;margin-bottom:28px}
 .ob-input-group{display:flex;flex-direction:column;gap:5px}
 .ob-label{font-size:12px;font-weight:600;color:var(--text2)}
-.ob-input{padding:12px 14px;background:var(--bg2);border:1.5px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-size:15px;width:100%}
+.ob-input{padding:12px 14px;background:var(--bg2);border:1.5px solid var(--border2);border-radius:var(--radius-sm);color:var(--text);font-size:16px;width:100%}
 .ob-input:focus{outline:none;border-color:var(--green)}
 .ob-input-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .ob-unit{font-size:11px;color:var(--text3);margin-top:3px}
@@ -162,7 +162,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .tbtn.tp{border-color:var(--green);color:var(--green)}
 .tbtn.tl{border-color:var(--blue);color:var(--blue)}
 .tbtn.th{border-color:#9B5000;color:#9B5000}
-.sinp{width:100%;padding:10px 13px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);font-size:13px;background:var(--bg2);color:var(--text);margin-bottom:8px}
+.sinp{width:100%;padding:10px 13px;border:0.5px solid var(--border2);border-radius:var(--radius-sm);font-size:16px;background:var(--bg2);color:var(--text);margin-bottom:8px}
 .sinp:focus{outline:none;border-color:var(--green)}
 .sri{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:0.5px solid var(--border);cursor:pointer;-webkit-tap-highlight-color:rgba(29,158,117,0.15);touch-action:manipulation;user-select:none;-webkit-user-select:none}
 .sri>div{pointer-events:none}
@@ -188,6 +188,122 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .timing-title{font-size:11px;font-weight:700;color:var(--text2);margin-bottom:4px}
 .timing-item{font-size:11px;color:var(--text3);padding:2px 0;display:flex;gap:6px}
 .timing-time{color:var(--green);font-weight:600;min-width:60px}
+
+/* ── REDESIGNED TRACKER UI ── */
+/* Day tabs — pill/capsule style, horizontal scroll */
+.day-tabs{display:flex;gap:5px;padding:10px 12px 6px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
+.day-tabs::-webkit-scrollbar{display:none;}
+.dtab{background:transparent;border:0.5px solid var(--border2);border-radius:20px;padding:5px 13px;font-size:12px;cursor:pointer;color:var(--text2);white-space:nowrap;flex-shrink:0;}
+.dtab.active{background:var(--green);color:#fff;font-weight:700;border-color:var(--green);}
+.dtab.cf{border-left:3px solid var(--green);}
+.dtab.rs{border-left:3px solid var(--purple);}
+/* Compact train/rest chip */
+.train-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px 5px 8px;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none;transition:all .15s;}
+.train-chip.cf{border:1.5px solid var(--green);background:rgba(29,158,117,.1);color:var(--green);}
+.train-chip.rs{border:1.5px solid var(--border2);background:var(--bg2);color:var(--text2);}
+/* Calorie ring + macro pills */
+.ring-stats{padding:14px 16px 8px;display:flex;align-items:center;gap:16px;}
+.ring-wrap{position:relative;width:108px;height:108px;flex-shrink:0;}
+.ring-wrap svg{transform:rotate(-90deg);}
+.ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;pointer-events:none;}
+.ring-kcal{font-size:21px;font-weight:800;line-height:1;}
+.ring-sub{font-size:9px;color:var(--text3);margin-top:2px;text-transform:uppercase;letter-spacing:.05em;}
+.ring-target{font-size:10px;color:var(--text2);margin-top:3px;}
+.ring-left{font-size:11px;font-weight:700;margin-top:4px;line-height:1;}
+.macros-col{flex:1;display:flex;flex-direction:column;gap:7px;}
+.macro-pill{background:var(--bg2);border-radius:10px;padding:7px 10px;}
+.macro-top{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px;}
+.macro-lbl{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;}
+.macro-val{font-size:13px;font-weight:800;}
+.macro-tgt{font-size:9px;font-weight:400;color:var(--text3);}
+.macro-bar{height:3px;background:var(--bg3);border-radius:2px;overflow:hidden;}
+.macro-bar-fill{height:3px;border-radius:2px;transition:width .4s;}
+.mp-protein .macro-lbl,.mp-protein .macro-val{color:#4CAF8A;}
+.mp-protein .macro-bar-fill{background:#4CAF8A;}
+.mp-carbs .macro-lbl,.mp-carbs .macro-val{color:var(--blue);}
+.mp-carbs .macro-bar-fill{background:var(--blue);}
+.mp-fats .macro-lbl{color:var(--text3);}
+.mp-fats .macro-val{color:var(--text2);}
+.mp-fats .macro-bar-fill{background:var(--amber);}
+/* Collapsible deficit card */
+.def-card{margin:4px 12px 6px;border-radius:var(--radius);padding:12px 14px;border:0.5px solid var(--border2);}
+.def-card.ok{background:#0a2218;border-color:var(--green);}
+.def-card.low{background:#2e1c00;border-color:var(--amber);}
+.def-card.excess,.def-card.over{background:#2a0a0a;border-color:var(--red);}
+.def-card.pending{background:var(--bg2);border-color:var(--border2);}
+.def-card-top{display:flex;align-items:center;justify-content:space-between;}
+.def-badge2{display:inline-flex;align-items:center;font-size:12px;font-weight:700;padding:5px 12px;border-radius:8px;color:#fff;}
+.def-badge2.ok{background:var(--green);}
+.def-badge2.low{background:var(--amber);}
+.def-badge2.excess,.def-badge2.over{background:var(--red);}
+.def-badge2.pending{background:var(--bg3);color:var(--text2);}
+.def-num{font-size:22px;font-weight:800;}
+.def-num.ok{color:var(--green);}
+.def-num.low{color:var(--amber);}
+.def-num.excess,.def-num.over{color:var(--red);}
+.def-num.pending{color:var(--text3);}
+.def-num-sub{font-size:9px;color:var(--text3);margin-top:1px;}
+.def-prog2{height:4px;background:var(--border);border-radius:2px;margin-top:9px;overflow:hidden;}
+.def-prog2-fill{height:4px;border-radius:2px;transition:width .3s;}
+.def-prog2-fill.ok{background:var(--green);}
+.def-prog2-fill.low{background:var(--amber);}
+.def-prog2-fill.excess,.def-prog2-fill.over{background:var(--red);}
+.def-prog2-fill.pending{background:var(--bg3);}
+.def-toggle{font-size:10px;color:var(--text3);margin-top:9px;cursor:pointer;display:flex;align-items:center;gap:5px;touch-action:manipulation;user-select:none;-webkit-user-select:none;}
+.def-details{margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border);}
+/* Section headers with completion dot */
+.sec2{display:flex;align-items:center;gap:8px;padding:14px 12px 6px;}
+.sec2-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+.sec2-dot.done{background:var(--green);}
+.sec2-dot.partial{background:var(--amber);}
+.sec2-dot.empty{background:transparent;border:1.5px solid var(--border2);}
+.sec2-lbl{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;flex:1;}
+.sec2-cnt{font-size:10px;color:var(--text3);}
+.sec2-cnt.done{color:var(--green);}
+/* Meal cards with accent border + macro summary */
+.meal-card2{margin:0 12px 7px;border-radius:var(--radius);border:0.5px solid var(--border2);background:var(--bg2);overflow:hidden;border-left:3px solid var(--border2);}
+.meal-card2.logged{border-left-color:var(--green);}
+.meal-hdr2{display:flex;align-items:center;padding:11px 12px;gap:10px;cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none;background:var(--bg2);}
+.meal-icon2{font-size:16px;flex-shrink:0;}
+.meal-info2{flex:1;min-width:0;}
+.meal-name2{font-size:13px;font-weight:700;}
+.meal-summ2{font-size:11px;color:var(--text3);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.meal-summ2.logged{color:var(--green);}
+.meal-tick2{width:20px;height:20px;border-radius:50%;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:10px;color:transparent;}
+.meal-tick2.logged{background:var(--green);border-color:var(--green);color:#fff;font-weight:800;}
+/* Activity cards — horizontal pair */
+.act-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 12px 4px;}
+.act-card2{background:var(--bg2);border:1.5px solid var(--border2);border-radius:var(--radius);padding:12px;cursor:pointer;transition:border-color .15s,background .15s;touch-action:manipulation;user-select:none;-webkit-user-select:none;}
+.act-card2.done{border-color:var(--green);background:rgba(29,158,117,.08);}
+.act-card2-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;}
+.act-card2-icon{font-size:22px;}
+.act-card2-ck{width:18px;height:18px;border-radius:50%;border:1.5px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:9px;}
+.act-card2.done .act-card2-ck{background:var(--green);border-color:var(--green);color:#fff;}
+.act-card2-name{font-size:12px;font-weight:700;margin-bottom:2px;}
+.act-card2.done .act-card2-name{color:var(--green);}
+.act-card2-kcal{font-size:11px;color:var(--text3);}
+.act-card2.done .act-card2-kcal{color:var(--green);}
+.act-dur-row{display:flex;gap:4px;flex-wrap:wrap;margin-top:8px;}
+.act-dur-btn{padding:3px 8px;border-radius:10px;border:1px solid var(--border2);background:transparent;color:var(--text3);font-size:10px;font-weight:600;cursor:pointer;touch-action:manipulation;}
+.act-dur-btn.active{background:var(--green);border-color:var(--green);color:#fff;}
+/* Supplement chips */
+.supp-chips{display:flex;flex-wrap:wrap;gap:8px;padding:4px 12px 12px;}
+.supp-chip2{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;border:1.5px solid var(--border2);color:var(--text3);cursor:pointer;background:transparent;transition:all .15s;touch-action:manipulation;user-select:none;-webkit-user-select:none;}
+.supp-chip2.done{background:rgba(29,158,117,.12);border-color:var(--green);color:var(--green);}
+/* Compact goal progress strip */
+.prog-strip{margin:0 12px 6px;background:var(--bg2);border-radius:var(--radius);padding:10px 14px;border:0.5px solid var(--border2);}
+.prog-strip-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;cursor:pointer;touch-action:manipulation;}
+.prog-strip-title{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;}
+.prog-strip-exp{font-size:10px;color:var(--text3);}
+.prog-strip-row{display:flex;gap:16px;}
+.psi{flex:1;}
+.psi-label{font-size:9px;color:var(--text3);margin-bottom:3px;}
+.psi-vals{display:flex;justify-content:space-between;margin-bottom:3px;}
+.psi-cur{font-size:10px;font-weight:700;color:var(--text);}
+.psi-tgt{font-size:10px;color:var(--green);}
+.psi-bar{height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;}
+.psi-fill{height:4px;border-radius:2px;}
+
 /* Settings screen */
 .settings-screen{padding:16px}
 .settings-title{font-size:18px;font-weight:700;margin-bottom:16px}
@@ -209,7 +325,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .home-meal-tag{font-size:9px;padding:1px 5px;border-radius:4px;background:#1a2a1a;color:#6fcf97;margin-left:3px}
 
 /* ── Auth screen ── */
-.auth-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:32px 20px;background:var(--bg)}
+.auth-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;min-height:100dvh;padding:32px 20px;background:var(--bg)}
 .auth-logo{font-size:48px;margin-bottom:8px}
 .auth-title{font-size:22px;font-weight:800;color:var(--green);margin-bottom:4px;letter-spacing:-0.5px}
 .auth-sub{font-size:13px;color:var(--text3);margin-bottom:32px;text-align:center}
@@ -218,7 +334,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .auth-btn-google:active{opacity:.8}
 .auth-divider{display:flex;align-items:center;gap:8px;color:var(--text3);font-size:11px}
 .auth-divider::before,.auth-divider::after{content:'';flex:1;height:.5px;background:var(--border)}
-.auth-input{width:100%;padding:12px 14px;border-radius:10px;border:.5px solid var(--border2);background:var(--bg3);color:var(--text);font-size:14px;box-sizing:border-box;outline:none}
+.auth-input{width:100%;padding:12px 14px;border-radius:10px;border:.5px solid var(--border2);background:var(--bg3);color:var(--text);font-size:16px;box-sizing:border-box;outline:none}
 .auth-input:focus{border-color:var(--green)}
 .auth-btn-primary{padding:13px;border-radius:10px;border:none;background:var(--green);color:#fff;font-size:15px;font-weight:700;cursor:pointer;width:100%}
 .auth-btn-primary:active{opacity:.85}
@@ -226,7 +342,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .auth-toggle span{color:var(--green);font-weight:600}
 .auth-error{font-size:12px;color:#ff6b6b;text-align:center;min-height:16px}
 .auth-loading{display:flex;flex-direction:column;align-items:center;gap:12px;color:var(--text3);font-size:14px;padding:40px}
-.sync-bar{position:fixed;bottom:0;left:0;right:0;background:var(--green);color:#fff;font-size:12px;text-align:center;padding:6px;z-index:999;transform:translateY(100%);transition:transform .3s}
+.sync-bar{position:fixed;bottom:0;left:0;right:0;background:var(--green);color:#fff;font-size:12px;text-align:center;padding:6px;padding-bottom:max(6px,env(safe-area-inset-bottom));z-index:999;transform:translateY(100%);transition:transform .3s}
 .sync-bar.show{transform:translateY(0)}
 .user-pill{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text3);padding:3px 8px;border-radius:20px;background:var(--bg2);border:.5px solid var(--border);cursor:pointer}
 .user-pill img{width:18px;height:18px;border-radius:50%}
@@ -237,11 +353,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 <div id="root"></div>
 
 <script>
-// iOS Safari doesn't support Notification API — polyfill to prevent crashes
-if (typeof Notification === 'undefined') {
-  window._notifPolyfill = { permission: 'denied', requestPermission: async () => 'denied' };
-  window.Notification = window._notifPolyfill;
-}
 // Global error handler — shows error + reset button instead of black screen
 window.onerror = function(msg, src, line, col, err) {
   const root = document.getElementById('root');
@@ -261,7 +372,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v13.4 (By Charly)",
+    appName: "MagicTracker v11.5 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -404,7 +515,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v13.4 (By Charly)",
+    appName: "MagicTracker v11.5 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -712,7 +823,6 @@ const FDB=[
 {n:'Prawn avocado salad + lemon dressing',k:380,p:30,c:14,f:14,cat:'Home meal',hi:1,hm:1},
 {n:'Chicken quinoa salad 150g + cucumber + tomato',k:480,p:40,c:42,f:8,cat:'Home meal',hi:1,hm:1},
 {n:'Protein shake 30g',k:120,p:24,c:4,f:2,cat:'Protein',hi:1,hm:1},
-,
 {n:'Isey Skyr Vanilla 150g',k:84,p:15,c:6,f:0,cat:'Dairy',hi:1,lc:1},
 {n:'Isey Skyr Vanilla 200g',k:112,p:20,c:8,f:0,cat:'Dairy',hi:1,lc:1},
 {n:'Isey Skyr Vanilla 300g',k:168,p:29,c:11,f:1,cat:'Dairy',hi:1,lc:1},
@@ -1228,7 +1338,7 @@ function save() {
     const appData = {...APP};
     if (currentUser) appData._uid = currentUser.uid;
     localStorage.setItem('cvr_app', JSON.stringify(appData));
-  scheduleSave();
+    scheduleSave();
   } catch(e){}
 }
 function load() {
@@ -1346,7 +1456,7 @@ function jsDayToIdx(jsDay){ return jsDay===0?6:jsDay-1; }
 function idxToJsDay(idx){ return idx===6?0:idx+1; }
 function currentDayId() {
   const i = new Date().getDay(); // 0=Sun
-  const days7 = ['dom','lun','mar','mié','jue','vie','sáb'];
+  const days7 = ['dom','lun','mar','mie','jue','vie','sab'];
   return days7[i];
 }
 
@@ -1738,7 +1848,7 @@ function renderOnboard() {
         </div>
         <div class="ob-input-group">
           <label class="ob-label">${tl.ob_weight}</label>
-          <input class="ob-input" type="number" inputmode="decimal" placeholder="75" value="${od.weight||''}" onchange="obSetInput('weight',this.value)" oninput="obSetInput('weight',this.value)">
+          <input class="ob-input" type="number" step="0.1" inputmode="decimal" placeholder="75" value="${od.weight||''}" onchange="obSetInput('weight',this.value)" oninput="obSetInput('weight',this.value)">
           <span class="ob-unit">kg</span>
         </div>
       </div>
@@ -1909,14 +2019,14 @@ function renderOnboard() {
       if(showWeight){
         html += `<div class="ob-input-group">
           <label class="ob-label">${lang==='es'?'Peso objetivo':'Target weight'}</label>
-          <input class="ob-input" type="number" inputmode="decimal" placeholder="${od.weight?Math.round(parseFloat(od.weight||75)*0.9):68}" value="${od.target_weight||''}" onchange="obSetInput('target_weight',this.value)" oninput="obSetInput('target_weight',this.value)">
+          <input class="ob-input" type="number" step="0.1" inputmode="decimal" placeholder="${od.weight?Math.round(parseFloat(od.weight||75)*0.9):68}" value="${od.target_weight||''}" onchange="obSetInput('target_weight',this.value)" oninput="obSetInput('target_weight',this.value)">
           <span class="ob-unit">kg</span>
         </div>`;
       }
       if(showFat){
         html += `<div class="ob-input-group">
           <label class="ob-label">${lang==='es'?'% grasa objetivo':'Target body fat %'}</label>
-          <input class="ob-input" type="number" inputmode="decimal" placeholder="${goal==='cut'?'12':'15'}" value="${od.target_fat||''}" onchange="obSetInput('target_fat',this.value)" oninput="obSetInput('target_fat',this.value)">
+          <input class="ob-input" type="number" step="0.1" inputmode="decimal" placeholder="${goal==='cut'?'12':'15'}" value="${od.target_fat||''}" onchange="obSetInput('target_fat',this.value)" oninput="obSetInput('target_fat',this.value)">
           <span class="ob-unit">%</span>
         </div>
         <div style="font-size:11px;color:var(--text3);margin-top:-4px;padding:0 2px;line-height:1.4">${lang==='es'
@@ -1993,12 +2103,11 @@ function renderSettings() {
 
       <div class="sec">${tl.ob_data_title||'Body stats'}</div>
       <div class="ob-inputs">
-        <div class="ob-input-row">
-          <div class="ob-input-group">
-            <label class="ob-label">${tl.ob_weight}</label>
-            <input class="ob-input" type="number" inputmode="decimal" placeholder="kg" value="${ed.weight||p.weight||''}" oninput="seSetInput('weight',this.value)">
-            <span class="ob-unit">kg</span>
-          </div>
+        <div class="ob-input-group">
+          <label class="ob-label">${tl.ob_weight}</label>
+          <input class="ob-input" type="number" step="0.1" inputmode="decimal" placeholder="kg" value="${ed.weight||p.weight||''}" oninput="seSetInput('weight',this.value)">
+          <span class="ob-unit">kg</span>
+        </div>
         <div class="ob-input-row">
           <div class="ob-input-group">
             <label class="ob-label">${tl.ob_waist}</label>
@@ -2010,7 +2119,6 @@ function renderSettings() {
             <input class="ob-input" type="number" inputmode="numeric" placeholder="cm" value="${ed.neck||p.neck||''}" oninput="seSetInput('neck',this.value)">
             <span class="ob-unit">cm</span>
           </div>
-        </div>
         </div>
         <div class="ob-input-row">
           <div class="ob-input-group">
@@ -2093,12 +2201,12 @@ function renderSettings() {
         <div class="ob-input-row">
           <div class="ob-input-group">
             <label class="ob-label">${APP.lang==='es'?'Peso objetivo':'Target weight'}</label>
-            <input class="ob-input" type="number" inputmode="decimal" placeholder="kg" value="${ed.target_weight||p.target_weight||''}" oninput="seSetInput('target_weight',this.value)">
+            <input class="ob-input" type="number" step="0.1" inputmode="decimal" placeholder="kg" value="${ed.target_weight||p.target_weight||''}" oninput="seSetInput('target_weight',this.value)">
             <span class="ob-unit">kg</span>
           </div>
           <div class="ob-input-group">
             <label class="ob-label">${APP.lang==='es'?'% grasa objetivo':'Target body fat'}</label>
-            <input class="ob-input" type="number" inputmode="decimal" placeholder="%" value="${ed.target_fat||p.target_fat||''}" oninput="seSetInput('target_fat',this.value)">
+            <input class="ob-input" type="number" step="0.1" inputmode="decimal" placeholder="%" value="${ed.target_fat||p.target_fat||''}" oninput="seSetInput('target_fat',this.value)">
             <span class="ob-unit">%</span>
           </div>
         </div>
@@ -2304,103 +2412,98 @@ function renderTracker() {
   dayList.forEach(x=>{h+=`<button class="dtab ${x.cf?'cf':'rs'}${x.id===d?' active':''}" onclick="setDay('${x.id}')">${x.label}${x.cf?t('cf_label'):''}</button>`;});
   h+=`</div>`;
 
-  // ── TRAINING DAY TOGGLE — prominent, right under day tabs ──
+  // ── COMPACT TRAIN/REST CHIP ──
   const isEs2 = APP.lang === 'es';
   const hasOverride = APP.trainOverride && APP.trainOverride[d] !== undefined;
-  h += `<div style="margin:6px 12px 4px;display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:${cf?'rgba(29,158,117,0.15)':'rgba(255,255,255,0.04)'};border:1.5px solid ${cf?'var(--green)':'var(--border2)'};border-radius:var(--radius)">
-    <div style="display:flex;align-items:center;gap:8px">
-      <span style="font-size:20px">${cf?'💪':'😴'}</span>
-      <div>
-        <div style="font-size:14px;font-weight:700;color:${cf?'var(--green)':'var(--text2)'}">${cf?(isEs2?'Día de entrenamiento':'Training day'):(isEs2?'Día de descanso':'Rest day')}</div>
-        <div style="font-size:10px;color:var(--text3)">${hasOverride?(isEs2?'modificado manualmente':'manually overridden'):(isEs2?'según tu plan semanal':'from your weekly plan')}</div>
-      </div>
-    </div>
-    <div style="display:flex;gap:6px;align-items:center">
-      ${hasOverride?`<button onclick="delete APP.trainOverride['${d}'];save();render()" style="font-size:10px;padding:3px 8px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer">${isEs2?'Reset':'Reset'}</button>`:''}
-      <button onclick="toggleTrainDay('${d}')" style="font-size:13px;font-weight:700;padding:8px 16px;border-radius:8px;border:none;background:${cf?'var(--green)':'var(--bg3)'};color:${cf?'#fff':'var(--text)'};cursor:pointer;touch-action:manipulation">
-        ${cf?(isEs2?'→ Descanso':'→ Rest'):(isEs2?'→ Entreno':'→ Train')}
-      </button>
+  h += `<div style="display:flex;align-items:center;justify-content:space-between;padding:4px 12px 2px">
+    <button class="train-chip ${cf?'cf':'rs'}" onclick="toggleTrainDay('${d}')">
+      <span style="font-size:15px">${cf?'💪':'😴'}</span>
+      ${cf?(isEs2?'Entrenamiento':'Training'):(isEs2?'Descanso':'Rest day')}
+      <span style="font-size:10px;opacity:.7">→ ${cf?(isEs2?'descanso':'rest'):(isEs2?'entreno':'train')}</span>
+    </button>
+    <div style="display:flex;align-items:center;gap:6px">
+      ${hasOverride?`<button onclick="delete APP.trainOverride['${d}'];save();render()" style="font-size:10px;padding:3px 8px;border-radius:6px;border:0.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer">↩ ${isEs2?'Reset':'Reset'}</button>`:''}
+      <span style="font-size:9px;color:var(--text3)">${hasOverride?(isEs2?'modificado':'overridden'):(isEs2?'según tu plan':'from plan')}</span>
     </div>
   </div>`;
 
-  // Stats
-  h+=`<div class="stats">
-    <div class="stat"><div class="sv ${kC}">${k}</div><div class="sl">${t('kcal_in')}</div></div>
-    <div class="stat"><div class="sv ${pC}">${p2}g</div><div class="sl">${t('protein')}</div></div>
-    <div class="stat"><div class="sv ${cC}">${cb}g</div><div class="sl">${t('carbs')}</div></div>
-    <div class="stat"><div class="sv" style="color:${ft>tF?'var(--amber)':'var(--text2)'}">${ft}g</div><div class="sl">${APP.lang==='es'?'grasas/'+tF+'g':'fats/'+tF+'g'}</div></div>
-    <div class="stat"><div class="sv w">${b}</div><div class="sl">${t('activity')}</div></div>
-  </div>`;
-
-  // Deficit box — two-arc donut: grey=remaining, color=consumed
-  const isEs3 = APP.lang === 'es';
-  const kcalConsumed = k;
-  // Base target is always the REST target (fixed). Calories only rise when exercise is marked.
-  const p_donut = getProfile();
-  const baseTarget = p_donut ? (p_donut.target_rest || getTargetKcal(d)) : getTargetKcal(d);
-  const kcalGoal = baseTarget + b; // base + exercise actually marked (walk/crossfit)
-  const kcalLeft = Math.max(0, kcalGoal - kcalConsumed);
-  const kcalOver2 = Math.max(0, kcalConsumed - kcalGoal);
-  const fillPct = Math.min(100, kcalGoal > 0 ? kcalConsumed / kcalGoal * 100 : 0);
-  const R2 = 44, SW2 = 10;
-  const C2 = 2 * Math.PI * R2;
-  const consumedArc = C2 * Math.min(1, fillPct / 100);
-  const ringColor = kcalOver2 > 0 ? '#E74C3C' : '#1D9E75';
-
-  h+=`<div class="def-box ${cfg.cls}">
-    <div style="display:flex;gap:14px;align-items:center">
-      <div style="position:relative;flex-shrink:0;width:116px;height:116px">
-        <svg width="116" height="116" viewBox="0 0 116 116">
-          <!-- Background ring (remaining) -->
-          <circle cx="58" cy="58" r="${R2}" fill="none"
-            stroke="rgba(255,255,255,0.10)" stroke-width="${SW2}"/>
-          <!-- Consumed arc -->
-          <circle cx="58" cy="58" r="${R2}" fill="none"
-            stroke="${ringColor}" stroke-width="${SW2}"
-            stroke-dasharray="${consumedArc.toFixed(2)} ${C2.toFixed(2)}"
-            stroke-linecap="round"
-            transform="rotate(-90 58 58)"/>
-        </svg>
-        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:2px">
-          ${kcalOver2 > 0
-            ? `<div style="font-size:10px;color:#E74C3C;font-weight:600;line-height:1">${isEs3?'Excedido':'Over'}</div>
-               <div style="font-size:20px;font-weight:800;color:#E74C3C;line-height:1">+${kcalOver2}</div>
-               <div style="font-size:9px;color:var(--text3)">kcal</div>`
-            : `<div style="font-size:9px;color:var(--text3);line-height:1">${isEs3?'Restantes':'Remaining'}</div>
-               <div style="font-size:22px;font-weight:800;color:#1D9E75;line-height:1.1">${kcalLeft}</div>
-               <div style="font-size:9px;color:var(--text3);line-height:1">kcal</div>`
-          }
-        </div>
-      </div>
-      <div style="flex:1;display:flex;flex-direction:column;gap:4px">
-        <div style="display:flex;justify-content:space-between;font-size:12px">
-          <span style="color:var(--text3)">${isEs3?'Objetivo diario':'Daily goal'}</span>
-          <span style="font-weight:700">${kcalGoal}</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:12px">
-          <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:${ringColor};display:inline-block"></span>${isEs3?'Consumido':'Consumed'}</span>
-          <span style="font-weight:700;color:${ringColor}">${kcalConsumed}</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:12px">
-          <span style="display:flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.15);display:inline-block"></span>${isEs3?'Restantes':'Remaining'}</span>
-          <span style="font-weight:700">${kcalLeft}</span>
-        </div>
-        <div style="height:0.5px;background:var(--border2);margin:2px 0"></div>
-        <div style="display:flex;justify-content:space-between;font-size:11px">
-          <span style="color:var(--text3)">${isEs3?'Ejercicio':'Exercise'}</span>
-          <span style="color:#1D9E75;font-weight:600">+${b} kcal</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:11px">
-          <span style="color:var(--text3)">TDEE</span>
-          <span style="font-weight:600">${tdee} kcal</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:11px">
-          <span style="color:var(--text3)">${isEs3?'Déficit':'Deficit'}</span>
-          <span style="font-weight:600;color:${cfg.col}">${def>=0?'−'+def:'+'+Math.abs(def)} kcal</span>
-        </div>
-        <div class="dbadge ${cfg.cls}" style="margin-top:2px;align-self:flex-start">${cfg.lbl}</div>
+  // ── CALORIE RING + MACRO PILLS ──
+  const [dm0]=getDeficitRange(d);
+  const dynBudget=Math.max(1200, getTDEE(d)+b-dm0); // dynamic: grows as activity is logged
+  const ringC = 289; // circumference 2π×46
+  const ringPct = Math.min(100, Math.round(k/dynBudget*100));
+  const ringOffset = Math.round(ringC * (1 - ringPct/100));
+  const ringColor = cfg.cls==='ok'?'var(--green)':cfg.cls==='low'?'var(--amber)':cfg.cls==='excess'||cfg.cls==='over'?'var(--red)':'var(--bg3)';
+  const pPct = Math.min(100, Math.round(p2/(tP||1)*100));
+  const cPct = Math.min(100, Math.round(cb/(tC||1)*100));
+  const fPct = Math.min(100, Math.round(ft/(tF||1)*100));
+  const isEs = APP.lang==='es';
+  h+=`<div class="ring-stats">
+    <div class="ring-wrap">
+      <svg width="108" height="108" viewBox="0 0 108 108">
+        <circle cx="54" cy="54" r="46" fill="none" stroke="var(--bg3)" stroke-width="10"/>
+        <circle cx="54" cy="54" r="46" fill="none" stroke="${ringColor}" stroke-width="10"
+          stroke-dasharray="${ringC}" stroke-dashoffset="${ringOffset}" stroke-linecap="round"/>
+      </svg>
+      <div class="ring-center">
+        <div class="ring-kcal" style="color:${ringColor}">${k.toLocaleString()}</div>
+        <div class="ring-sub">${isEs?'kcal ingeridas':'kcal eaten'}</div>
+        <div class="ring-target">/ ${dynBudget.toLocaleString()}</div>
+        ${(()=>{const left=dynBudget-k;const overBudget=left<0;const leftColor=overBudget?'var(--red)':'var(--green)';const leftLabel=overBudget?(isEs?`${Math.abs(left).toLocaleString()} de más`:`${Math.abs(left).toLocaleString()} over`):(isEs?`${left.toLocaleString()} restantes`:`${left.toLocaleString()} left`);return `<div class="ring-left" style="color:${leftColor}">${leftLabel}</div>`;})()}
       </div>
     </div>
+    <div class="macros-col">
+      <div class="macro-pill mp-protein">
+        <div class="macro-top">
+          <span class="macro-lbl">${isEs?'Proteína':'Protein'}</span>
+          <span class="macro-val">${p2}g <span class="macro-tgt">/ ${tP}g</span></span>
+        </div>
+        <div class="macro-bar"><div class="macro-bar-fill" style="width:${pPct}%"></div></div>
+      </div>
+      <div class="macro-pill mp-carbs">
+        <div class="macro-top">
+          <span class="macro-lbl">${isEs?'Carbos':'Carbs'}</span>
+          <span class="macro-val">${cb}g <span class="macro-tgt">/ ${tC}g</span></span>
+        </div>
+        <div class="macro-bar"><div class="macro-bar-fill" style="width:${cPct}%"></div></div>
+      </div>
+      <div class="macro-pill mp-fats">
+        <div class="macro-top">
+          <span class="macro-lbl">${isEs?'Grasas':'Fats'}</span>
+          <span class="macro-val">${ft}g <span class="macro-tgt">/ ${tF}g</span></span>
+        </div>
+        <div class="macro-bar"><div class="macro-bar-fill" style="width:${fPct}%"></div></div>
+      </div>
+    </div>
+  </div>`;
+
+  // ── COLLAPSIBLE DEFICIT CARD ──
+  const defOpen = APP._defOpen || false;
+  const defLabel = def>=0?'−'+def:'+'+Math.abs(def);
+  h+=`<div class="def-card ${cfg.cls}">
+    <div class="def-card-top">
+      <div class="def-badge2 ${cfg.cls}">${cfg.lbl}</div>
+      <div style="text-align:right">
+        <div class="def-num ${cfg.cls}">${defLabel} kcal</div>
+        <div class="def-num-sub">${isEs?'déficit estimado hoy':'estimated deficit today'}</div>
+      </div>
+    </div>
+    <div class="def-prog2"><div class="def-prog2-fill ${cfg.bc}" style="width:${Math.min(100,pct)}%"></div></div>
+    <div class="def-toggle" onclick="APP._defOpen=${defOpen?'false':'true'};render()">
+      <span>${defOpen?'▲':'▼'}</span>
+      ${defOpen?(isEs?'Ocultar desglose':'Hide breakdown'):(isEs?'Ver desglose (TDEE, objetivos)':'Show breakdown (TDEE, targets)')}
+    </div>
+    ${defOpen?`<div class="def-details">
+      <div class="dr"><span>${t('bmr_neat')}</span><span class="dv">${getTDEE(d)} kcal</span></div>
+      <div class="dr"><span>${t('activity_label')} ${b>0?'✓':''}</span><span class="dv" style="color:${b>0?'var(--green)':'var(--text3)'}">${b>0?'+'+b+' kcal':(isEs?'nada marcado':'nothing marked')}</span></div>
+      <div class="dr" style="font-weight:600"><span>${t('total_tdee')}</span><span class="dv">${tdee} kcal</span></div>
+      <div class="dhr"></div>
+      <div class="dr"><span>${t('kcal_ingested')}</span><span class="dv">${k} kcal</span></div>
+      <div class="dhr"></div>
+      <div class="dr"><span>${t('intake_target')}</span><span class="dv">${tK} kcal</span></div>
+      <div class="dr"><span>${t('carbs_target')}</span><span class="dv">≤${tC}g</span></div>
+      <div class="dr"><span>${t('target_range')}</span><span class="dv">${dm}–${dx} kcal</span></div>
+    </div>`:''}
   </div>`;
 
   // ── GOAL PROGRESS CARD ──
@@ -2511,41 +2614,69 @@ function renderTracker() {
       </div>`;
     }
 
-    h+=`<div style="margin:6px 12px;background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--radius);padding:12px 14px">
-      <div style="font-size:11px;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">🎯 ${isEs?'Progreso hacia tu objetivo':'Progress towards your goal'}</div>
-      ${progressHtml}
+    // ── COMPACT PROGRESS STRIP ──
+    const progOpen = APP._progOpen || false;
+    // Build compact summary line
+    let compactBF = '', compactW = '';
+    if (tgtF && estBF !== null) {
+      const bfStart2 = startBF || estBF;
+      const bfTotal2 = Math.abs(bfStart2 - tgtF) || 1;
+      const bfPct2 = Math.min(100, Math.round(Math.abs(bfStart2 - estBF) / bfTotal2 * 100));
+      compactBF = `<div class="psi">
+        <div class="psi-label">📏 ${isEs?'Grasa corporal':'Body fat'}</div>
+        <div class="psi-vals"><span class="psi-cur">${estBF}%</span><span class="psi-tgt">→ ${tgtF}%</span></div>
+        <div class="psi-bar"><div class="psi-fill" style="background:var(--green);width:${bfPct2}%"></div></div>
+      </div>`;
+    }
+    if (tgtW && curW) {
+      const wTotal2 = Math.abs(startW - tgtW) || 1;
+      const wPct2 = Math.min(100, Math.round(Math.abs(startW - curW) / wTotal2 * 100));
+      compactW = `<div class="psi">
+        <div class="psi-label">⚖️ ${isEs?'Peso':'Weight'}</div>
+        <div class="psi-vals"><span class="psi-cur">${curW}kg</span><span class="psi-tgt">→ ${tgtW}kg</span></div>
+        <div class="psi-bar"><div class="psi-fill" style="background:var(--blue);width:${wPct2}%"></div></div>
+      </div>`;
+    }
+    h+=`<div class="prog-strip">
+      <div class="prog-strip-hdr" onclick="APP._progOpen=${progOpen?'false':'true'};render()">
+        <span class="prog-strip-title">🎯 ${isEs?'Progreso':'Goal progress'}</span>
+        <span class="prog-strip-exp">${progOpen?(isEs?'▲ Ocultar':'▲ Hide'):(isEs?'▼ Ver detalles':'▼ Details')}</span>
+      </div>
+      <div class="prog-strip-row">${compactBF}${compactW}</div>
+      ${progOpen?`<div style="margin-top:10px;padding-top:10px;border-top:0.5px solid var(--border)">${progressHtml}</div>`:''}
       ${needsReminder?`<div style="margin-top:8px;padding:8px 10px;background:#2e1c00;border:0.5px solid var(--amber);border-radius:8px;font-size:11px;color:var(--amber)">
-        ⚠️ ${isEs
-          ?`Hace ${daysSinceUpd} días que no actualizás tu peso/cintura. Actualizá en ⚙️ Settings → Edit profile.`
-          :`It's been ${daysSinceUpd} days since you updated. Update in ⚙️ Settings → Edit profile.`}
+        ⚠️ ${isEs?`Hace ${daysSinceUpd} días sin actualizar. Editá en ⚙️ Settings.`:`${daysSinceUpd} days since last update. Edit in ⚙️ Settings.`}
       </div>`:''}
     </div>`;
   }
   if (timing && timing.length) {
-    h+=`<div class="sec">${t('meal_timing')}</div>
+    h+=`<div class="sec2"><div class="sec2-dot empty"></div><span class="sec2-lbl">🕐 ${t('meal_timing')}</span></div>
     <div class="timing-banner">`;
     timing.forEach(ti=>{h+=`<div class="timing-item"><span class="timing-time">${ti.time}</span><span>${ti.label}</span></div>`;});
     h+=`</div>`;
   }
 
-  // Supplements (Charly only)
+  // ── SUPPLEMENTS — chip style ──
   if (supps.length) {
-    h+=`<div class="sec">${t('supplements')} — ${sd}/${supps.length} ${t('taken')}</div><div class="supp-card">`;
+    const suppDotCls = sd===supps.length?'done':sd>0?'partial':'empty';
+    h+=`<div class="sec2"><div class="sec2-dot ${suppDotCls}"></div><span class="sec2-lbl">💊 ${t('supplements')}</span><span class="sec2-cnt ${sd===supps.length?'done':''}">${sd}/${supps.length} ${t('taken')}</span></div>`;
+    h+=`<div class="supp-chips">`;
     supps.forEach(x=>{
-      const dn=sc[x.id]?'done':'';
+      const done=sc[x.id]?true:false;
       const lbl=typeof x.label==='object'?x.label[APP.lang]:x.label;
       const tm=typeof x.time==='object'?x.time[APP.lang]:x.time;
-      h+=`<div class="srow ${dn}" onclick="tS('${d}','${x.id}')"><div class="chk ${dn}"></div><span class="sname">${lbl}</span><span class="stag">${tm}</span></div>`;
+      h+=`<div class="supp-chip2${done?' done':''}" onclick="tS('${d}','${x.id}')">${lbl}<span style="font-size:9px;opacity:.6;margin-left:4px">${tm}</span>${done?' ✓':''}</div>`;
     });
     h+=`</div>`;
   }
 
-  // Activity — exercise starts unchecked, user decides what they actually did
+  // Activity — preload training days for non-Charly users if not yet set
   const ac=APP.act[d]||{};
   if(!p.isCharly && p.cf_days && ac._preloaded === undefined) {
     if (!APP.act[d]) APP.act[d]={};
     APP.act[d]._preloaded = true;
-    APP.act[d].walk = false; // user decides
+    if (isCFDay(d)) APP.act[d].cf = true;
+    APP.act[d].walk = false; // walk starts unchecked, user decides
     save();
   }
   const acNow = APP.act[d]||{};
@@ -2569,52 +2700,48 @@ function renderTracker() {
       :[{id:'walk',name:walkName,burn:150,hint:walkHint}];
   }
 
-  h+=`<div class="sec">${t('physical_activity')}</div>`;
-  if(actDef.length>0){
-    h+=`<div style="display:flex;justify-content:flex-end;padding:0 12px 2px;font-size:9px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">${APP.lang==='es'?'kcal quemadas':'kcal burned'}</div>`;
-  }
+  // ── ACTIVITY — card grid ──
+  const actCheckedCount = actDef.filter(a=>acNow[a.id]).length;
+  const actDotCls = actCheckedCount===actDef.length&&actDef.length>0?'done':actCheckedCount>0?'partial':'empty';
+  h+=`<div class="sec2"><div class="sec2-dot ${actDotCls}"></div><span class="sec2-lbl">⚡ ${t('physical_activity')}</span><span class="sec2-cnt ${actCheckedCount===actDef.length&&actDef.length>0?'done':''}">${actCheckedCount}/${actDef.length}</span></div>`;
+  h+=`<div class="act-grid">`;
   actDef.forEach(a=>{
-    const dn=acNow[a.id]?'done':'';
+    const done=acNow[a.id]?true:false;
     const customBurn = APP.actBurn && APP.actBurn[d] && APP.actBurn[d][a.id];
     const showEdit = APP.actEditMode && APP.actEditMode[d+a.id];
-
-    if(a.id==='walk') {
-      // Walk: duration picker → auto-calculates kcal at ~4 kcal/min
+    if(a.id==='walk'){
       const walkMins = (APP.walkMins && APP.walkMins[d]) || (p.isCharly ? 75 : 30);
       const walkKcal = customBurn || Math.round(walkMins * 4);
-      const showWalkEdit = showEdit;
-      const walkDurations = [15,20,30,45,60,75,90];
-      h+=`<div class="arow ${dn}" style="flex-wrap:wrap;gap:6px">
-        <div style="display:flex;align-items:center;gap:10px;flex:1;cursor:pointer;min-width:120px" onclick="tA('${d}','walk')">
-          <div class="chkr ${dn}"></div>
-          <div>
-            <span class="aname">${APP.lang==='es'?'Caminata':'Walk'}</span>
-            ${a.hint?`<div style="font-size:9px;color:var(--text3);margin-top:1px">${a.hint}</div>`:''}
-          </div>
+      const walkDurations = [15,30,45,60,75,90];
+      h+=`<div class="act-card2${done?' done':''}">
+        <div class="act-card2-top" onclick="tA('${d}','walk')">
+          <span class="act-card2-icon">🚶</span>
+          <div class="act-card2-ck">${done?'✓':''}</div>
         </div>
-        <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
-          <span style="font-size:10px;color:var(--text3)">${APP.lang==='es'?'min:':'min:'}</span>
-          ${walkDurations.map(m=>`<button onclick="setWalkMins('${d}',${m})" style="padding:3px 7px;border-radius:12px;border:1.5px solid ${walkMins===m?'var(--green)':'var(--border2)'};background:${walkMins===m?'var(--green)':'transparent'};color:${walkMins===m?'#fff':'var(--text3)'};font-size:11px;font-weight:600;cursor:pointer">${m}</button>`).join('')}
-          <span class="akcal" style="margin-left:4px">+${walkKcal} kcal</span>
+        <div class="act-card2-name" onclick="tA('${d}','walk')">${isEs?'Caminata':'Walk'}</div>
+        <div class="act-card2-kcal">+${walkKcal} kcal</div>
+        <div class="act-dur-row">
+          ${walkDurations.map(m=>`<button class="act-dur-btn${walkMins===m?' active':''}" onclick="setWalkMins('${d}',${m})">${m}m</button>`).join('')}
         </div>
       </div>`;
     } else {
-      // Workout: shows calculated kcal with manual override ✏️
       const displayBurn = customBurn || a.burn;
-      const editBtn=`<button onclick="openEditBurn('${d}','${a.id}')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:1px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer">✏️</button>`;
-      const editInput=`<input id="burn_${d}_${a.id}" type="number" inputmode="numeric" value="${displayBurn}" style="width:60px;padding:4px 6px;border-radius:6px;border:1px solid var(--green);background:var(--bg2);color:var(--text);font-size:12px;text-align:center" oninput="setCustomBurn('${d}','${a.id}',this.value)">
-        <button onclick="closeEditBurn('${d}','${a.id}')" style="font-size:11px;padding:3px 8px;border-radius:5px;border:none;background:var(--green);color:#fff;cursor:pointer">✓</button>`;
-      h+=`<div class="arow ${dn}" style="flex-wrap:wrap">
-        <div style="display:flex;align-items:center;gap:10px;flex:1;cursor:pointer" onclick="tA('${d}','${a.id}')">
-          <div class="chkr ${dn}"></div>
-          <span class="aname">${a.name}</span>
+      const exIcon = p.isCharly?'💪':(T[APP.lang].ob_exercise_types||[]).find(e=>e.id===p.exercise_type)?.icon||'💪';
+      const editInput=`<input id="burn_${d}_${a.id}" type="number" inputmode="numeric" value="${displayBurn}" style="width:52px;padding:3px 5px;border-radius:6px;border:1px solid var(--green);background:var(--bg2);color:var(--text);font-size:11px;text-align:center" oninput="setCustomBurn('${d}','${a.id}',this.value)">
+        <button onclick="closeEditBurn('${d}','${a.id}')" style="font-size:10px;padding:2px 7px;border-radius:5px;border:none;background:var(--green);color:#fff;cursor:pointer">✓</button>`;
+      h+=`<div class="act-card2${done?' done':''}">
+        <div class="act-card2-top" onclick="tA('${d}','${a.id}')">
+          <span class="act-card2-icon">${exIcon}</span>
+          <div class="act-card2-ck">${done?'✓':''}</div>
         </div>
-        <div style="display:flex;align-items:center;gap:6px">
-          ${showEdit ? editInput : `<span class="akcal">+${displayBurn} kcal${customBurn?'*':''}</span>${editBtn}`}
+        <div class="act-card2-name" onclick="tA('${d}','${a.id}')">${a.name.replace(/\s*\(.*?\)/,'')}</div>
+        <div class="act-card2-kcal" style="display:flex;align-items:center;gap:5px">
+          ${showEdit ? editInput : `<span>+${displayBurn} kcal${customBurn?' *':''}</span><button onclick="openEditBurn('${d}','${a.id}')" style="font-size:9px;padding:1px 5px;border-radius:4px;border:0.5px solid var(--border2);background:transparent;color:var(--text3);cursor:pointer">✏️</button>`}
         </div>
       </div>`;
     }
   });
+  h+=`</div>`;
 
   // ── MEAL SECTIONS — structured by eating pattern ──
   const eating = p.eating || 'omad';
@@ -2624,16 +2751,29 @@ function renderTracker() {
   // Helper to render a full restaurant/home-meal section
   function renderMealSection(sectionTitle, sectionIcon, sectionId, mealsData) {
     const selSt2 = APP.meal[d]||{};
-    // curM2 is per-restaurant now — checked inside the loop
-    let s = `<div class="sec">${sectionIcon} ${sectionTitle}</div>`;
+    // Count how many restaurants have a selection
+    const selCount2 = mealsData.filter(r=>selSt2[r.id]!==undefined).length;
+    const mealDotCls = selCount2>0?'done':'empty';
+    let s = `<div class="sec2"><div class="sec2-dot ${mealDotCls}"></div><span class="sec2-lbl">${sectionIcon} ${sectionTitle}</span>${selCount2>0?`<span class="sec2-cnt done">${selCount2} ${isEsSnacks?'seleccionado':'selected'} ✓</span>`:''}</div>`;
     if (p.isCharly && sectionId !== 'breakfast') {
       s+=`<div class="skey">${t('snack_a_key')}${t('snack_key_suffix')}</div>`;
     }
     mealsData.forEach(r=>{
       const selM2=selSt2[r.id],isOpen2=APP.rest[d]&&APP.rest[d][r.id],hasSel2=selM2!==undefined;
-      s+=`<div class="rest-card"><div class="rest-hdr" onclick="tRest('${d}','${r.id}')">
-        <span class="ricon">${r.icon||'🍽️'}</span><span class="rname">${r.name}</span>
-        <span class="rsrc">${r.src||''}</span>${hasSel2?`<span class="rok">✓</span>`:''}
+      // Build macro summary for selected meal
+      let mealSummaryHtml = '';
+      if(hasSel2 && selM2!==undefined && r.meals[selM2]) {
+        const sm=r.meals[selM2];
+        const smK=sm.items.reduce((a,x)=>a+x.kcal,0);
+        const smP=sm.items.reduce((a,x)=>a+x.prot,0);
+        mealSummaryHtml=`<div style="font-size:10px;color:var(--green);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${sm.name} · ${smK}kcal · ${smP}g P</div>`;
+      } else {
+        mealSummaryHtml=`<div style="font-size:10px;color:var(--text3);margin-top:1px">${isEsSnacks?'Tocá para elegir':'Tap to select'}</div>`;
+      }
+      s+=`<div class="rest-card" style="border-left:3px solid ${hasSel2?'var(--green)':'var(--border2)'}"><div class="rest-hdr" onclick="tRest('${d}','${r.id}')">
+        <span class="ricon">${r.icon||'🍽️'}</span>
+        <div style="flex:1;min-width:0"><span class="rname">${r.name}</span>${mealSummaryHtml}</div>
+        <span class="rsrc">${r.src||''}</span>
         <span class="rarr${isOpen2?' open':''}">▼</span>
       </div><div class="rbody${isOpen2?' open':''}">`;
       r.meals.forEach((m2,mi)=>{
@@ -3308,10 +3448,6 @@ async function handleFoodPhotoImage(input) {
   input.value = '';
 }
 
-function openBarcodeScanner() {
-  document.getElementById('barcode-input')?.click();
-}
-
 async function handleBarcodeImage(input) {
   const file = input.files[0];
   if (!file) return;
@@ -3413,10 +3549,17 @@ async function searchUSDA(q, isEs) {
     const r = await fetch(`https://api.nal.usda.gov/fdc/v1/foods/search?query=${encodeURIComponent(q)}&pageSize=6&api_key=DEMO_KEY`);
     const data = await r.json();
     const foods = (data.foods || []).slice(0, 6).map(f => {
-      const n = (name, unit) => Math.round((f.foodNutrients||[]).find(x=>x.nutrientName===name)?.value||0);
+      const n = (name, unitName) => {
+        const match = (f.foodNutrients||[]).find(x => x.nutrientName === name && (!unitName || (x.unitName||'').toLowerCase() === unitName.toLowerCase()));
+        if (match) return Math.round(match.value || 0);
+        // Fall back to any nutrient with that name if unit-filtered match not found
+        return Math.round((f.foodNutrients||[]).find(x => x.nutrientName === name)?.value || 0);
+      };
+      const rawKcal = n('Energy','kcal') || n('Energy (Atwater General Factors)','kcal');
+      const rawKj   = n('Energy','kJ')   || n('Energy (Atwater General Factors)','kJ');
       return {
         n: f.description,
-        k: n('Energy','kcal') || n('Energy (Atwater General Factors)','kcal'),
+        k: rawKcal || (rawKj ? Math.round(rawKj / 4.184) : 0),
         p: n('Protein','g'),
         c: n('Carbohydrate, by difference','g'),
         f: n('Total lipid (fat)','g'),
@@ -3439,7 +3582,8 @@ function parseOFFProduct(p) {
   const nm = p.nutriments;
   const per = p.quantity || '100g';
   // Values per 100g
-  const k = Math.round(nm['energy-kcal_100g'] || nm['energy_100g']/4.184 || 0);
+  const kcalDirect = nm['energy-kcal_100g'];
+  const k = Math.round(kcalDirect != null ? kcalDirect : (nm['energy_100g'] ? nm['energy_100g']/4.184 : 0));
   const pr = Math.round(nm['proteins_100g'] || 0);
   const cb = Math.round(nm['carbohydrates_100g'] || 0);
   const ft = Math.round(nm['fat_100g'] || 0);
@@ -3482,7 +3626,7 @@ function saveOnlineFood(idx) {
     alert(isEs ? 'Ya está guardado en Mis alimentos.' : 'Already saved in My foods.');
     return;
   }
-  APP.customFoods.push({ n: f.n, k: f.k, p: f.p, c: f.c||0, f: f.f||0 });
+  APP.customFoods.push({ id: 'cf_' + Date.now(), n: f.n, k: f.k, p: f.p, c: f.c||0, f: f.f||0 });
   save();
   alert(isEs ? `"${f.n}" guardado en Mis alimentos ✓` : `"${f.n}" saved to My foods ✓`);
 }
@@ -3559,9 +3703,17 @@ function saveEdit(){
   if(ed.mealstyle)p.mealstyle=ed.mealstyle;
   if(ed.city!==undefined)p.city=ed.city;
   if(ed.exercise_type)p.exercise_type=ed.exercise_type;
+  if(ed.exercise_duration!==undefined&&ed.exercise_duration!=='')p.exercise_duration=parseInt(ed.exercise_duration)||p.exercise_duration||60;
   if(ed.exercise_days){p.exercise_days=[...ed.exercise_days];p.cf_days=[...ed.exercise_days];}
   if(ed.target_weight!==undefined&&ed.target_weight!=='')p.target_weight=parseFloat(ed.target_weight);
   if(ed.target_fat!==undefined&&ed.target_fat!=='')p.target_fat=parseFloat(ed.target_fat);
+  // Recompute exercise_burn whenever type or duration may have changed
+  if(ed.exercise_type||ed.exercise_duration!==undefined){
+    const tl2=T[APP.lang];
+    const exType=tl2.ob_exercise_types.find(e=>e.id===p.exercise_type)||{kcal:400};
+    const dur2=p.exercise_duration||60;
+    p.exercise_burn=Math.round(exType.kcal*dur2/60);
+  }
   // Store start weight if not already set
   if(!p.start_weight)p.start_weight=p.weight;
   // Recalculate macros for everyone (unified Mifflin formula)
@@ -3574,12 +3726,6 @@ function saveEdit(){
   p.deficit_min_cf=m.deficit_min_cf; p.deficit_max_cf=m.deficit_max_cf;
   p.deficit_min_rest=m.deficit_min_rest; p.deficit_max_rest=m.deficit_max_rest;
   p.deficit_min=m.deficit_min; p.deficit_max=m.deficit_max;
-  if(ed.exercise_type||ed.exercise_duration){
-    const tl2=T[APP.lang];
-    const exType=tl2.ob_exercise_types.find(e=>e.id===p.exercise_type)||{kcal:400};
-    const dur2=p.exercise_duration||60;
-    p.exercise_burn=Math.round(exType.kcal*dur2/60);
-  }
   // Update in profiles list
   const idx=APP.profiles.findIndex(x=>x.id===p.id);
   if(idx>=0)APP.profiles[idx]={...p};
@@ -3665,25 +3811,25 @@ async function validateCity(q){
 function obSetCity(c){obSetCityQuick(c);}
 function obToggleDiet(id){
   const d=APP.ob_data.diet;
-  if(id==='none'){APP.ob_data.diet=['none'];render();return;}
+  if(id==='none'){APP.ob_data.diet=['none'];save();render();return;}
   const idx=d.indexOf(id);
   if(idx>=0)d.splice(idx,1);else{d.push(id);const ni=d.indexOf('none');if(ni>=0)d.splice(ni,1);}
-  render();
+  save();render();
 }
 function obNext(){APP.ob_step++;save();render();}
 function obBack(){if(APP.ob_step>0){APP.ob_step--;save();render();}}
 function obFinish(){
   try {
   const od=APP.ob_data;
-  const m=calcMacros({
-    sex:od.sex, age:parseInt(od.age)||30, height:parseInt(od.height)||170,
-    weight:parseFloat(od.weight)||70, goal:od.goal||'cut', activity:od.activity||'moderate',
-    exercise_days:od.exercise_days||[], exercise_burn:0, exercise_duration:parseInt(od.exercise_duration||60)
-  });
   const tl=T[od.lang||'en'];
   const exType=(tl.ob_exercise_types||[]).find(e=>e.id===od.exercise_type)||{kcal:400};
   const dur=parseInt(od.exercise_duration||'60');
   const burnPerSession=Math.round(exType.kcal * dur/60);
+  const m=calcMacros({
+    sex:od.sex, age:parseInt(od.age)||30, height:parseInt(od.height)||170,
+    weight:parseFloat(od.weight)||70, goal:od.goal||'cut', activity:od.activity||'moderate',
+    exercise_days:od.exercise_days||[], exercise_burn:burnPerSession, exercise_duration:dur
+  });
   const newProfile={
     id:'user_'+Date.now(),
     name:od.name||'User',
@@ -3902,7 +4048,19 @@ function renderLoginScreen(mode='login', errorMsg='') {
 async function signInWithGoogle() {
   try {
     const provider = new firebase.auth.GoogleAuthProvider();
-    await fbAuth.signInWithRedirect(provider);
+    provider.setCustomParameters({ prompt: 'select_account' });
+    try {
+      await fbAuth.signInWithPopup(provider);
+    } catch(popupErr) {
+      // Popup blocked (common on mobile PWA) — fall back to redirect
+      if (popupErr.code === 'auth/popup-blocked' || popupErr.code === 'auth/popup-closed-by-user') {
+        if (popupErr.code === 'auth/popup-blocked') {
+          await fbAuth.signInWithRedirect(provider);
+        }
+        return;
+      }
+      throw popupErr;
+    }
   } catch(e) {
     if (e.code !== 'auth/popup-closed-by-user') renderLoginScreen('login', e.message || 'Error');
   }
@@ -4005,16 +4163,12 @@ function initAuth() {
   if (!firebase.apps.length) { fbApp = firebase.initializeApp(FB_CONFIG); } else { fbApp = firebase.app(); }
   fbAuth = firebase.auth();
   fbMsg = firebase.messaging();
+  // Handle redirect result from signInWithRedirect (Google on mobile PWA)
+  fbAuth.getRedirectResult().catch(() => {});
   // Foreground FCM messages — suppress them since local polling handles foreground notifications
   // Background messages are handled by sw.js onBackgroundMessage
   fbMsg.onMessage(() => { /* suppress foreground FCM - local polling handles it */ });
   document.getElementById('root').innerHTML = '<div class="auth-loading"><div style="font-size:40px">⚡</div><div>Loading...</div></div>';
-
-  // Handle Google redirect result (mobile sign-in returns here after redirect)
-  (async () => {
-    try { await fbAuth.getRedirectResult(); } catch(e) {}
-  })();
-
   fbAuth.onAuthStateChanged(async (user) => {
     if (!user) { currentUser = null; renderLoginScreen(); return; }
     currentUser = user;
@@ -4236,7 +4390,7 @@ function scheduleLocalReminders() {
   if (!window._notifFired) window._notifFired = {};
 
   const ns = getNS();
-  if (!ns || typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+  if (!ns || Notification.permission !== 'granted') return;
   const hasActive = ns.enabled || Object.keys(ns).some(k => k !== 'fcmToken' && k !== 'enabled' && ns[k] === true);
   if (!hasActive) return;
 
@@ -4275,7 +4429,7 @@ function scheduleLocalReminders() {
     const jsDay = now.getDay(); // 0=Sun..6=Sat JS convention
     const toApp = d => d === 0 ? 6 : d - 1; // convert to 0=Mon..6=Sun
     const appDay = toApp(jsDay);
-    const dateKey = now.getFullYear() + '-' + now.getMonth() + '-' + now.getDate();
+    const dateKey = now.getFullYear() + '-' + (now.getMonth()+1) + '-' + now.getDate();
 
     // Re-read ns each poll so settings changes take effect immediately
     const currentNS = getNS();
@@ -4312,8 +4466,9 @@ function scheduleLocalReminders() {
 function renderNotifSettings() {
   const ns = getNS() || {};
   const isEs = APP.lang === 'es';
-  const permOk = typeof Notification !== 'undefined' && Notification !== window._notifPolyfill && Notification.permission === 'granted';
-  const enabled = !!ns.enabled; // only true if user explicitly enabled
+  // Check both saved flag AND actual permission
+  const permOk = typeof Notification !== 'undefined' && Notification.permission === 'granted';
+  const enabled = ns.enabled || permOk; // if permission granted, show settings regardless
 
   const PRESET_REMINDERS = [
     {key:'meal',    icon:'🍽️', label:isEs?'Comida principal':'Main meal',          defaultTime:'12:00'},
@@ -4346,8 +4501,7 @@ function renderNotifSettings() {
       <button onclick="activateAndTest()" style="font-size:11px;padding:3px 10px;border-radius:6px;border:.5px solid var(--green);background:transparent;color:var(--green);cursor:pointer">
         🔔 ${isEs?'Activar':'Activate'}
       </button>
-    </div>
-    <div id="notif-debug" style="margin:4px 12px;padding:6px;background:rgba(0,0,0,0.3);border-radius:6px;font-size:10px;color:#aaa;font-family:monospace;max-height:120px;overflow-y:auto"></div>`;
+    </div>`;
 
     // Preset reminders
     html += `<div style="padding:6px 12px 4px;font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.05em">${isEs?'Recordatorios predefinidos':'Preset reminders'}</div>`;
@@ -4497,24 +4651,6 @@ async function testNotif() {
 
 async function activateAndTest() {
   const isEs = APP.lang === 'es';
-  const dbg = (msg) => {
-    console.log(msg);
-    const el = document.getElementById('notif-debug');
-    if (el) el.innerHTML += `<div>${msg}</div>`;
-  };
-
-  const debugEl = document.getElementById('notif-debug');
-  if (debugEl) debugEl.innerHTML = '';
-
-  dbg('notif check: typeof Notification=' + typeof Notification);
-  dbg('polyfill=' + (Notification === window._notifPolyfill));
-  dbg('permission=' + Notification.permission);
-
-  // iOS doesn't support Notification API — skip silently
-  if (typeof Notification === 'undefined' || Notification === window._notifPolyfill) {
-    alert(isEs ? 'Las notificaciones no están disponibles en este dispositivo.' : 'Notifications are not available on this device.');
-    return;
-  }
 
   if (Notification.permission === 'denied') {
     alert(isEs
@@ -4522,82 +4658,41 @@ async function activateAndTest() {
       : 'Notifications blocked. Click 🔒 in the URL bar → Notifications → Allow.');
     return;
   }
-
   if (Notification.permission !== 'granted') {
-    dbg('requesting permission...');
     const perm = await Notification.requestPermission();
-    dbg('permission result=' + perm);
     if (perm !== 'granted') return;
   }
 
   getNS().enabled = true;
   _saveNS(); save();
-  dbg('enabled=true saved');
 
   if (!fbMsg) {
-    try { fbMsg = firebase.messaging(); dbg('fbMsg initialized'); } 
-    catch(e) { dbg('messaging error: ' + e.message); }
-  } else {
-    dbg('fbMsg already set');
+    try { fbMsg = firebase.messaging(); } catch(e) { console.log('messaging error:', e.message); }
   }
 
+  // Get FCM token — register sw.js explicitly so Firebase doesn't look for firebase-messaging-sw.js
   try {
     let token = null;
-    let swReg = null;
-
-    // Get or register SW
     try {
-      dbg('getting SW registrations...');
-      const regs = await navigator.serviceWorker.getRegistrations();
-      dbg('found: ' + regs.length + ' registrations');
-      swReg = regs.find(r => r.active?.scriptURL?.includes('sw.js')) || regs[0];
-    } catch(e) { dbg('getRegistrations error: ' + e.message); }
-
-    if (!swReg) {
-      try {
-        dbg('registering sw.js...');
-        swReg = await navigator.serviceWorker.register('./sw.js');
-        // Wait for SW to activate
-        await new Promise(resolve => {
-          if (swReg.active) { resolve(); return; }
-          swReg.addEventListener('updatefound', () => {
-            swReg.installing?.addEventListener('statechange', () => {
-              if (swReg.active) resolve();
-            });
-          });
-          setTimeout(resolve, 3000);
-        });
-        dbg('sw.js registered');
-      } catch(e) { dbg('SW register error: ' + e.message); }
-    }
-
-    try {
-      if (swReg) {
-        dbg('getting FCM token with SW...');
-        token = await fbMsg.getToken({vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg});
-      } else {
-        dbg('getting FCM token without SW...');
-        token = await fbMsg.getToken({vapidKey: VAPID_KEY});
-      }
-      dbg('token=' + (token ? token.substring(0,20)+'...' : 'null'));
+      const reg = await navigator.serviceWorker.ready;
+      token = await fbMsg.getToken({vapidKey: VAPID_KEY, serviceWorkerRegistration: reg});
     } catch(e) {
-      dbg('getToken error: ' + e.message);
+      try { token = await fbMsg.getToken({vapidKey: VAPID_KEY}); } catch(e2) {
+        console.log('FCM token failed:', e2.message);
+      }
     }
-
     if (token) {
       getNS().fcmToken = token;
       _saveNS(); save();
       await registerDeviceInFirestore(token);
-      dbg('device registered ✓');
-    } else {
-      dbg('no token obtained');
     }
   } catch(e) {
-    dbg('FCM error: ' + e.message);
+    console.log('FCM registration error:', e.message);
   }
 
   scheduleLocalReminders();
 
+  // Send test notification — try SW first, fall back to basic Notification API
   const title = 'MagicTracker 🎯';
   const body = isEs ? '✓ Todo funcionando' : '✓ All set — notifications active';
   try {
@@ -4606,10 +4701,8 @@ async function activateAndTest() {
       new Promise((_,r) => setTimeout(() => r(new Error('timeout')), 2000))
     ]);
     await reg.showNotification(title, {body, icon:'./icons/icon-192.png', tag:'test'});
-    dbg('test notification sent via SW');
   } catch(e) {
-    dbg('SW notif error: ' + e.message);
-    try { new Notification(title, {body}); dbg('basic notif sent'); } catch(e2) { dbg('basic notif error: ' + e2.message); }
+    try { new Notification(title, {body, icon:'./icons/icon-192.png'}); } catch(e2) {}
   }
 
   render();
@@ -4641,6 +4734,7 @@ function setNotifTime(key, val) {
   syncNotifSettingsToFirestore();
 }
 
+init();
 initAuth();
 </script>
 </body>
