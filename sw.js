@@ -1,5 +1,5 @@
-const CACHE = 'charly-tracker-v59';
-const FILES = ['./manifest.json', './icons/icon-192.png', './icons/icon-512.png'];
+const CACHE = 'charly-tracker-v58';
+const FILES = ['./', './index.html', './manifest.json', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)));
@@ -17,13 +17,20 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   const url = new URL(e.request.url);
-  if (url.pathname.endsWith('.html') || url.pathname.endsWith('sw.js') || url.pathname === '/' || url.pathname.endsWith('/charly-tracker/')) {
+  // Navigation requests (opening the app / clicking a notification) and the app shell:
+  // network-first, falling back to a cached copy of index.html so the app always loads.
+  const isNav = e.request.mode === 'navigate';
+  if (isNav || url.pathname.endsWith('.html') || url.pathname.endsWith('sw.js')) {
     e.respondWith(
       fetch(e.request).then(r => {
         const clone = r.clone();
         caches.open(CACHE).then(c => c.put(e.request, clone));
         return r;
-      }).catch(() => caches.match(e.request))
+      }).catch(() =>
+        caches.match(e.request).then(cached =>
+          cached || caches.match('./index.html') || caches.match('./')
+        )
+      )
     );
   } else {
     e.respondWith(caches.match(e.request).then(cached => cached || fetch(e.request)));
@@ -53,8 +60,8 @@ messaging.onBackgroundMessage(payload => {
   const tag   = payload.data?.tag   || 'magictracker';
   self.registration.showNotification(title, {
     body,
-    icon: 'https://charlybreaker-aps.github.io/charly-tracker/icons/icon-192.png',
-    badge: 'https://charlybreaker-aps.github.io/charly-tracker/icons/icon-192.png',
+    icon: self.registration.scope + 'icons/icon-192.png',
+    badge: self.registration.scope + 'icons/icon-192.png',
     tag,
     renotify: false,
   });
@@ -62,15 +69,15 @@ messaging.onBackgroundMessage(payload => {
 
 self.addEventListener('notificationclick', e => {
   e.notification.close();
-  const url = 'https://charlybreaker-aps.github.io/charly-tracker/';
-  e.waitUntil(
-    clients.matchAll({type:'window', includeUncontrolled: true}).then(list => {
-      for (const c of list) {
-        if (c.url.startsWith('https://charlybreaker-aps.github.io/charly-tracker') && 'focus' in c) {
-          return c.focus();
-        }
-      }
-      return clients.openWindow(url);
-    })
-  );
+  const scope = self.registration.scope;
+  // Open index.html explicitly (matches manifest start_url) — opening the bare
+  // scope directory can 404 on some hosts / Android, which is the reported bug.
+  const dataUrl = e.notification.data && e.notification.data.url;
+  const target = dataUrl ? new URL(dataUrl, scope).href : scope + 'index.html';
+  e.waitUntil(clients.matchAll({type:'window', includeUncontrolled: true}).then(list => {
+    for (const c of list) {
+      if (c.url.startsWith(scope) && 'focus' in c) return c.focus();
+    }
+    return clients.openWindow(target);
+  }));
 });
