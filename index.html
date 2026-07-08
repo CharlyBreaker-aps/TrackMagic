@@ -4289,9 +4289,30 @@ function initFirebase() {
   } catch(e) { console.log('Firebase init error:', e); }
 }
 
+// ── Helpers a prueba de iOS ──────────────────────────────────────────────
+// Safari en iPhone/iPad (en pestaña, no PWA instalada) NO expone la API
+// `Notification`. Acceder a `Notification.permission` ahí lanza un
+// ReferenceError que crashea toda la app. TODO acceso a notificaciones debe
+// pasar por estos helpers — nunca referenciar `Notification` directamente.
+const NOTIF_OK = (typeof window !== 'undefined') && ('Notification' in window);
+function notifPerm() {
+  try { return NOTIF_OK ? Notification.permission : 'unsupported'; }
+  catch (e) { return 'unsupported'; }
+}
+async function notifRequest() {
+  if (!NOTIF_OK) return 'unsupported';
+  try { return await Notification.requestPermission(); }
+  catch (e) { return 'denied'; }
+}
+function notifBasic(title, opts) {
+  if (!NOTIF_OK) return false;
+  try { new Notification(title, opts); return true; }
+  catch (e) { return false; }
+}
+
 async function requestNotifPermission() {
   try {
-    const perm = await Notification.requestPermission();
+    const perm = await notifRequest();
     if (perm !== 'granted') return false;
 
     getNS().enabled = true;
@@ -4390,7 +4411,7 @@ function scheduleLocalReminders() {
   if (!window._notifFired) window._notifFired = {};
 
   const ns = getNS();
-  if (!ns || Notification.permission !== 'granted') return;
+  if (!ns || notifPerm() !== 'granted') return;
   const hasActive = ns.enabled || Object.keys(ns).some(k => k !== 'fcmToken' && k !== 'enabled' && ns[k] === true);
   if (!hasActive) return;
 
@@ -4406,7 +4427,7 @@ function scheduleLocalReminders() {
       ]);
       reg.showNotification(title, {body, tag, renotify:false, icon:'./icons/icon-192.png', badge:'./icons/icon-192.png'});
     } catch(e) {
-      try { new Notification(title, {body, icon:'./icons/icon-192.png'}); } catch(e2){}
+      notifBasic(title, {body, icon:'./icons/icon-192.png'});
     }
   }
 
@@ -4467,7 +4488,7 @@ function renderNotifSettings() {
   const ns = getNS() || {};
   const isEs = APP.lang === 'es';
   // Check both saved flag AND actual permission
-  const permOk = typeof Notification !== 'undefined' && Notification.permission === 'granted';
+  const permOk = notifPerm() === 'granted';
   const enabled = ns.enabled || permOk; // if permission granted, show settings regardless
 
   const PRESET_REMINDERS = [
@@ -4603,20 +4624,22 @@ async function testNotif() {
   const title = 'MagicTracker 🎯';
   const body = isEs ? '✓ Las notificaciones funcionan correctamente' : '✓ Notifications are working correctly';
 
-  if (typeof Notification === 'undefined') {
-    alert('Notifications API not supported in this browser.');
+  if (!NOTIF_OK) {
+    alert(isEs
+      ? 'Este navegador no soporta notificaciones. En iPhone: agregá la app a la pantalla de inicio (Compartir → "Agregar a inicio") para activarlas.'
+      : 'This browser does not support notifications. On iPhone: add the app to your Home Screen (Share → "Add to Home Screen") to enable them.');
     return;
   }
 
-  if (Notification.permission === 'denied') {
+  if (notifPerm() === 'denied') {
     alert(isEs
       ? 'Notificaciones bloqueadas. En Chrome: click en el candado 🔒 en la barra de URL → Notificaciones → Permitir.'
       : 'Notifications blocked. In Chrome: click the 🔒 lock in the URL bar → Notifications → Allow.');
     return;
   }
 
-  if (Notification.permission !== 'granted') {
-    const perm = await Notification.requestPermission();
+  if (notifPerm() !== 'granted') {
+    const perm = await notifRequest();
     if (perm !== 'granted') {
       alert(isEs ? 'Permiso denegado.' : 'Permission denied.');
       return;
@@ -4640,26 +4663,30 @@ async function testNotif() {
   }
 
   // Fallback: basic Notification
-  try {
-    new Notification(title, {body, icon:'./icons/icon-192.png'});
-    return; // success
-  } catch(e) { basicError = e.message; }
+  if (notifBasic(title, {body, icon:'./icons/icon-192.png'})) return; // success
+  basicError = 'basic Notification unavailable';
 
   // Both failed — show debug info
-  alert(`Could not show notification.\nSW error: ${swError}\nBasic error: ${basicError}\nPermission: ${Notification.permission}`);
+  alert(`Could not show notification.\nSW error: ${swError}\nBasic error: ${basicError}\nPermission: ${notifPerm()}`);
 }
 
 async function activateAndTest() {
   const isEs = APP.lang === 'es';
 
-  if (Notification.permission === 'denied') {
+  if (!NOTIF_OK) {
+    alert(isEs
+      ? 'Este navegador no soporta notificaciones. En iPhone agregá la app a la pantalla de inicio para activarlas.'
+      : 'This browser does not support notifications. On iPhone, add the app to your Home Screen to enable them.');
+    return;
+  }
+  if (notifPerm() === 'denied') {
     alert(isEs
       ? 'Notificaciones bloqueadas. Click en el 🔒 en la barra de URL → Notificaciones → Permitir.'
       : 'Notifications blocked. Click 🔒 in the URL bar → Notifications → Allow.');
     return;
   }
-  if (Notification.permission !== 'granted') {
-    const perm = await Notification.requestPermission();
+  if (notifPerm() !== 'granted') {
+    const perm = await notifRequest();
     if (perm !== 'granted') return;
   }
 
@@ -4702,7 +4729,7 @@ async function activateAndTest() {
     ]);
     await reg.showNotification(title, {body, icon:'./icons/icon-192.png', tag:'test'});
   } catch(e) {
-    try { new Notification(title, {body, icon:'./icons/icon-192.png'}); } catch(e2) {}
+    notifBasic(title, {body, icon:'./icons/icon-192.png'});
   }
 
   render();
