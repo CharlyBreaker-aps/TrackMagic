@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v11.6 (By Charly)</title>
+<title>MagicTracker v11.7 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
@@ -303,6 +303,14 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .psi-tgt{font-size:10px;color:var(--green);}
 .psi-bar{height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;}
 .psi-fill{height:4px;border-radius:2px;}
+/* Collapsible section chevron (generic sections) */
+.sec2.sec2-clk{cursor:pointer;touch-action:manipulation;user-select:none;-webkit-user-select:none;}
+.sec2-chev{font-size:11px;color:var(--text3);margin-left:6px;transition:transform .2s;}
+/* Over-goal aware progress bar (presentational) */
+.obar{background:var(--bg3);border-radius:3px;overflow:hidden;display:flex;position:relative;}
+.obar-fill{transition:width .4s;}
+.obar-over{background:var(--red);transition:width .4s;background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.22) 0 3px,transparent 3px 6px);}
+.obar-tick{position:absolute;top:0;bottom:0;width:2px;background:rgba(255,255,255,.4);}
 
 /* Settings screen */
 .settings-screen{padding:16px}
@@ -372,7 +380,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v11.6 (By Charly)",
+    appName: "MagicTracker v11.7 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -515,7 +523,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v11.6 (By Charly)",
+    appName: "MagicTracker v11.7 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -2377,6 +2385,28 @@ function filterHelp(q){
   });
 }
 
+// ── Collapsible section state — isolated in its own localStorage key.
+// Does NOT touch save()/load()/SYNC_FIELDS, so it cannot affect data or cloud sync.
+function getSecCollapsed(){ try{ return JSON.parse(localStorage.getItem('mt_seccollapse')||'{}'); }catch(e){ return {}; } }
+function toggleSec(id){ try{ const o=getSecCollapsed(); o[id]=!o[id]; localStorage.setItem('mt_seccollapse',JSON.stringify(o)); }catch(e){} render(); }
+function secOpen(id){ return !getSecCollapsed()[id]; }
+function secChev(id){ return `<span class="sec2-chev">${secOpen(id)?'▾':'▸'}</span>`; }
+
+// ── Over-goal aware progress bar — presentational only, no calculations changed.
+// cur/full in the same units. If cur>full and overGood is false, the excess renders
+// as a red hatched segment past a 100% tick. If overGood (e.g. protein, goal overshoot),
+// exceeding just fills the bar fully in its own colour.
+function overBar(cur, full, colorVar, hPx, overGood){
+  full = full || 1; hPx = hPx || 4;
+  const over = cur > full;
+  if(!over || overGood){
+    const w = over ? 100 : Math.max(0, Math.round(cur/full*100));
+    return `<div class="obar" style="height:${hPx}px"><div class="obar-fill" style="width:${w}%;height:${hPx}px;background:${colorVar}"></div></div>`;
+  }
+  const base = Math.round(full/cur*100), ov = 100-base;
+  return `<div class="obar" style="height:${hPx}px"><div class="obar-fill" style="width:${base}%;height:${hPx}px;background:${colorVar}"></div><div class="obar-over" style="width:${ov}%;height:${hPx}px"></div><div class="obar-tick" style="left:${base}%"></div></div>`;
+}
+
 function renderTracker() {
   const p = getProfile();
   if (!p) { goOnboard(); return ''; }
@@ -2458,21 +2488,21 @@ function renderTracker() {
           <span class="macro-lbl">${isEs?'Proteína':'Protein'}</span>
           <span class="macro-val">${p2}g <span class="macro-tgt">/ ${tP}g</span></span>
         </div>
-        <div class="macro-bar"><div class="macro-bar-fill" style="width:${pPct}%"></div></div>
+        ${overBar(p2, tP, '#4CAF8A', 3, true)}
       </div>
       <div class="macro-pill mp-carbs">
         <div class="macro-top">
           <span class="macro-lbl">${isEs?'Carbos':'Carbs'}</span>
-          <span class="macro-val">${cb}g <span class="macro-tgt">/ ${tC}g</span></span>
+          <span class="macro-val">${cb}g <span class="macro-tgt">/ ${tC}g</span>${cb>tC?` <span style="color:var(--red);font-weight:800">+${cb-tC}</span>`:''}</span>
         </div>
-        <div class="macro-bar"><div class="macro-bar-fill" style="width:${cPct}%"></div></div>
+        ${overBar(cb, tC, 'var(--blue)', 3)}
       </div>
       <div class="macro-pill mp-fats">
         <div class="macro-top">
           <span class="macro-lbl">${isEs?'Grasas':'Fats'}</span>
-          <span class="macro-val">${ft}g <span class="macro-tgt">/ ${tF}g</span></span>
+          <span class="macro-val">${ft}g <span class="macro-tgt">/ ${tF}g</span>${ft>tF?` <span style="color:var(--red);font-weight:800">+${ft-tF}</span>`:''}</span>
         </div>
-        <div class="macro-bar"><div class="macro-bar-fill" style="width:${fPct}%"></div></div>
+        ${overBar(ft, tF, 'var(--amber)', 3)}
       </div>
     </div>
   </div>`;
@@ -2550,10 +2580,13 @@ function renderTracker() {
     // ── PRIMARY: Body fat progress (waist-driven) ──
     if (tgtF && estBF !== null) {
       const bfStart = startBF || estBF;
-      const bfTotal = Math.abs(bfStart - tgtF) || 1;
-      const bfDone = Math.abs(bfStart - estBF);
-      const bfPct = Math.min(100, Math.round(bfDone / bfTotal * 100));
+      // Directional progress: positive toward target, negative if moving the wrong way, >100 if overshot.
+      const bfProg = (bfStart - tgtF) !== 0 ? Math.round((bfStart - estBF) / (bfStart - tgtF) * 100) : 0;
+      const bfPct = Math.max(0, Math.min(100, bfProg));
+      const bfAway = bfProg < 0;
+      const bfReached = bfProg >= 100;
       const bfRemaining = Math.abs(estBF - tgtF).toFixed(1);
+      const bfAwayAmt = Math.abs(estBF - bfStart).toFixed(1);
       const bfCloser = estBF > tgtF; // for cut goal
       const bfColor = estBF <= tgtF ? 'var(--green)' : (estBF - tgtF < 3 ? 'var(--amber)' : 'var(--text)');
 
@@ -2571,12 +2604,14 @@ function renderTracker() {
             <span style="font-size:10px;color:var(--text3);display:block">${isEs?'objetivo':'target'}</span>
           </div>
         </div>
-        <div style="height:10px;background:var(--bg3);border-radius:5px;overflow:hidden;position:relative">
-          <div style="height:10px;background:${bfPct>=100?'var(--green)':'var(--green)'};border-radius:5px;width:${bfPct}%;transition:width .4s;opacity:${bfPct>=100?1:0.85}"></div>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);margin-top:4px">
-          <span>${bfCloser ? `${bfRemaining}% ${isEs?'para llegar':'to go'} · ${bfPct}% ${isEs?'del camino':'done'}` : (bfPct>0?`${isEs?'Objetivo alcanzado':'Target reached'} 🎉`:(isEs?'Empezaste hoy 💪':'Started today 💪'))}</span>
-          <span>${isEs?'Cintura':'Waist'}: ${curWaist}cm</span>
+        ${overBar(bfProg, 100, 'var(--green)', 10, true)}
+        <div style="display:flex;justify-content:space-between;font-size:10px;margin-top:4px">
+          <span style="color:${bfAway?'var(--amber)':'var(--text3)'}">${
+            bfReached ? `${isEs?'Objetivo alcanzado':'Target reached'} 🎉`
+            : bfAway ? `⚠️ ${isEs?`Te alejaste ${bfAwayAmt}% del objetivo`:`Moved ${bfAwayAmt}% away from target`}`
+            : (bfProg>0 ? `${bfRemaining}% ${isEs?'para llegar':'to go'} · ${bfPct}% ${isEs?'del camino':'done'}` : (isEs?'Empezaste hoy 💪':'Started today 💪'))
+          }</span>
+          <span style="color:var(--text3)">${isEs?'Cintura':'Waist'}: ${curWaist}cm</span>
         </div>
         <div style="font-size:10px;color:var(--text3);margin-top:4px;font-style:italic">
           ${isEs?'Estimación basada en cintura + altura. Actualizá la cintura en Settings para ver cambios reales.':'Estimate based on waist + height. Update waist in Settings to track real changes.'}
@@ -2590,10 +2625,13 @@ function renderTracker() {
 
     // ── SECONDARY: Weight progress ──
     if (tgtW && curW) {
-      const wTotal = Math.abs(startW - tgtW) || 1;
-      const wDone = Math.abs(startW - curW);
-      const wPct = Math.min(100, Math.round(wDone / wTotal * 100));
+      // Directional progress: positive toward target, negative if moving the wrong way, >100 if overshot.
+      const wProg = (tgtW - startW) !== 0 ? Math.round((curW - startW) / (tgtW - startW) * 100) : 0;
+      const wPct = Math.max(0, Math.min(100, wProg));
+      const wAway = wProg < 0;
+      const wReached = wProg >= 100;
       const wRemaining = Math.abs(curW - tgtW).toFixed(1);
+      const wAwayAmt = Math.abs(curW - startW).toFixed(1);
       progressHtml += `<div style="margin-bottom:6px">
         <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px">
           ⚖️ ${isEs?'Peso':'Weight'}
@@ -2602,13 +2640,13 @@ function renderTracker() {
           <span><strong style="color:var(--text)">${curW}kg</strong> <span style="color:var(--text3)">${isEs?'actual':'current'}</span></span>
           <span><strong style="color:var(--green)">${tgtW}kg</strong> <span style="color:var(--text3)">${isEs?'objetivo':'target'}</span></span>
         </div>
-        <div style="height:6px;background:var(--bg3);border-radius:3px;overflow:hidden">
-          <div style="height:6px;background:var(--blue);border-radius:3px;width:${wPct}%;transition:width .4s"></div>
-        </div>
-        <div style="font-size:10px;color:${wPct>=100?'var(--green)':'var(--text3)'};margin-top:3px">
-          ${wPct>=100
+        ${overBar(wProg, 100, 'var(--blue)', 6, true)}
+        <div style="font-size:10px;color:${wReached?'var(--green)':wAway?'var(--amber)':'var(--text3)'};margin-top:3px">
+          ${wReached
             ? '🎉 '+(isEs?'Objetivo alcanzado':'Goal reached')+(parseFloat(wRemaining)>0?' · '+(isEs?'Superado por '+wRemaining+'kg':'Exceeded by '+wRemaining+'kg'):'')
-            : wRemaining+'kg '+(isEs?'restantes':'remaining')+' · '+wPct+'% '+(isEs?'completado':'done')
+            : wAway
+              ? '⚠️ '+(isEs?`Te alejaste ${wAwayAmt}kg del objetivo`:`Moved ${wAwayAmt}kg away from target`)
+              : wRemaining+'kg '+(isEs?'restantes':'remaining')+' · '+wPct+'% '+(isEs?'completado':'done')
           }
         </div>
       </div>`;
@@ -2620,21 +2658,19 @@ function renderTracker() {
     let compactBF = '', compactW = '';
     if (tgtF && estBF !== null) {
       const bfStart2 = startBF || estBF;
-      const bfTotal2 = Math.abs(bfStart2 - tgtF) || 1;
-      const bfPct2 = Math.min(100, Math.round(Math.abs(bfStart2 - estBF) / bfTotal2 * 100));
+      const bfProg2 = (bfStart2 - tgtF) !== 0 ? Math.round((bfStart2 - estBF) / (bfStart2 - tgtF) * 100) : 0;
       compactBF = `<div class="psi">
         <div class="psi-label">📏 ${isEs?'Grasa corporal':'Body fat'}</div>
         <div class="psi-vals"><span class="psi-cur">${estBF}%</span><span class="psi-tgt">→ ${tgtF}%</span></div>
-        <div class="psi-bar"><div class="psi-fill" style="background:var(--green);width:${bfPct2}%"></div></div>
+        ${overBar(bfProg2, 100, 'var(--green)', 4, true)}
       </div>`;
     }
     if (tgtW && curW) {
-      const wTotal2 = Math.abs(startW - tgtW) || 1;
-      const wPct2 = Math.min(100, Math.round(Math.abs(startW - curW) / wTotal2 * 100));
+      const wProg2 = (tgtW - startW) !== 0 ? Math.round((curW - startW) / (tgtW - startW) * 100) : 0;
       compactW = `<div class="psi">
         <div class="psi-label">⚖️ ${isEs?'Peso':'Weight'}</div>
         <div class="psi-vals"><span class="psi-cur">${curW}kg</span><span class="psi-tgt">→ ${tgtW}kg</span></div>
-        <div class="psi-bar"><div class="psi-fill" style="background:var(--blue);width:${wPct2}%"></div></div>
+        ${overBar(wProg2, 100, 'var(--blue)', 4, true)}
       </div>`;
     }
     h+=`<div class="prog-strip">
@@ -2650,24 +2686,28 @@ function renderTracker() {
     </div>`;
   }
   if (timing && timing.length) {
-    h+=`<div class="sec2"><div class="sec2-dot empty"></div><span class="sec2-lbl">🕐 ${t('meal_timing')}</span></div>
-    <div class="timing-banner">`;
-    timing.forEach(ti=>{h+=`<div class="timing-item"><span class="timing-time">${ti.time}</span><span>${ti.label}</span></div>`;});
-    h+=`</div>`;
+    h+=`<div class="sec2 sec2-clk" onclick="toggleSec('timing')"><div class="sec2-dot empty"></div><span class="sec2-lbl">🕐 ${t('meal_timing')}</span>${secChev('timing')}</div>`;
+    if (secOpen('timing')) {
+      h+=`<div class="timing-banner">`;
+      timing.forEach(ti=>{h+=`<div class="timing-item"><span class="timing-time">${ti.time}</span><span>${ti.label}</span></div>`;});
+      h+=`</div>`;
+    }
   }
 
   // ── SUPPLEMENTS — chip style ──
   if (supps.length) {
     const suppDotCls = sd===supps.length?'done':sd>0?'partial':'empty';
-    h+=`<div class="sec2"><div class="sec2-dot ${suppDotCls}"></div><span class="sec2-lbl">💊 ${t('supplements')}</span><span class="sec2-cnt ${sd===supps.length?'done':''}">${sd}/${supps.length} ${t('taken')}</span></div>`;
-    h+=`<div class="supp-chips">`;
-    supps.forEach(x=>{
-      const done=sc[x.id]?true:false;
-      const lbl=typeof x.label==='object'?x.label[APP.lang]:x.label;
-      const tm=typeof x.time==='object'?x.time[APP.lang]:x.time;
-      h+=`<div class="supp-chip2${done?' done':''}" onclick="tS('${d}','${x.id}')">${lbl}<span style="font-size:9px;opacity:.6;margin-left:4px">${tm}</span>${done?' ✓':''}</div>`;
-    });
-    h+=`</div>`;
+    h+=`<div class="sec2 sec2-clk" onclick="toggleSec('supps')"><div class="sec2-dot ${suppDotCls}"></div><span class="sec2-lbl">💊 ${t('supplements')}</span><span class="sec2-cnt ${sd===supps.length?'done':''}">${sd}/${supps.length} ${t('taken')}</span>${secChev('supps')}</div>`;
+    if (secOpen('supps')) {
+      h+=`<div class="supp-chips">`;
+      supps.forEach(x=>{
+        const done=sc[x.id]?true:false;
+        const lbl=typeof x.label==='object'?x.label[APP.lang]:x.label;
+        const tm=typeof x.time==='object'?x.time[APP.lang]:x.time;
+        h+=`<div class="supp-chip2${done?' done':''}" onclick="tS('${d}','${x.id}')">${lbl}<span style="font-size:9px;opacity:.6;margin-left:4px">${tm}</span>${done?' ✓':''}</div>`;
+      });
+      h+=`</div>`;
+    }
   }
 
   // Activity — preload training days for non-Charly users if not yet set
@@ -2703,7 +2743,9 @@ function renderTracker() {
   // ── ACTIVITY — card grid ──
   const actCheckedCount = actDef.filter(a=>acNow[a.id]).length;
   const actDotCls = actCheckedCount===actDef.length&&actDef.length>0?'done':actCheckedCount>0?'partial':'empty';
-  h+=`<div class="sec2"><div class="sec2-dot ${actDotCls}"></div><span class="sec2-lbl">⚡ ${t('physical_activity')}</span><span class="sec2-cnt ${actCheckedCount===actDef.length&&actDef.length>0?'done':''}">${actCheckedCount}/${actDef.length}</span></div>`;
+  h+=`<div class="sec2 sec2-clk" onclick="toggleSec('activity')"><div class="sec2-dot ${actDotCls}"></div><span class="sec2-lbl">⚡ ${t('physical_activity')}</span><span class="sec2-cnt ${actCheckedCount===actDef.length&&actDef.length>0?'done':''}">${actCheckedCount}/${actDef.length}</span>${secChev('activity')}</div>`;
+  const actGridOpen = secOpen('activity');
+  if (actGridOpen) {
   h+=`<div class="act-grid">`;
   actDef.forEach(a=>{
     const done=acNow[a.id]?true:false;
@@ -2742,6 +2784,7 @@ function renderTracker() {
     }
   });
   h+=`</div>`;
+  }
 
   // ── MEAL SECTIONS — structured by eating pattern ──
   const eating = p.eating || 'omad';
@@ -2754,7 +2797,9 @@ function renderTracker() {
     // Count how many restaurants have a selection
     const selCount2 = mealsData.filter(r=>selSt2[r.id]!==undefined).length;
     const mealDotCls = selCount2>0?'done':'empty';
-    let s = `<div class="sec2"><div class="sec2-dot ${mealDotCls}"></div><span class="sec2-lbl">${sectionIcon} ${sectionTitle}</span>${selCount2>0?`<span class="sec2-cnt done">${selCount2} ${isEsSnacks?'seleccionado':'selected'} ✓</span>`:''}</div>`;
+    const mealSecId = 'meal_'+sectionId;
+    let s = `<div class="sec2 sec2-clk" onclick="toggleSec('${mealSecId}')"><div class="sec2-dot ${mealDotCls}"></div><span class="sec2-lbl">${sectionIcon} ${sectionTitle}</span>${selCount2>0?`<span class="sec2-cnt done">${selCount2} ${isEsSnacks?'seleccionado':'selected'} ✓</span>`:''}${secChev(mealSecId)}</div>`;
+    if (!secOpen(mealSecId)) return s;
     if (p.isCharly && sectionId !== 'breakfast') {
       s+=`<div class="skey">${t('snack_a_key')}${t('snack_key_suffix')}</div>`;
     }
@@ -2814,7 +2859,8 @@ function renderTracker() {
   function renderBreakfastSection() {
     const bfKey = 'breakfast_open_'+d;
     const isOpen3 = APP.rest[d]&&APP.rest[d][bfKey];
-    let s = `<div class="sec">🌅 ${isEs2?'Desayuno':'Breakfast'}</div>`;
+    let s = `<div class="sec sec2-clk" onclick="toggleSec('bfhome')" style="display:flex;align-items:center">🌅 ${isEs2?'Desayuno':'Breakfast'}${secChev('bfhome')}</div>`;
+    if (!secOpen('bfhome')) return s;
     s += `<div class="rest-card"><div class="rest-hdr" onclick="tRest('${d}','${bfKey}')">
       <span class="ricon">🌅</span><span class="rname">${isEs2?'Opciones de desayuno':'Breakfast options'}</span>
       <span class="rsrc">${isEs2?'Casero':'Home'}</span>
