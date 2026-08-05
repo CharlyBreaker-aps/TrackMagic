@@ -6,7 +6,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="theme-color" content="#1D9E75">
-<title>MagicTracker v11.7 (By Charly)</title>
+<title>MagicTracker v11.8 (By Charly)</title>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js"></script>
@@ -380,7 +380,7 @@ window.onerror = function(msg, src, line, col, err) {
 // ══════════════════════════════════════════════
 const T = {
   en: {
-    appName: "MagicTracker v11.7 (By Charly)",
+    appName: "MagicTracker v11.8 (By Charly)",
     ob_lang_title: 'Choose your language',
     ob_lang_sub: 'You can change this anytime from the app.',
     ob_sex_title: 'What is your biological sex?',
@@ -523,7 +523,7 @@ const T = {
     home_snacks: 'Protein snacks',
   },
   es: {
-    appName: "MagicTracker v11.7 (By Charly)",
+    appName: "MagicTracker v11.8 (By Charly)",
     ob_lang_title: 'Elegí tu idioma',
     ob_lang_sub: 'Podés cambiarlo cuando quieras desde la app.',
     ob_sex_title: '¿Cuál es tu sexo biológico?',
@@ -2580,14 +2580,17 @@ function renderTracker() {
     // ── PRIMARY: Body fat progress (waist-driven) ──
     if (tgtF && estBF !== null) {
       const bfStart = startBF || estBF;
-      // Directional progress: positive toward target, negative if moving the wrong way, >100 if overshot.
-      const bfProg = (bfStart - tgtF) !== 0 ? Math.round((bfStart - estBF) / (bfStart - tgtF) * 100) : 0;
+      // Body fat: at or below the target = achieved (fat goals are a ceiling), regardless of start.
+      const bfReached = estBF <= tgtF;
+      let bfProg, bfAway = false;
+      if (bfReached) { bfProg = 100; }
+      else if (bfStart > tgtF) { // normal reduction journey
+        bfProg = Math.round((bfStart - estBF) / (bfStart - tgtF) * 100);
+        if (bfProg < 0) { bfAway = true; bfProg = 0; } else bfProg = Math.min(99, bfProg);
+      } else { bfProg = 0; bfAway = estBF > bfStart; } // started at/below target but crept back up
       const bfPct = Math.max(0, Math.min(100, bfProg));
-      const bfAway = bfProg < 0;
-      const bfReached = bfProg >= 100;
       const bfRemaining = Math.abs(estBF - tgtF).toFixed(1);
       const bfAwayAmt = Math.abs(estBF - bfStart).toFixed(1);
-      const bfCloser = estBF > tgtF; // for cut goal
       const bfColor = estBF <= tgtF ? 'var(--green)' : (estBF - tgtF < 3 ? 'var(--amber)' : 'var(--text)');
 
       progressHtml += `<div style="margin-bottom:12px">
@@ -2606,8 +2609,8 @@ function renderTracker() {
         </div>
         ${overBar(bfProg, 100, 'var(--green)', 10, true)}
         <div style="display:flex;justify-content:space-between;font-size:10px;margin-top:4px">
-          <span style="color:${bfAway?'var(--amber)':'var(--text3)'}">${
-            bfReached ? `${isEs?'Objetivo alcanzado':'Target reached'} 🎉`
+          <span style="color:${bfReached?'var(--green)':bfAway?'var(--amber)':'var(--text3)'}">${
+            bfReached ? `🎉 ${isEs?'Objetivo alcanzado':'Target reached'}${estBF<tgtF?' · '+(isEs?`${bfRemaining}% por debajo`:`${bfRemaining}% below`):''}`
             : bfAway ? `⚠️ ${isEs?`Te alejaste ${bfAwayAmt}% del objetivo`:`Moved ${bfAwayAmt}% away from target`}`
             : (bfProg>0 ? `${bfRemaining}% ${isEs?'para llegar':'to go'} · ${bfPct}% ${isEs?'del camino':'done'}` : (isEs?'Empezaste hoy 💪':'Started today 💪'))
           }</span>
@@ -2625,11 +2628,18 @@ function renderTracker() {
 
     // ── SECONDARY: Weight progress ──
     if (tgtW && curW) {
-      // Directional progress: positive toward target, negative if moving the wrong way, >100 if overshot.
-      const wProg = (tgtW - startW) !== 0 ? Math.round((curW - startW) / (tgtW - startW) * 100) : 0;
+      // Direction from the profile goal: bulk = reach target by gaining, otherwise by losing.
+      const wGain = (p.goal === 'bulk');
+      const wReached = wGain ? (curW >= tgtW) : (curW <= tgtW);
+      let wProg, wAway = false;
+      if (wReached) { wProg = 100; }
+      else {
+        const wTot = Math.abs(tgtW - startW) || 1;
+        const wToward = wGain ? (curW - startW) : (startW - curW);
+        wProg = Math.round(wToward / wTot * 100);
+        if (wProg < 0) { wAway = true; wProg = 0; } else wProg = Math.min(99, wProg);
+      }
       const wPct = Math.max(0, Math.min(100, wProg));
-      const wAway = wProg < 0;
-      const wReached = wProg >= 100;
       const wRemaining = Math.abs(curW - tgtW).toFixed(1);
       const wAwayAmt = Math.abs(curW - startW).toFixed(1);
       progressHtml += `<div style="margin-bottom:6px">
@@ -2658,7 +2668,10 @@ function renderTracker() {
     let compactBF = '', compactW = '';
     if (tgtF && estBF !== null) {
       const bfStart2 = startBF || estBF;
-      const bfProg2 = (bfStart2 - tgtF) !== 0 ? Math.round((bfStart2 - estBF) / (bfStart2 - tgtF) * 100) : 0;
+      let bfProg2;
+      if (estBF <= tgtF) bfProg2 = 100;
+      else if (bfStart2 > tgtF) bfProg2 = Math.max(0, Math.min(99, Math.round((bfStart2 - estBF) / (bfStart2 - tgtF) * 100)));
+      else bfProg2 = 0;
       compactBF = `<div class="psi">
         <div class="psi-label">📏 ${isEs?'Grasa corporal':'Body fat'}</div>
         <div class="psi-vals"><span class="psi-cur">${estBF}%</span><span class="psi-tgt">→ ${tgtF}%</span></div>
@@ -2666,7 +2679,11 @@ function renderTracker() {
       </div>`;
     }
     if (tgtW && curW) {
-      const wProg2 = (tgtW - startW) !== 0 ? Math.round((curW - startW) / (tgtW - startW) * 100) : 0;
+      const wGain2 = (p.goal === 'bulk');
+      const wReached2 = wGain2 ? (curW >= tgtW) : (curW <= tgtW);
+      let wProg2;
+      if (wReached2) wProg2 = 100;
+      else { const wTot2 = Math.abs(tgtW - startW) || 1; const wTw2 = wGain2 ? (curW - startW) : (startW - curW); wProg2 = Math.max(0, Math.min(99, Math.round(wTw2 / wTot2 * 100))); }
       compactW = `<div class="psi">
         <div class="psi-label">⚖️ ${isEs?'Peso':'Weight'}</div>
         <div class="psi-vals"><span class="psi-cur">${curW}kg</span><span class="psi-tgt">→ ${tgtW}kg</span></div>
